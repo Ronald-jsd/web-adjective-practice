@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <title>Guía Visual Oxford: Adjetivos en Inglés</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/merriweather@5.0.8/index.min.css">
@@ -35,6 +35,109 @@
                 Master English <span class="text-amber-700">Adjectives</span>
             </h2>
             <p class="font-serif-oxford text-lg text-gray-600 italic mb-6">(Guía Completa y Categorizada de Adjetivos)</p>
+            
+            <div class="relative max-w-2xl mx-auto">
+                <input type="text" id="global-search" placeholder="Buscar adjetivo (inglés o español)..." 
+                    class="w-full px-5 py-3.5 pl-12 bg-white border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all">
+                <svg class="w-5 h-5 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
+                <button id="clear-search" class="hidden absolute right-4 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            <p class="text-sm text-gray-500 mt-4">Seleccione una categoría para explorar sus adjetivos organizados.</p>
+        </div>
+        
+        <div id="loading-indicator" class="flex justify-center items-center py-20">
+            <div class="loading-spinner"></div>
+            <span class="ml-3 text-gray-500">Cargando datos...</span>
+        </div>
+        
+        <div id="categories-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 hidden"></div>
+        
+        <div id="search-results" class="hidden">
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div class="px-6 py-4 bg-amber-50 border-b border-amber-200">
+                    <h3 class="font-serif-oxford font-bold text-lg text-amber-800">Resultados de búsqueda</h3>
+                    <p class="text-sm text-amber-600" id="search-results-count"></p>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse min-w-[800px]">
+                        <thead>
+                            <tr class="bg-gray-50 border-b border-gray-200">
+                                <th class="py-3 px-4 text-xs font-bold text-gray-500 uppercase">Categoría</th>
+                                <th class="py-3 px-4 text-xs font-bold text-gray-500 uppercase">Subcategoría</th>
+                                <th class="py-3 px-4 text-xs font-bold text-gray-500 uppercase">Adjective</th>
+                                <th class="py-3 px-4 text-xs font-bold text-gray-500 uppercase">Pronun.</th>
+                                <th class="py-3 px-4 text-xs font-bold text-gray-500 uppercase">Español</th>
+                                <th class="py-3 px-4 text-xs font-bold text-gray-500 uppercase">Example</th>
+                            </tr>
+                        </thead>
+                        <tbody id="search-results-tbody" class="divide-y divide-gray-100"></tbody>
+                    </table>
+                </div>
+                <div id="search-pagination" class="flex items-center justify-between px-6 py-4 bg-gray-50 border-t border-gray-200"></div>
+            </div>
+            <div class="mt-6 text-center">
+                <button id="back-to-categories" class="px-6 py-2.5 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg transition-colors inline-flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                    Volver a categorías
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <div id="modal-overlay" class="fixed inset-0 z-50 hidden">
+        <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" onclick="closeModal()"></div>
+        <div class="absolute inset-0 flex items-start md:items-center justify-center p-2 md:p-4 pointer-events-none">
+            <div class="bg-white w-full max-w-6xl max-h-[95vh] md:max-h-[90vh] rounded-xl md:rounded-2xl shadow-2xl overflow-hidden flex flex-col pointer-events-auto">
+                <div class="flex items-center justify-between p-3 md:p-5 border-b border-gray-200 bg-gray-50 flex-shrink-0">
+                    <div class="flex items-center gap-2 md:gap-3">
+                        <div id="modal-icon" class="p-1 md:p-2 rounded-xl text-xl md:text-2xl shadow-sm"></div>
+                        <div>
+                            <h2 id="modal-title" class="font-serif-oxford font-bold text-lg md:text-xl text-gray-900"></h2>
+                            <p id="modal-subtitle" class="text-xs text-gray-500 mt-0.5"></p>
+                        </div>
+                    </div>
+                    <button onclick="closeModal()" class="p-1 md:p-2 hover:bg-gray-200 rounded-full transition-colors">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    </button>
+                </div>
+                
+                <div class="flex flex-col md:flex-row flex-1 overflow-hidden">
+                    <div id="modal-sidebar" class="w-full md:w-64 lg:w-72 bg-gray-50 border-b md:border-b-0 md:border-r border-gray-200 flex-shrink-0 sidebar-scroll">
+                        <div class="p-2 md:p-3 border-b border-gray-200 bg-gray-100">
+                            <span class="text-xs font-bold text-gray-500 uppercase tracking-wider">Subcategorías</span>
+                            <span id="subcat-count" class="text-xs text-gray-400 ml-2"></span>
+                        </div>
+                        <div id="subcategories-list" class="py-1 md:py-2"></div>
+                    </div>
+                    
+                    <div class="flex-1 overflow-y-auto p-3 md:p-5 bg-gray-50">
+                        <div id="modal-content-active"></div>
+                    </div>
+                </div>
+                
+                <div class="p-2 md:p-3 border-t border-gray-200 bg-white flex justify-between items-center flex-shrink-0">
+                    <span class="text-xs text-gray-400">Oxford Visual Guide</span>
+                    <button onclick="closeModal()" class="px-4 md:px-5 py-1.5 md:py-2 bg-gray-900 hover:bg-gray-800 text-white font-medium rounded-lg transition-colors text-sm">
+                        Cerrar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-white border-t border-gray-200 mt-auto no-print">
+        <div class="max-w-7xl mx-auto px-6 py-8 text-center">
+            <p class="font-serif-oxford text-sm text-gray-600 italic mb-2">"The limits of my language mean the limits of my world." — Ludwig Wittgenstein</p>
+            <p class="text-xs text-gray-400 uppercase tracking-widest font-semibold">Complete English Adjectives Reference • © 2026</p>
+        </div>
+    </footer>
+
+    <script type="module" src="app.js">
+    </script>
+</body>
+</html>            <p class="font-serif-oxford text-lg text-gray-600 italic mb-6">(Guía Completa y Categorizada de Adjetivos)</p>
             
             <div class="relative max-w-2xl mx-auto">
                 <input type="text" id="global-search" placeholder="Buscar adjetivo (inglés o español)..." 
