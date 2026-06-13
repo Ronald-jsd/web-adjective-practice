@@ -62,3 +62,161 @@
             opacity: 0.5;
             pointer-events: none;
         }
+
+        /* Tabla mejorada responsive */
+        #modal-content-active {
+            padding: 0 !important;
+        }
+
+        #modal-content-active .bg-white {
+            margin: 0 !important;
+        }
+
+        #modal-content-active table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        #modal-content-active tbody tr {
+            border: none;
+            border-bottom: 1px solid #e5e7eb;
+            transition: background-color 0.2s ease;
+            display: grid;
+            grid-template-columns: 1fr;
+            grid-template-rows: auto;
+            gap: 0;
+        }
+
+        #modal-content-active tbody tr:hover {
+            background-color: #fef3c7 !important;
+        }
+
+        #modal-content-active td {
+            display: block;
+            padding: 0.75rem 0.75rem;
+            font-size: 0.9rem;
+            border: none;
+            border-bottom: 1px solid #f3f4f6;
+            position: relative;
+            padding-left: 6rem;
+            min-height: 2rem;
+            display: flex;
+            align-items: center;
+        }
+
+        #modal-content-active td:before {
+            content: attr(data-label);
+            position: absolute;
+            left: 0.75rem;
+            font-weight: 700;
+            font-size: 0.75rem;
+            color: #6b7280;
+            text-transform: uppercase;
+            width: 5rem;
+            flex-shrink: 0;
+        }
+
+        #modal-content-active td:last-child {
+            border-bottom: none;
+        }
+
+        #modal-content-active tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        #modal-content-active thead {
+            display: none;
+        }
+
+        /* Estilos para escritorio */
+        @media (min-width: 768px) {
+            #modal-content-active tbody tr {
+                display: table-row;
+                grid-template-columns: none;
+                gap: 0;
+            }
+
+            #modal-content-active td {
+                display: table-cell;
+                padding: 1rem 1.25rem;
+                font-size: 0.95rem;
+                border: none;
+                border-bottom: 1px solid #e5e7eb;
+                padding-left: 1.25rem;
+                min-height: auto;
+            }
+
+            #modal-content-active td:before {
+                display: none;
+            }
+
+            #modal-content-active thead {
+                display: table-header-group;
+                background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+            }
+
+            #modal-content-active thead th {
+                font-weight: 700;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                font-size: 0.75rem;
+                color: #374151;
+                padding: 1rem 1.25rem;
+                border-bottom: 2px solid #d1d5db;
+                text-align: left;
+            }
+        }
+
+        /* Modal responsivo */
+        @media (max-width: 767px) {
+            #modal-overlay {
+                padding: 0 !important;
+            }
+
+            #modal-overlay .absolute.inset-0.flex {
+                align-items: flex-end !important;
+            }
+
+            #modal-overlay .bg-white {
+                width: 100% !important;
+                max-width: 100% !important;
+                max-height: 85vh !important;
+                border-radius: 1.5rem 1.5rem 0 0 !important;
+            }
+
+            #modal-sidebar {
+                width: 100% !important;
+                border-right: none !important;
+                border-bottom: 1px solid #e5e7eb;
+                max-height: 12rem !important;
+                overflow-x: auto;
+                overflow-y: hidden;
+                display: flex;
+                flex-direction: row;
+                padding-right: 1rem;
+            }
+
+            #subcategories-list {
+                display: flex !important;
+                gap: 0.5rem;
+                overflow-x: auto;
+                flex: 1;
+                padding: 0.5rem 0 !important;
+                py-2: none !important;
+            }
+
+            #subcategories-list button {
+                border-bottom: none !important;
+                border-right: 1px solid #e5e7eb !important;
+                white-space: nowrap;
+                flex-shrink: 0;
+                padding-right: 1rem !important;
+            }
+
+            #subcategories-list button:last-child {
+                border-right: none !important;
+            }
+
+            .flex.flex-1.overflow-hidden {
+                flex-direction: column;
+            }
