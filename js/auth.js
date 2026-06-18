@@ -1,7 +1,6 @@
 import { supabase } from './app.js'
 import { store } from './config.js'
 
-// AUTENTICACIÓN
 function updateAuthUI() {
     const authContainer = document.getElementById('auth-container')
     if (!authContainer) return
@@ -141,13 +140,11 @@ async function signUpWithEmail() {
 }
 
 
-// EXPORTACIONES
 export {
     checkUser, updateAuthUI, loadUserWordStatus,
     loadUserCustomItems, logout, loginWithEmail, signUpWithEmail
 }
 
-// FUNCIONES GLOBALES PARA EL HTML
 window.loginWithEmail = loginWithEmail
 window.signUpWithEmail = signUpWithEmail
 window.logout = logout

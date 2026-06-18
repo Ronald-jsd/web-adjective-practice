@@ -5,8 +5,6 @@ import { loadUserCustomItems } from './auth.js'
 import { initDragAndDrop } from './drag-drop.js'
 import { makeClickableText } from './audio.js'
 
-
-// VISTA DE CATEGORÍA (PÁGINA COMPLETA)
 function openCategoryView(data) {
     if (!data) return
     store.currentCategoryData = data
@@ -48,8 +46,8 @@ function openCategoryView(data) {
             const btn = document.createElement('button')
             const isActive = idx === store.activeSubcatIndex
             btn.className = `px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2 ${isActive
-                    ? 'bg-amber-500 text-white shadow-md'
-                    : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+                ? 'bg-amber-500 text-white shadow-md'
+                : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
                 }`
             btn.innerHTML = `
                 <span class="text-xs ${isActive ? 'text-amber-100' : 'text-gray-400'} font-bold">${idx + 1}</span>
@@ -73,8 +71,8 @@ function openCategoryView(data) {
             const sub = data.subcategories[i]
             const isActive = i === index
             btn.className = `px-4 py-2 rounded-lg text-sm font-medium transition-all whitespace-nowrap flex items-center gap-2 ${isActive
-                    ? 'bg-amber-500 text-white shadow-md'
-                    : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
+                ? 'bg-amber-500 text-white shadow-md'
+                : 'bg-white text-gray-700 border border-gray-200 hover:bg-gray-50'
                 }`
             btn.innerHTML = `
                 <span class="text-xs ${isActive ? 'text-amber-100' : 'text-gray-400'} font-bold">${i + 1}</span>

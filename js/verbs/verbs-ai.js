@@ -3,12 +3,13 @@ import {
     GEMINI_KEY_STORAGE,
     GROQ_KEY_STORAGE,
     AI_PROVIDER_STORAGE
-} from './config.js'
-import { showToast } from './cache.js'
-import { loadUserCustomItems } from './auth.js'
-import { renderCategories } from './data.js'
-import { supabase } from './app.js'
+} from '/js/config.js'
+import { showToast } from '../cache.js'
+import { loadUserCustomItems } from '../auth.js'
+import { renderCategories } from '../data.js'
+import { supabase } from '../app.js'
 
+let tempAIData = null
 
 function getApiKey(provider) {
     const key = provider === 'groq' ? GROQ_KEY_STORAGE : GEMINI_KEY_STORAGE
@@ -66,8 +67,6 @@ function updateAIButton() {
     }
 }
 
-
-// GESTIÓN DE CONFIGURACIÓN DE IA (UI)
 window.manageAIKeys = function () {
     const hasGemini = hasApiKey('gemini')
     const hasGroq = hasApiKey('groq')
@@ -213,37 +212,57 @@ function changePreferredProvider() {
     }
 }
 
-// GENERACIÓN CON IA
 async function generateWithGroq(word, apiKey) {
-    const categoriesList = store.categoriesData.map(cat => {
-        const subcats = cat.subcategories.map(sub => sub.title).join(', ')
-        return `${cat.title}: [${subcats}]`
-    }).join('\n')
+    const systemPrompt = `Eres un experto en verbos ingleses. Analiza el verbo "${word}" y proporciona TODOS los siguientes campos.
 
-    const systemPrompt = `Eres un experto en vocabulario inglés. Analiza la palabra o frase que te dará el usuario (si te da en español tú conviertelo a ingles) y proporciona:
-1. La categoría más apropiada de esta lista: ${categoriesList}
-2. La subcategoría más específica dentro de esa categoría
-3. Pronunciación fonética en inglés (formato IPA)
-4. Traducción al español (asegúrate de que sea una traducción natural y de uso cotidiano, evitando traducciones literales que suenen forzadas)
-5. Un ejemplo de uso en inglés (oración completa)
-6. Traducción del ejemplo al español (traducido de forma contextual y fluida para que tenga sentido real en español)
+⚠️ IMPORTANTE: Debes incluir TODOS los campos listados, incluso si no existen (usa "--" o "N/A").
+⚠️ Los ejemplos deben incluir la traducción entre paréntesis: "I take out the trash (Yo saco la basura)"
+⚠️ El campo "type" debe ser "R" de Regular o "I" de Irregular
+⚠️ Si no encuentras una palabra entonces que sea su aproximado y de esa buscas
 
-Responde SOLO en formato JSON válido, sin texto adicional, sin markdown:
+
+Responde SOLO en formato JSON válido, sin texto adicional, sin markdown. El JSON debe tener EXACTAMENTE esta estructura:
+
 {
-  "category": "nombre de la categoría",
-  "subcategory": "nombre de la subcategoría",
-  "pronunciation": "/pronunciación/",
-  "spanish": "traducción al español",
-  "example_en": "Example sentence in English",
-  "example_es": "Ejemplo de oración en español"
-}`
+  "category": "Categoría del verbo",
+  "type": "R o I",
+  "verb": "${word}",
+  "pronunciation": "Pronunciación aproximado al español",
+  "translation": "Traducción al español",
+  "example_base": "Ejemplo en inglés con el verbo base (traducción entre paréntesis)",
+  "usage": "Usos y diferencias importantes",
+  "past_simple": "Past Simple",
+  "pronunciation_ps": "Pronunciación del Past Simple en IPA",
+  "translation_ps": "Traducción del Past Simple",
+  "example_ps": "Ejemplo con Past Simple (traducción entre paréntesis)",
+  "past_participle": "Past Participle",
+  "pronunciation_pp": "Pronunciación del Past Participle en IPA",
+  "translation_pp": "Traducción del Past Participle",
+  "example_pp": "Ejemplo con Past Participle (traducción entre paréntesis)",
+  "adjective": "Adjetivo derivado",
+  "pronunciation_adj": "Pronunciación del adjetivo en IPA",
+  "translation_adj": "Traducción del adjetivo",
+  "example_adj": "Ejemplo con adjetivo (traducción entre paréntesis)",
+  "example_adj_translation": "Traducción del ejemplo con adjetivo",
+  "adverb": "Adverbio derivado",
+  "pronunciation_adv": "Pronunciación del adverbio en IPA",
+  "translation_adv": "Traducción del adverbio",
+  "example_adv": "Ejemplo con adverbio (traducción entre paréntesis)",
+  "example_adv_translation": "Traducción del ejemplo con adverbio",
+  "noun": "Sustantivo derivado",
+  "pronunciation_noun": "Pronunciación del sustantivo en IPA",
+  "translation_noun": "Traducción del sustantivo",
+  "example_noun": "Ejemplo con sustantivo en inglés",
+  "example_noun_translation": "Traducción del ejemplo con sustantivo"
+}
 
+Recuerda: ¡RESPONDE SOLO EN FORMATO JSON!`
 
     const modelsToTry = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'gemma2-9b-it']
 
     for (const model of modelsToTry) {
         try {
-            console.log(`[Groq] Intentando con modelo: ${model}`)
+            console.log(`[Groq-Verb] Intentando con modelo: ${model}`)
             const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                 method: 'POST',
                 headers: {
@@ -254,17 +273,18 @@ Responde SOLO en formato JSON válido, sin texto adicional, sin markdown:
                     model: model,
                     messages: [
                         { role: 'system', content: systemPrompt },
-                        { role: 'user', content: `Palabra/frase: "${word}"` }
+                        { role: 'user', content: `Genera la información completa para el verbo: "${word}"` }
                     ],
-                    temperature: 0.7,
-                    max_tokens: 1024,
+                    temperature: 0.3,
+                    max_tokens: 2048,
                     response_format: { type: 'json_object' }
                 })
             })
 
+
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}))
-                console.warn(`[Groq] Modelo ${model} falló:`, errorData.error?.message || response.status)
+                console.warn(`[Groq-Verb] Modelo ${model} falló:`, errorData.error?.message || response.status)
                 if (response.status === 401) {
                     return { error: 'invalid_key', message: 'API Key inválida' }
                 }
@@ -273,51 +293,111 @@ Responde SOLO en formato JSON válido, sin texto adicional, sin markdown:
 
             const data = await response.json()
             const text = data.choices[0].message.content
-            console.log(`[Groq] ✅ Éxito con ${model}:`, text)
+            console.log(`[Groq-Verb] ✅ Éxito con ${model}`)
+            console.log('Resultados: ' + data)
+                        console.log('Resultados: ' + text)
 
             const cleaned = text.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim()
             const jsonMatch = cleaned.match(/\{[\s\S]*\}/)
             if (!jsonMatch) continue
 
             const result = JSON.parse(jsonMatch[0])
-            return { word: word, ...result, modelUsed: `Groq: ${model}`, provider: 'groq' }
+            result.word = word
+
+            const defaultFields = {
+                category: 'Sin Categoría',
+                type: 'Regular',
+                pronunciation: '--',
+                translation: '--',
+                example_base: '--',
+                usage: '--',
+                past_simple: '--',
+                pronunciation_ps: '--',
+                translation_ps: '--',
+                example_ps: '--',
+                past_participle: '--',
+                pronunciation_pp: '--',
+                translation_pp: '--',
+                example_pp: '--',
+                adjective: '--',
+                pronunciation_adj: '--',
+                translation_adj: '--',
+                example_adj: '--',
+                example_adj_translation: '--',
+                adverb: '--',
+                pronunciation_adv: '--',
+                translation_adv: '--',
+                example_adv: '--',
+                example_adv_translation: '--',
+                noun: '--',
+                pronunciation_noun: '--',
+                translation_noun: '--',
+                example_noun: '--',
+                example_noun_translation: '--'
+            }
+
+            return { ...defaultFields, ...result, modelUsed: `Groq: ${model}`, provider: 'groq' }
         } catch (error) {
-            console.warn(`[Groq] Error con ${model}:`, error.message)
+            console.warn(`[Groq-Verb] Error con ${model}:`, error.message)
         }
     }
     return null
 }
 
 async function generateWithGemini(word, apiKey) {
-    const categoriesList = store.categoriesData.map(cat => {
-        const subcats = cat.subcategories.map(sub => sub.title).join(', ')
-        return `${cat.title}: [${subcats}]`
-    }).join('\n')
+    const prompt = `Eres un experto en verbos ingleses. Analiza el verbo "${word}" y proporciona TODOS los siguientes campos en formato JSON.
 
-    const prompt = `Eres un experto en vocabulario inglés. Analiza la palabra o frase "${word}" y proporciona:
-1. La categoría más apropiada de esta lista: ${categoriesList}
-2. La subcategoría más específica dentro de esa categoría
-3. Pronunciación fonética en inglés (formato IPA)
-4. Traducción al español
-5. Un ejemplo de uso en inglés (oración completa)
-6. Traducción del ejemplo al español
+⚠️ IMPORTANTE: Debes incluir TODOS los campos listados. Si un campo no existe, usa "--".
+⚠️ El campo "type" debe ser "Regular" o "Irregular"
+⚠️ Los ejemplos deben incluir la traducción entre paréntesis: "I take out the trash (Yo saco la basura)"
 
-Responde SOLO en formato JSON válido, sin texto adicional:
+Responde SOLO en formato JSON válido, sin texto adicional. El JSON debe tener EXACTAMENTE esta estructura:
+
 {
-  "category": "nombre de la categoría",
-  "subcategory": "nombre de la subcategoría",
-  "pronunciation": "/pronunciación/",
-  "spanish": "traducción al español",
-  "example_en": "Example sentence in English",
-  "example_es": "Ejemplo de oración en español"
-}`
+  "category": "Categoría del verbo",
+  "type": "Regular o Irregular",
+  "verb": "${word}",
+  "pronunciation": "Pronunciación en IPA",
+  "translation": "Traducción al español",
+  "example_base": "Ejemplo en inglés con el verbo base (traducción entre paréntesis)",
+  "usage": "Usos y diferencia importante",
+  "past_simple": "Past Simple",
+  "pronunciation_ps": "Pronunciación del Past Simple en IPA",
+  "translation_ps": "Traducción del Past Simple",
+  "example_ps": "Ejemplo con Past Simple (traducción entre paréntesis)",
+  "past_participle": "Past Participle",
+  "pronunciation_pp": "Pronunciación del Past Participle en IPA",
+  "translation_pp": "Traducción del Past Participle",
+  "example_pp": "Ejemplo con Past Participle (traducción entre paréntesis)",
+  "adjective": "Adjetivo derivado",
+  "pronunciation_adj": "Pronunciación del adjetivo en IPA",
+  "translation_adj": "Traducción del adjetivo",
+  "example_adj": "Ejemplo con adjetivo (traducción entre paréntesis)",
+  "example_adj_translation": "Traducción del ejemplo con adjetivo",
+  "adverb": "Adverbio derivado",
+  "pronunciation_adv": "Pronunciación del adverbio en IPA",
+  "translation_adv": "Traducción del adverbio",
+  "example_adv": "Ejemplo con adverbio (traducción entre paréntesis)",
+  "example_adv_translation": "Traducción del ejemplo con adverbio",
+  "noun": "Sustantivo derivado",
+  "pronunciation_noun": "Pronunciación del sustantivo en IPA",
+  "translation_noun": "Traducción del sustantivo",
+  "example_noun": "Ejemplo con sustantivo en inglés",
+  "example_noun_translation": "Traducción del ejemplo con sustantivo"
+}
 
-    const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-001', 'gemini-1.5-flash']
+Recuerda: ¡RESPONDE SOLO EN FORMATO JSON!`
+
+    const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash']
 
     const requestBody = {
-        contents: [{ parts: [{ text: prompt }] }],
+        contents: [{
+            parts: [{
+                text: prompt
+            }]
+        }],
         generationConfig: {
-            temperature: 0.7,
+            temperature: 0.3,
             topK: 40,
             topP: 0.95,
             maxOutputTokens: 2048,
@@ -326,7 +406,7 @@ Responde SOLO en formato JSON válido, sin texto adicional:
 
     for (const model of modelsToTry) {
         try {
-            console.log(`[Gemini] Intentando con modelo: ${model}`)
+            console.log(`[Gemini-Verb] Intentando con modelo: ${model}`)
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -343,7 +423,7 @@ Responde SOLO en formato JSON válido, sin texto adicional:
                         return { error: 'invalid_key', message: 'API Key inválida' }
                     }
                 }
-                console.warn(`[Gemini] Modelo ${model} falló:`, errorMsg || response.status)
+                console.warn(`[Gemini-Verb] Modelo ${model} falló:`, errorMsg || response.status)
                 continue
             }
 
@@ -351,16 +431,53 @@ Responde SOLO en formato JSON válido, sin texto adicional:
             if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) continue
 
             const text = data.candidates[0].content.parts[0].text
-            console.log(`[Gemini] ✅ Éxito con ${model}:`, text)
+            console.log(`[Gemini-Verb] ✅ Éxito con ${model}`)
 
             const cleaned = text.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim()
             const jsonMatch = cleaned.match(/\{[\s\S]*\}/)
-            if (!jsonMatch) continue
+            if (!jsonMatch) {
+                console.warn('⚠️ No se encontró JSON en la respuesta de Gemini')
+                continue
+            }
 
             const result = JSON.parse(jsonMatch[0])
-            return { word: word, ...result, modelUsed: `Gemini: ${model}`, provider: 'gemini' }
+            result.word = word
+
+            const defaultFields = {
+                category: 'Sin Categoría',
+                type: 'Regular',
+                pronunciation: '--',
+                translation: '--',
+                example_base: '--',
+                usage: '--',
+                past_simple: '--',
+                pronunciation_ps: '--',
+                translation_ps: '--',
+                example_ps: '--',
+                past_participle: '--',
+                pronunciation_pp: '--',
+                translation_pp: '--',
+                example_pp: '--',
+                adjective: '--',
+                pronunciation_adj: '--',
+                translation_adj: '--',
+                example_adj: '--',
+                example_adj_translation: '--',
+                adverb: '--',
+                pronunciation_adv: '--',
+                translation_adv: '--',
+                example_adv: '--',
+                example_adv_translation: '--',
+                noun: '--',
+                pronunciation_noun: '--',
+                translation_noun: '--',
+                example_noun: '--',
+                example_noun_translation: '--'
+            }
+
+            return { ...defaultFields, ...result, modelUsed: `Gemini: ${model}`, provider: 'gemini' }
         } catch (error) {
-            console.warn(`[Gemini] Error con ${model}:`, error.message)
+            console.warn(`[Gemini-Verb] Error con ${model}:`, error.message)
         }
     }
     return null
@@ -405,7 +522,9 @@ async function generateWithAI(word) {
         const providerName = provider === 'groq' ? 'Groq ⚡' : 'Gemini 🤖'
         showToast(`Consultando con ${providerName}...`, 'info')
 
-        let result = provider === 'groq' ? await generateWithGroq(word, apiKey) : await generateWithGemini(word, apiKey)
+        let result = provider === 'groq'
+            ? await generateWithGroq(word, apiKey)
+            : await generateWithGemini(word, apiKey)
 
         if (result && result.error === 'invalid_key') {
             removeApiKey(provider)
@@ -414,7 +533,9 @@ async function generateWithAI(word) {
             continue
         }
 
-        if (result && !result.error) return result
+        if (result && !result.error && result.verb) {
+            return result
+        }
         console.warn(`⚠️ ${providerName} falló, intentando con el siguiente...`)
     }
 
@@ -422,8 +543,6 @@ async function generateWithAI(word) {
     return null
 }
 
-
-// FUNCIONES PARA SELECTS EDITABLES
 function buildCategoryOptions(selectedCategory) {
     let options = '<option value="">-- Selecciona una categoría --</option>'
 
@@ -559,13 +678,21 @@ function updateDestinationIndicator() {
     const categorySelect = document.getElementById('ai-category-select')
     const subcategorySelect = document.getElementById('ai-subcategory-select')
     const indicator = document.getElementById('ai-destination-indicator')
-    if (!categorySelect || !subcategorySelect || !indicator || !store.currentAIData) return
+    if (!categorySelect || !subcategorySelect || !indicator) return
+
+    const data = store.currentAIData || tempAIData || window._tempVerbData
+
+    if (!data) {
+        indicator.className = 'mt-3 p-2 bg-gray-100 border border-gray-300 rounded'
+        indicator.innerHTML = '<div class="text-xs text-gray-500">⏳ Esperando datos...</div>'
+        return
+    }
 
     const selectedCategory = categorySelect.value
     const selectedSubcategory = subcategorySelect.value
 
-    const originalCategory = (store.currentAIData.category || '').trim()
-    const originalSubcategory = (store.currentAIData.subcategory || '').trim()
+    const originalCategory = (data.category || '').trim()
+    const originalSubcategory = (data.subcategory || '').trim()
 
     const categoryExists = store.categoriesData.some(cat =>
         cat.title.toLowerCase().trim() === selectedCategory.toLowerCase().trim()
@@ -636,14 +763,17 @@ function updateDestinationIndicator() {
     }
 }
 
-
-// GUARDAR RESULTADO DE IA
 async function saveAIResult() {
     if (!store.currentUser) {
         alert('🔐 Debes iniciar sesión para guardar')
         return
     }
-    if (!store.currentAIData) {
+
+    const data = store.currentAIData || tempAIData || window._tempVerbData
+
+    console.log('🔍 Datos disponibles para guardar:', data)
+
+    if (!data) {
         alert('❌ No hay datos de IA para guardar')
         return
     }
@@ -675,32 +805,59 @@ async function saveAIResult() {
 
     showToast('Guardando en tu base de datos...', 'info')
 
-    const { data, error } = await supabase
-        .from('user_custom_items')
+    const { error } = await supabase
+        .from('verbs')
         .insert({
-            user_id: store.currentUser.id,
-            word: store.currentAIData.word,
-            pronunciation: store.currentAIData.pronunciation || '',
-            spanish: store.currentAIData.spanish || '',
-            example_en: store.currentAIData.example_en || '',
-            example_es: store.currentAIData.example_es || '',
             category: finalCategory,
-            subcategory: finalSubcategory,
-            created_at: new Date()
+            type: data.type || 'regular',
+            verb: data.verb || data.word || '',
+            pronunciation: data.pronunciation || '',
+            translation: data.translation || '',
+            example_base: data.example_base || '',
+            usage: data.usage || '',
+            past_simple: data.past_simple || '',
+            pronunciation_ps: data.pronunciation_ps || '',
+            translation_ps: data.translation_ps || '',
+            example_ps: data.example_ps || '',
+            past_participle: data.past_participle || '',
+            pronunciation_pp: data.pronunciation_pp || '',
+            translation_pp: data.translation_pp || '',
+            example_pp: data.example_pp || '',
+            adjective: data.adjective || '',
+            pronunciation_adj: data.pronunciation_adj || '',
+            translation_adj: data.translation_adj || '',
+            example_adj: data.example_adj || '',
+            example_adj_translation: data.example_adj_translation || '',
+            adverb: data.adverb || '',
+            pronunciation_adv: data.pronunciation_adv || '',
+            translation_adv: data.translation_adv || '',
+            example_adv: data.example_adv || '',
+            example_adv_translation: data.example_adv_translation || '',
+            noun: data.noun || '',
+            pronunciation_noun: data.pronunciation_noun || '',
+            translation_noun: data.translation_noun || '',
+            example_noun: data.example_noun || '',
+            example_noun_translation: data.example_noun_translation || ''
         })
-        .select()
 
     if (error) {
         alert('❌ Error al guardar: ' + error.message)
         return
     }
 
-    const providerBadge = store.currentAIData.provider === 'groq' ? '⚡ Groq' : '🤖 Gemini'
+    const providerBadge = data.provider === 'groq' ? '⚡ Groq' : '🤖 Gemini'
     showToast(`✅ Guardado con ${providerBadge} en "${finalSubcategory}"`, 'success')
 
+    tempAIData = null
     store.currentAIData = null
+    window._tempVerbData = null
 
-    await loadUserCustomItems()
+    try {
+        const { loadVerbsFromSupabase } = await import('./verbs-loader.js')
+        await loadVerbsFromSupabase(true)
+    } catch (e) {
+        console.warn('⚠️ Error recargando datos:', e)
+    }
 
     const aiContainer = document.getElementById('ai-suggestion-container')
     if (aiContainer) {
@@ -709,27 +866,28 @@ async function saveAIResult() {
         aiContainer.classList.add('hidden')
     }
 
-    const aiBtn = document.getElementById('ai-generate-btn')
-    if (aiBtn) {
-        aiBtn.disabled = false
-        aiBtn.innerHTML = `
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
-            </svg>
-            ✨ Generar con IA`
-    }
-
-    const searchInput = document.getElementById('global-search')
-    if (searchInput) {
-        searchInput.value = ''
-        const clearBtn = document.getElementById('clear-search')
-        if (clearBtn) clearBtn.classList.add('hidden')
-        renderCategories(store.categoriesData)
-    }
+    renderCategories(store.categoriesData)
 }
 
 
-//  USAR IA PARA GENERAR PALABRA
+window.saveAIResultWithData = function (data) {
+    console.log('📝 saveAIResultWithData llamado con:', data)
+    if (!data) {
+        data = store.currentAIData || tempAIData || window._tempVerbData
+    }
+
+    if (!data) {
+        alert('❌ No hay datos de IA para guardar')
+        return
+    }
+
+    store.currentAIData = data
+    tempAIData = data
+    window._tempVerbData = data
+
+    saveAIResult()
+}
+
 window.useAIForWord = async function () {
     if (!store.currentUser) {
         alert('🔐 Debes iniciar sesión para usar la IA')
@@ -758,7 +916,9 @@ window.useAIForWord = async function () {
     const aiData = await generateWithAI(word)
 
     if (aiData) {
+        tempAIData = aiData
         store.currentAIData = aiData
+        window._tempVerbData = aiData
 
         const providerLabel = aiData.provider === 'groq'
             ? '<span class="inline-block px-2 py-0.5 bg-orange-100 text-orange-700 rounded text-xs font-bold">⚡ Groq (Ultra rápido)</span>'
@@ -766,9 +926,10 @@ window.useAIForWord = async function () {
 
         const categoryOptions = buildCategoryOptions(aiData.category)
         const subcategoryOptions = buildSubcategoryOptions(aiData.category, aiData.subcategory)
+        const saveBtnId = 'ai-save-btn-' + Date.now()
 
         const preview = `
-        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4" id="ai-preview">
             <h4 class="font-bold text-blue-900 mb-3 flex items-center gap-2">
                 ✨ Resultado de IA: ${providerLabel}
             </h4>
@@ -827,8 +988,14 @@ window.useAIForWord = async function () {
             </div>
             
             <div class="flex gap-2 mt-4">
-                <button id="ai-save-btn" onclick="window.saveAIResult()" class="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 font-medium transition-all">💾 Guardar</button>
-                <button onclick="window.cancelAIPreview()" class="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-medium transition-all">❌ Cancelar</button>
+                <button id="${saveBtnId}" 
+                        onclick="window.saveAIResultWithData(window._tempVerbData)" 
+                        class="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 font-medium transition-all">
+                    💾 Guardar
+                </button>
+                <button onclick="window.cancelAIPreview()" class="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 font-medium transition-all">
+                    ❌ Cancelar
+                </button>
             </div>
         </div>`
 
@@ -836,7 +1003,7 @@ window.useAIForWord = async function () {
         if (container) {
             const existingPreview = document.getElementById('ai-preview')
             if (existingPreview) existingPreview.remove()
-            container.insertAdjacentHTML('beforeend', `<div id="ai-preview">${preview}</div>`)
+            container.insertAdjacentHTML('beforeend', preview)
 
             setTimeout(() => updateDestinationIndicator(), 50)
         }
@@ -852,21 +1019,24 @@ function cancelAIPreview() {
     const existingPreview = document.getElementById('ai-preview')
     if (existingPreview) existingPreview.remove()
     store.currentAIData = null
+    tempAIData = null
+    window._tempVerbData = null
 }
 
-//  EXPORTACIONES
 export {
     getApiKey, setApiKey, removeApiKey, hasApiKey,
     getPreferredProvider, setPreferredProvider,
     updateAIButton, generateWithAI, saveAIResult,
     buildCategoryOptions, buildSubcategoryOptions,
-    updateDestinationIndicator, cancelAIPreview
+    updateDestinationIndicator, cancelAIPreview,
+    generateWithAI as generateVerbWithAI,
+    saveAIResult as saveVerbAIResult
 }
 
-//  FUNCIONES GLOBALES PARA EL HTML
 window.manageAIKeys = window.manageAIKeys
 window.useAIForWord = window.useAIForWord
 window.saveAIResult = saveAIResult
+window.saveAIResultWithData = window.saveAIResultWithData
 window.cancelAIPreview = cancelAIPreview
 window.onCategoryChange = window.onCategoryChange
 window.onSubcategoryChange = window.onSubcategoryChange

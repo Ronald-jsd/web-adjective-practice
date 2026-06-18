@@ -9,7 +9,6 @@ export const CACHE_KEY = 'vocabulary_cache'
 export const CACHE_TIMESTAMP_KEY = 'vocabulary_cache_timestamp'
 export const CACHE_DURATION = 24 * 60 * 60 * 1000
 
-// STORE - Objeto mutable para estado global
 export const store = {
     categoriesData: [],
     currentSearchResults: [],
@@ -27,7 +26,6 @@ export const store = {
     dragCleanup: null
 }
 
-// Funciones de utilidad para el store
 export function resetStore() {
     store.categoriesData = []
     store.currentSearchResults = []

@@ -34,10 +34,13 @@ function clearCache() {
     localStorage.removeItem(CACHE_TIMESTAMP_KEY)
 }
 
+
 function showToast(message, type = 'info') {
+    // Eliminar toast existente
     const existingToast = document.querySelector('.saving-toast')
     if (existingToast) existingToast.remove()
 
+    // Crear nuevo toast
     const toast = document.createElement('div')
     toast.className = `saving-toast ${type}`
     toast.textContent = message
@@ -46,7 +49,7 @@ function showToast(message, type = 'info') {
     setTimeout(() => {
         toast.style.animation = 'slideOutRight 0.3s ease'
         setTimeout(() => toast.remove(), 300)
-    }, 2000)
+    }, 2500)
 }
 
 export { saveToCache, loadFromCache, clearCache, showToast }

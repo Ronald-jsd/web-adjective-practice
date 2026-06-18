@@ -4,7 +4,6 @@ import { showToast } from './cache.js'
 import { loadUserCustomItems } from './auth.js'
 import { loadCategoriesFromSupabase } from './data.js'
 
-// Obtener badge de estado
 function getStatusBadge(status) {
     switch (status) {
         case 1: return '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-yellow-200 text-yellow-800">📚 Por aprender</span>'
