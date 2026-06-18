@@ -3,7 +3,7 @@ import {
     GEMINI_KEY_STORAGE,
     GROQ_KEY_STORAGE,
     AI_PROVIDER_STORAGE
-} from '/js/config.js'
+} from '../config.js'
 import { showToast } from '../cache.js'
 import { loadUserCustomItems } from '../auth.js'
 import { renderCategories } from '../data.js'
@@ -215,10 +215,10 @@ function changePreferredProvider() {
 async function generateWithGroq(word, apiKey) {
     const systemPrompt = `Eres un experto en verbos ingleses. Analiza el verbo "${word}" y proporciona TODOS los siguientes campos.
 
-⚠️ IMPORTANTE: Debes incluir TODOS los campos listados, incluso si no existen (usa "--" o "N/A").
-⚠️ Los ejemplos deben incluir la traducción entre paréntesis: "I take out the trash (Yo saco la basura)"
-⚠️ El campo "type" debe ser "R" de Regular o "I" de Irregular
-⚠️ Si no encuentras una palabra entonces que sea su aproximado y de esa buscas
+ - IMPORTANTE: Debes incluir TODOS los campos listados, incluso si no existen (usa "--" o "N/A").
+ - Los ejemplos deben incluir la traducción entre paréntesis: "I take out the trash (Yo saco la basura)"
+ - El campo "type" debe ser "R" de Regular o "I" de Irregular
+ - Si no encuentras una palabra entonces que sea su aproximado y de esa buscas
 
 
 Responde SOLO en formato JSON válido, sin texto adicional, sin markdown. El JSON debe tener EXACTAMENTE esta estructura:
@@ -293,7 +293,7 @@ Recuerda: ¡RESPONDE SOLO EN FORMATO JSON!`
 
             const data = await response.json()
             const text = data.choices[0].message.content
-            console.log(`[Groq-Verb] ✅ Éxito con ${model}`)
+            console.log(`[Groq-Verb]  Éxito con ${model}`)
             console.log('Resultados: ' + data)
                         console.log('Resultados: ' + text)
 
@@ -356,7 +356,7 @@ Responde SOLO en formato JSON válido, sin texto adicional. El JSON debe tener E
 {
   "category": "Categoría del verbo",
   "type": "Regular o Irregular",
-  "verb": "${word}",
+  "verb": "${word}" y otras palabras mas usadas que puede significar separados entre / ,
   "pronunciation": "Pronunciación en IPA",
   "translation": "Traducción al español",
   "example_base": "Ejemplo en inglés con el verbo base (traducción entre paréntesis)",
@@ -431,12 +431,12 @@ Recuerda: ¡RESPONDE SOLO EN FORMATO JSON!`
             if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) continue
 
             const text = data.candidates[0].content.parts[0].text
-            console.log(`[Gemini-Verb] ✅ Éxito con ${model}`)
+            console.log(`[Gemini-Verb] Éxito con ${model}`)
 
             const cleaned = text.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim()
             const jsonMatch = cleaned.match(/\{[\s\S]*\}/)
             if (!jsonMatch) {
-                console.warn('⚠️ No se encontró JSON en la respuesta de Gemini')
+                console.warn('No se encontró JSON en la respuesta de Gemini')
                 continue
             }
 
@@ -515,7 +515,7 @@ async function generateWithAI(word) {
         if (hasGemini) providersToTry.push('gemini')
     }
 
-    console.log(`🎯 Orden de proveedores: ${providersToTry.join(' → ')}`)
+    console.log(`Orden de proveedores: ${providersToTry.join(' → ')}`)
 
     for (const provider of providersToTry) {
         const apiKey = getApiKey(provider)
@@ -536,7 +536,7 @@ async function generateWithAI(word) {
         if (result && !result.error && result.verb) {
             return result
         }
-        console.warn(`⚠️ ${providerName} falló, intentando con el siguiente...`)
+        console.warn(`${providerName} falló, intentando con el siguiente...`)
     }
 
     alert('❌ Ningún proveedor de IA funcionó.\n\nRevisa la consola (F12) para más detalles.')
@@ -771,7 +771,7 @@ async function saveAIResult() {
 
     const data = store.currentAIData || tempAIData || window._tempVerbData
 
-    console.log('🔍 Datos disponibles para guardar:', data)
+    console.log('Datos disponibles para guardar:', data)
 
     if (!data) {
         alert('❌ No hay datos de IA para guardar')
@@ -856,7 +856,7 @@ async function saveAIResult() {
         const { loadVerbsFromSupabase } = await import('./verbs-loader.js')
         await loadVerbsFromSupabase(true)
     } catch (e) {
-        console.warn('⚠️ Error recargando datos:', e)
+        console.warn('Error recargando datos:', e)
     }
 
     const aiContainer = document.getElementById('ai-suggestion-container')
@@ -871,7 +871,7 @@ async function saveAIResult() {
 
 
 window.saveAIResultWithData = function (data) {
-    console.log('📝 saveAIResultWithData llamado con:', data)
+    console.log('saveAIResultWithData llamado con:', data)
     if (!data) {
         data = store.currentAIData || tempAIData || window._tempVerbData
     }

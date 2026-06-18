@@ -53,12 +53,12 @@ function setupEventListeners() {
 
 window.loadVerbsFromSupabase = async function (forceRefresh) {
     try {
-        console.log("📚 Cargando verbos...");
+        console.log("Cargando verbos...");
         const { loadVerbsFromSupabase } = await import("./verbs/verbs-data.js");
         const data = await loadVerbsFromSupabase(forceRefresh);
         return data;
     } catch (error) {
-        console.error("❌ Error cargando verbos:", error);
+        console.error("Error cargando verbos:", error);
         return [];
     }
 };

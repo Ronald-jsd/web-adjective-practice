@@ -8,7 +8,7 @@ import {
 
 export async function loadVerbsFromSupabase(forceRefresh = false) {
     try {
-        console.log('📚 Cargando todos los verbos desde Supabase...')
+        console.log('Cargando todos los verbos desde Supabase...')
 
         let allVerbs = []
         let page = 0
@@ -19,7 +19,7 @@ export async function loadVerbsFromSupabase(forceRefresh = false) {
             const from = page * pageSize
             const to = from + pageSize - 1
 
-            console.log(`📄 Cargando página ${page + 1} (registros ${from} - ${to})...`)
+            console.log(`Cargando página ${page + 1} (registros ${from} - ${to})...`)
 
             const { data: verbs, error } = await supabase
                 .from('verbs')
@@ -28,7 +28,7 @@ export async function loadVerbsFromSupabase(forceRefresh = false) {
                 .range(from, to)
 
             if (error) {
-                console.error('❌ Error cargando verbos:', error)
+                console.error('Error cargando verbos:', error)
                 showToast('Error cargando verbos', 'error')
                 return []
             }
@@ -39,16 +39,16 @@ export async function loadVerbsFromSupabase(forceRefresh = false) {
             }
 
             allVerbs = [...allVerbs, ...verbs]
-            console.log(`📄 Página ${page + 1}: ${verbs.length} verbos (Total: ${allVerbs.length})`)
+            console.log(`Página ${page + 1}: ${verbs.length} verbos (Total: ${allVerbs.length})`)
 
             if (verbs.length < pageSize) hasMore = false
             page++
         }
 
-        console.log(`📊 TOTAL CARGADO: ${allVerbs.length} verbos`)
+        console.log(`TOTAL CARGADO: ${allVerbs.length} verbos`)
 
         if (allVerbs.length === 0) {
-            console.warn('⚠️ No hay verbos en Supabase')
+            console.warn('No hay verbos en Supabase')
             return []
         }
 
@@ -85,7 +85,7 @@ export async function loadVerbsFromSupabase(forceRefresh = false) {
 
         if (store.currentUser) await loadUserVerbProgress()
 
-        console.log(`✅ Verbos cargados: ${mapped.length}, Categorías: ${verbCategories.length}`)
+        console.log(`Verbos cargados: ${mapped.length}, Categorías: ${verbCategories.length}`)
 
         const { renderVerbCategories } = await import('./verbs-render.js')
         renderVerbCategories()
@@ -93,7 +93,7 @@ export async function loadVerbsFromSupabase(forceRefresh = false) {
         return mapped
 
     } catch (error) {
-        console.error('❌ Error cargando verbos:', error)
+        console.error('Error cargando verbos:', error)
         showToast('Error cargando verbos: ' + error.message, 'error')
         return []
     }
@@ -108,7 +108,7 @@ export async function loadUserVerbProgress() {
         .eq('user_id', store.currentUser.id)
 
     if (error) {
-        console.error('❌ Error cargando progreso:', error)
+        console.error('Error cargando progreso:', error)
         return
     }
 
@@ -132,5 +132,5 @@ export async function saveVerbProgress(verbId, percentage) {
             level: Math.floor(percentage / 20) + 1
         }, { onConflict: 'user_id, verb_id' })
 
-    if (error) console.error('❌ Error guardando progreso:', error)
+    if (error) console.error('Error guardando progreso:', error)
 }

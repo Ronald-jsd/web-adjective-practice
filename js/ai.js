@@ -273,7 +273,7 @@ Responde SOLO en formato JSON válido, sin texto adicional, sin markdown:
 
             const data = await response.json()
             const text = data.choices[0].message.content
-            console.log(`[Groq] ✅ Éxito con ${model}:`, text)
+            console.log(`[Groq]  Éxito con ${model}:`, text)
 
             const cleaned = text.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim()
             const jsonMatch = cleaned.match(/\{[\s\S]*\}/)
@@ -351,7 +351,7 @@ Responde SOLO en formato JSON válido, sin texto adicional:
             if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) continue
 
             const text = data.candidates[0].content.parts[0].text
-            console.log(`[Gemini] ✅ Éxito con ${model}:`, text)
+            console.log(`[Gemini]  Éxito con ${model}:`, text)
 
             const cleaned = text.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim()
             const jsonMatch = cleaned.match(/\{[\s\S]*\}/)
@@ -398,7 +398,7 @@ async function generateWithAI(word) {
         if (hasGemini) providersToTry.push('gemini')
     }
 
-    console.log(`🎯 Orden de proveedores: ${providersToTry.join(' → ')}`)
+    console.log(` Orden de proveedores: ${providersToTry.join(' → ')}`)
 
     for (const provider of providersToTry) {
         const apiKey = getApiKey(provider)

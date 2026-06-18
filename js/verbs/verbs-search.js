@@ -41,6 +41,17 @@ window.searchVerbs = function () {
         (v.category || '').toLowerCase().includes(query)
     )
 
+       console.log(`Resultados filtrados: ${results.length} verbos`)
+    
+    /*if (results.length > 0) {
+        console.log('LISTA DE VERBOS ENCONTRADOS:')
+        results.forEach((v, index) => {
+            console.log(`  ${index + 1}. ${v.verb} - Categoría: ${v.category || 'Sin categoría'} - Traducción: ${v.translation || 'N/A'}`)
+        })
+    } else {
+        console.log('No se encontraron verbos para la búsqueda')
+    }*/
+
     results = sortVerbs(results, verbSortState.column, verbSortState.direction)
 
     const totalPages = Math.ceil(results.length / verbPaginationState.itemsPerPage) || 1
@@ -61,12 +72,10 @@ window.searchVerbs = function () {
         </tr>`
     }
 
-    // Mostrar contenedor de IA siempre que haya búsqueda
     if (aiContainer) {
         aiContainer.classList.remove('hidden')
         document.getElementById('verbs-ai-search-word').textContent = query
         
-        // Verificar si tiene API key
         import('../ai.js').then(module => {
             const noKeyWarning = document.getElementById('verbs-ai-no-key-warning')
             if (noKeyWarning) {
@@ -184,7 +193,7 @@ window.generateVerbWithAI = async function (query) {
             alert('❌ No se pudo generar el verbo. Intenta de nuevo.')
         }
     } catch (error) {
-        console.error('❌ Error generando verbo:', error)
+        console.error(' Error generando verbo:', error)
         alert('❌ Error al generar el verbo: ' + error.message)
     }
 
@@ -192,7 +201,7 @@ window.generateVerbWithAI = async function (query) {
 }
 
 window.saveGeneratedVerb = async function (data) {
-    console.log('💾 saveGeneratedVerb llamado con:', data)
+    console.log('saveGeneratedVerb llamado con:', data)
 
     try {
         const { saveAIResult } = await import('./verbs-ai.js')
@@ -204,7 +213,7 @@ window.saveGeneratedVerb = async function (data) {
         let subcategorySelect = document.getElementById('ai-subcategory-select')
 
         if (!categorySelect || !subcategorySelect) {
-            console.log('⚠️ Selects no encontrados, usando datos directamente')
+            console.log('Selects no encontrados, usando datos directamente')
 
             const finalCategory = data.category || 'Sin Categoría'
             const finalSubcategory = data.subcategory || data.category || 'General'
@@ -297,7 +306,7 @@ window.saveGeneratedVerb = async function (data) {
 
         if (currentVerbCategory) openVerbCategory(currentVerbCategory)
     } catch (error) {
-        console.error('❌ Error guardando verbo:', error)
-        alert('❌ Error al guardar: ' + error.message)
+        console.error('Error guardando verbo:', error)
+        alert('Error al guardar: ' + error.message)
     }
 }
