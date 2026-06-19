@@ -208,6 +208,9 @@ window.backToVerbCategories = function () {
     const searchInput = document.getElementById('verbs-search-input')
     if (searchInput) searchInput.value = ''
 
+    const previewCard = document.getElementById('verbs-ai-preview-card')
+    if (previewCard) previewCard.remove()
+
     renderVerbCategories()
 }
 
@@ -225,6 +228,9 @@ window.showAllVerbs = function () {
     const searchInput = document.getElementById('verbs-search-input')
     if (searchInput) searchInput.value = ''
 
+    const previewCard = document.getElementById('verbs-ai-preview-card')
+    if (previewCard) previewCard.remove()
+
     setCurrentVerbCategory(null)
     setCurrentViewVerbs([...verbsData])
 
@@ -239,42 +245,56 @@ export function showVerbAIPreview(data, query) {
     if (!resultsContainer || !resultsTbody) return
 
     resultsContainer.classList.remove('hidden')
-    resultsCount.textContent = `✨ Verbo generado por IA para "${query}"`
+    if (resultsCount) resultsCount.textContent = `✨ Verbo generado por IA para "${query}"`
+
+    resultsTbody.innerHTML = `
+        <tr>
+            <td colspan="${VERB_FIELDS.length + 1}" class="text-center py-6 text-gray-400 text-sm">
+                Revisa el verbo generado abajo 👇
+            </td>
+        </tr>
+    `
 
     const providerLabel = data.provider === 'groq' ? '⚡ Groq (Ultra rápido)' : '🤖 Gemini'
     const safeData = JSON.stringify(data).replace(/"/g, '&quot;').replace(/'/g, '&#39;')
 
-    resultsTbody.innerHTML = `
-        <tr>
-            <td colspan="${VERB_FIELDS.length + 1}" class="p-4">
-                <div class="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200 rounded-xl p-4">
-                    <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
-                        <h4 class="font-bold text-blue-900 flex items-center gap-2">
-                            ✨ Verbo generado con ${providerLabel}
-                            <span class="text-xs text-gray-500 font-normal">(Modelo: ${data.modelUsed || 'N/A'})</span>
-                        </h4>
-                        <button onclick="window.saveGeneratedVerb(${safeData})"
-                                class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm font-medium transition-all">
-                            💾 Guardar verbo
-                        </button>
-                    </div>
-                    <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 text-sm bg-white p-3 rounded-lg border border-blue-100">
-                        <div><span class="text-gray-500">Verbo:</span> <strong>${data.verb || ''}</strong></div>
-                        <div><span class="text-gray-500">Pronunciación:</span> ${data.pronunciation || '—'}</div>
-                        <div><span class="text-gray-500">Traducción:</span> ${data.translation || '—'}</div>
-                        <div><span class="text-gray-500">Categoría:</span> ${data.category || '—'}</div>
-                        <div><span class="text-gray-500">Tipo:</span> ${data.type || '—'}</div>
-                        <div><span class="text-gray-500">Past Simple:</span> ${data.past_simple || '—'}</div>
-                        <div><span class="text-gray-500">Past Participle:</span> ${data.past_participle || '—'}</div>
-                        <div><span class="text-gray-500">Adjetivo:</span> ${data.adjective || '—'}</div>
-                        <div class="col-span-2"><span class="text-gray-500">Ejemplo:</span> ${data.example_base || '—'}</div>
-                    </div>
-                    <div class="mt-3 text-xs text-gray-400 flex gap-4 flex-wrap">
-                        <span>🔊 Click en cualquier palabra para escuchar</span>
-                        <span>✏️ Se guardará como un nuevo verbo en la base de datos</span>
-                    </div>
-                </div>
-            </td>
-        </tr>
+    let previewCard = document.getElementById('verbs-ai-preview-card')
+    if (!previewCard) {
+        previewCard = document.createElement('div')
+        previewCard.id = 'verbs-ai-preview-card'
+        const aiContainer = document.getElementById('verbs-ai-suggestion-container')
+        if (aiContainer && aiContainer.parentNode) {
+            aiContainer.parentNode.insertBefore(previewCard, aiContainer)
+        }
+    }
+
+    previewCard.innerHTML = `
+        <div class="bg-gradient-to-r from-blue-50 to-purple-50 border-2 border-blue-200 rounded-xl p-4 mb-4">
+            <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+                <h4 class="font-bold text-blue-900 flex items-center gap-2">
+                    ✨ Verbo generado con ${providerLabel}
+                    <span class="text-xs text-gray-500 font-normal">(Modelo: ${data.modelUsed || 'N/A'})</span>
+                </h4>
+                <button onclick="window.saveGeneratedVerb(${safeData})"
+                        class="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm font-medium transition-all">
+                    💾 Guardar verbo
+                </button>
+            </div>
+            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2 text-sm bg-white p-3 rounded-lg border border-blue-100">
+                <div><span class="text-gray-500">Verbo:</span> <strong>${data.verb || ''}</strong></div>
+                <div><span class="text-gray-500">Pronunciación:</span> ${data.pronunciation || '—'}</div>
+                <div><span class="text-gray-500">Traducción:</span> ${data.translation || '—'}</div>
+                <div><span class="text-gray-500">Categoría:</span> ${data.category || '—'}</div>
+                <div><span class="text-gray-500">Tipo:</span> ${data.type || '—'}</div>
+                <div><span class="text-gray-500">Past Simple:</span> ${data.past_simple || '—'}</div>
+                <div><span class="text-gray-500">Past Participle:</span> ${data.past_participle || '—'}</div>
+                <div><span class="text-gray-500">Adjetivo:</span> ${data.adjective || '—'}</div>
+                <div class="col-span-2"><span class="text-gray-500">Ejemplo:</span> ${data.example_base || '—'}</div>
+            </div>
+            <div class="mt-3 text-xs text-gray-400 flex gap-4 flex-wrap">
+                <span>🔊 Click en cualquier palabra para escuchar</span>
+                <span>✏️ Se guardará como un nuevo verbo en la base de datos</span>
+            </div>
+        </div>
     `
 }

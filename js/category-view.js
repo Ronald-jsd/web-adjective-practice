@@ -196,8 +196,8 @@ function openCategoryView(data) {
                         <h3 class="font-serif-oxford font-bold text-xl text-gray-900">${sub.title || 'Sin título'}</h3>
                         <p class="text-sm text-gray-500 mt-1">
                             ${allItems.length} ${allItems.length === 1 ? 'término' : 'términos'} • 
-                            🔊 Click para escuchar • ✏️ Doble click para editar${store.currentUser ? ' • ⋮⋮ Arrastra para reordenar' : ''}
-                        </p>
+
+                         </p>
                     </div>
                     <div class="text-xs text-gray-400 bg-gray-100 px-3 py-1.5 rounded-full">
                         ${data.title} → ${sub.title}

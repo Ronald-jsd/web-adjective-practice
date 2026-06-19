@@ -26,6 +26,10 @@ window.searchVerbs = function () {
         if (grid) grid.classList.remove('hidden')
         if (view) view.classList.add('hidden')
         if (aiContainer) aiContainer.classList.add('hidden')
+
+        const previewCard = document.getElementById('verbs-ai-preview-card')
+        if (previewCard) previewCard.remove()
+
         setPaginationState({ currentPage: 1 })
         renderVerbCategories()
         return
@@ -41,16 +45,7 @@ window.searchVerbs = function () {
         (v.category || '').toLowerCase().includes(query)
     )
 
-       console.log(`Resultados filtrados: ${results.length} verbos`)
-    
-    /*if (results.length > 0) {
-        console.log('LISTA DE VERBOS ENCONTRADOS:')
-        results.forEach((v, index) => {
-            console.log(`  ${index + 1}. ${v.verb} - Categoría: ${v.category || 'Sin categoría'} - Traducción: ${v.translation || 'N/A'}`)
-        })
-    } else {
-        console.log('No se encontraron verbos para la búsqueda')
-    }*/
+    console.log(`Resultados filtrados: ${results.length} verbos`)
 
     results = sortVerbs(results, verbSortState.column, verbSortState.direction)
 
@@ -75,7 +70,7 @@ window.searchVerbs = function () {
     if (aiContainer) {
         aiContainer.classList.remove('hidden')
         document.getElementById('verbs-ai-search-word').textContent = query
-        
+
         import('../ai.js').then(module => {
             const noKeyWarning = document.getElementById('verbs-ai-no-key-warning')
             if (noKeyWarning) {
@@ -171,7 +166,7 @@ window.generateVerbWithAI = async function (query) {
 
     if (!query) {
         query = document.getElementById('verbs-search-input')?.value?.trim()
-        if (!query) { 
+        if (!query) {
             alert('🔍 Ingresa un verbo para buscar')
             return
         }
@@ -193,11 +188,31 @@ window.generateVerbWithAI = async function (query) {
             alert('❌ No se pudo generar el verbo. Intenta de nuevo.')
         }
     } catch (error) {
-        console.error(' Error generando verbo:', error)
+        console.error('Error generando verbo:', error)
         alert('❌ Error al generar el verbo: ' + error.message)
     }
 
     if (aiBtn) { aiBtn.disabled = false; aiBtn.innerHTML = '🤖 Generar verbo con IA' }
+}
+
+function clearAfterSave() {
+    window._tempVerbData = null
+    store.currentAIData = null
+
+    const previewCard = document.getElementById('verbs-ai-preview-card')
+    if (previewCard) previewCard.remove()
+
+    const searchInput = document.getElementById('verbs-search-input')
+    if (searchInput) searchInput.value = ''
+
+    const resultsContainer = document.getElementById('verbs-search-results')
+    if (resultsContainer) resultsContainer.classList.add('hidden')
+
+    const aiContainer = document.getElementById('verbs-ai-suggestion-container')
+    if (aiContainer) aiContainer.classList.add('hidden')
+
+    const grid = document.getElementById('verbs-category-grid')
+    if (grid) grid.classList.remove('hidden')
 }
 
 window.saveGeneratedVerb = async function (data) {
@@ -261,23 +276,10 @@ window.saveGeneratedVerb = async function (data) {
             const providerBadge = data.provider === 'groq' ? '⚡ Groq' : '🤖 Gemini'
             showToast(`✅ Guardado con ${providerBadge} en "${finalSubcategory}"`, 'success')
 
-            window._tempVerbData = null
-            store.currentAIData = null
+            clearAfterSave()
 
             const { loadVerbsFromSupabase } = await import('./verbs-loader.js')
             await loadVerbsFromSupabase(true)
-
-            const searchInput = document.getElementById('verbs-search-input')
-            if (searchInput) searchInput.value = ''
-
-            const resultsContainer = document.getElementById('verbs-search-results')
-            if (resultsContainer) resultsContainer.classList.add('hidden')
-
-            const aiContainer = document.getElementById('verbs-ai-suggestion-container')
-            if (aiContainer) aiContainer.classList.add('hidden')
-
-            const grid = document.getElementById('verbs-category-grid')
-            if (grid) grid.classList.remove('hidden')
 
             if (currentVerbCategory) openVerbCategory(currentVerbCategory)
             return
@@ -285,19 +287,7 @@ window.saveGeneratedVerb = async function (data) {
 
         await saveAIResult()
 
-        window._tempVerbData = null
-
-        const searchInput = document.getElementById('verbs-search-input')
-        if (searchInput) searchInput.value = ''
-
-        const resultsContainer = document.getElementById('verbs-search-results')
-        if (resultsContainer) resultsContainer.classList.add('hidden')
-
-        const aiContainer = document.getElementById('verbs-ai-suggestion-container')
-        if (aiContainer) aiContainer.classList.add('hidden')
-
-        const grid = document.getElementById('verbs-category-grid')
-        if (grid) grid.classList.remove('hidden')
+        clearAfterSave()
 
         const { loadVerbsFromSupabase } = await import('./verbs-loader.js')
         await loadVerbsFromSupabase(true)
