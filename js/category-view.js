@@ -1,3 +1,4 @@
+// category-view.js - CON PAGINACIÓN PARA SUBCATEGORÍAS
 import { store } from './config.js'
 import { showToast } from './cache.js'
 import { editCell, updateWordStatus, getStatusBadge } from './editing.js'
@@ -5,9 +6,20 @@ import { loadUserCustomItems } from './auth.js'
 import { initDragAndDrop } from './drag-drop.js'
 import { makeClickableText } from './audio.js'
 
+const SUBCAT_PAGE_SIZE_OPTIONS = [10, 15, 25, 50, 100]
+const SUBCAT_DEFAULT_PAGE_SIZE = 15
+
 function openCategoryView(data) {
     if (!data) return
     store.currentCategoryData = data
+
+    if (!store.subcategoryPaginationState) {
+        store.subcategoryPaginationState = {
+            currentPage: 1,
+            pageSize: SUBCAT_DEFAULT_PAGE_SIZE,
+            totalPages: 1
+        }
+    }
 
     const grid = document.getElementById('categories-grid')
     const searchDiv = document.getElementById('search-results')
@@ -25,6 +37,8 @@ function openCategoryView(data) {
         const foundIndex = data.subcategories.findIndex(sub => sub.id === store.currentSubcategoryId)
         store.activeSubcatIndex = foundIndex !== -1 ? foundIndex : 0
     }
+
+    store.subcategoryPaginationState.currentPage = 1
 
     const titleEl = document.getElementById('category-view-title')
     const subtitleEl = document.getElementById('category-view-subtitle')
@@ -56,6 +70,7 @@ function openCategoryView(data) {
             `
             btn.onclick = () => {
                 store.currentSubcategoryId = sub.id
+                store.subcategoryPaginationState.currentPage = 1
                 selectSubcategory(idx)
             }
             tabsContainer.appendChild(btn)
@@ -81,6 +96,7 @@ function openCategoryView(data) {
             `
         })
 
+        store.subcategoryPaginationState.currentPage = 1
         renderActiveContent()
     }
 
@@ -123,9 +139,20 @@ function openCategoryView(data) {
             })
         }
 
+        const pageSize = store.subcategoryPaginationState.pageSize || SUBCAT_DEFAULT_PAGE_SIZE
+        const totalItems = allItems.length
+        const totalPages = Math.ceil(totalItems / pageSize) || 1
+
+        if (store.subcategoryPaginationState.currentPage > totalPages) {
+            store.subcategoryPaginationState.currentPage = totalPages
+        }
+
+        const start = (store.subcategoryPaginationState.currentPage - 1) * pageSize
+        const pageItems = allItems.slice(start, start + pageSize)
+
         function buildRows(items) {
             return items.map((item, idx) => {
-                const itemId = item[5] || `${sub.id}-${idx}`
+                const itemId = item[5] || `${sub.id}-${start + idx}`
                 const isCustom = itemId.toString().startsWith('custom_')
                 const customId = isCustom ? item[6] : null
                 const status = store.wordStatusMap.get(itemId.toString()) || 0
@@ -190,14 +217,17 @@ function openCategoryView(data) {
         const subcatHeaderEl = document.getElementById('subcategory-header')
 
         if (subcatHeaderEl) {
+            const startDisplay = totalItems > 0 ? start + 1 : 0
+            const endDisplay = Math.min(start + pageSize, totalItems)
+
             subcatHeaderEl.innerHTML = `
                 <div class="flex items-center justify-between flex-wrap gap-2">
                     <div>
                         <h3 class="font-serif-oxford font-bold text-xl text-gray-900">${sub.title || 'Sin título'}</h3>
                         <p class="text-sm text-gray-500 mt-1">
-                            ${allItems.length} ${allItems.length === 1 ? 'término' : 'términos'} • 
-
-                         </p>
+                            ${totalItems} ${totalItems === 1 ? 'término' : 'términos'} 
+                            ${totalItems > pageSize ? `• Mostrando ${startDisplay}-${endDisplay}` : ''}
+                        </p>
                     </div>
                     <div class="text-xs text-gray-400 bg-gray-100 px-3 py-1.5 rounded-full">
                         ${data.title} → ${sub.title}
@@ -222,17 +252,21 @@ function openCategoryView(data) {
                                     ${store.currentUser ? '<th class="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wider">Progreso</th>' : ''}
                                 </tr>
                             </thead>
-                            <tbody id="sortable-tbody">${buildRows(allItems)}</tbody>
+                            <tbody id="sortable-tbody">${buildRows(pageItems)}</tbody>
                         </table>
                     </div>
-                    ${allItems.length === 0 ? `
+                    ${pageItems.length === 0 ? `
                         <div class="py-12 text-center text-gray-400">
                             <div class="text-4xl mb-2">📭</div>
                             <p>No hay términos en esta subcategoría todavía</p>
                         </div>
                     ` : ''}
+                    <!-- Controles de paginación -->
+                    <div id="subcategory-pagination" class="px-6 py-4 bg-gray-50 border-t border-gray-200"></div>
                 </div>
             `
+
+            renderSubcategoryPagination(totalItems, pageSize, totalPages)
 
             if (store.currentUser && allItems.length > 0) {
                 const tbodyEl = contentEl.querySelector('#sortable-tbody')
@@ -241,9 +275,138 @@ function openCategoryView(data) {
                         store.dragCleanup()
                         store.dragCleanup = null
                     }
-                    store.dragCleanup = initDragAndDrop(tbodyEl, allItems, sub.id, (newItems) => renderActiveContent(newItems))
+                    store.dragCleanup = initDragAndDrop(tbodyEl, allItems, sub.id, (newItems) => {
+                        renderActiveContent(newItems)
+                    })
                 }
             }
+        }
+    }
+
+    function renderSubcategoryPagination(totalItems, pageSize, totalPages) {
+        const pagDiv = document.getElementById('subcategory-pagination')
+        if (!pagDiv) return
+
+        const currentPage = store.subcategoryPaginationState.currentPage
+
+        if (totalPages <= 1) {
+            if (totalItems > SUBCAT_PAGE_SIZE_OPTIONS[0]) {
+                pagDiv.innerHTML = `
+                    <div class="flex items-center justify-between w-full">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm text-gray-600">Mostrar:</span>
+                            <select id="subcat-page-size-select" class="border rounded-md px-2 py-1 text-sm bg-white">
+                                ${SUBCAT_PAGE_SIZE_OPTIONS.map(size =>
+                    `<option value="${size}" ${size === pageSize ? 'selected' : ''}>${size}</option>`
+                ).join('')}
+                            </select>
+                        </div>
+                        <span class="text-sm text-gray-500">${totalItems} resultados</span>
+                    </div>
+                `
+            } else {
+                pagDiv.innerHTML = ''
+                return
+            }
+        } else {
+            const start = (currentPage - 1) * pageSize + 1
+            const end = Math.min(currentPage * pageSize, totalItems)
+
+            pagDiv.innerHTML = `
+                <div class="flex flex-col sm:flex-row items-center justify-between w-full gap-3">
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm text-gray-600">Mostrar:</span>
+                        <select id="subcat-page-size-select" class="border rounded-md px-2 py-1 text-sm bg-white">
+                            ${SUBCAT_PAGE_SIZE_OPTIONS.map(size =>
+                `<option value="${size}" ${size === pageSize ? 'selected' : ''}>${size}</option>`
+            ).join('')}
+                        </select>
+                    </div>
+                    
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm text-gray-500 mr-2">
+                            ${start}-${end} de ${totalItems}
+                        </span>
+                        
+                        <button id="subcat-first-page" ${currentPage === 1 ? 'disabled' : ''} 
+                            class="px-2.5 py-1.5 border rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50">
+                            ««
+                        </button>
+                        <button id="subcat-prev-page" ${currentPage === 1 ? 'disabled' : ''} 
+                            class="px-3 py-1.5 border rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50">
+                            ← Anterior
+                        </button>
+                        
+                        <select id="subcat-page-select" class="border rounded-md px-2 py-1 text-sm bg-white min-w-[60px]">
+                            ${Array.from({ length: totalPages }, (_, i) =>
+                `<option value="${i + 1}" ${i + 1 === currentPage ? 'selected' : ''}>
+                                    ${i + 1}/${totalPages}
+                                </option>`
+            ).join('')}
+                        </select>
+                        
+                        <button id="subcat-next-page" ${currentPage === totalPages ? 'disabled' : ''} 
+                            class="px-3 py-1.5 border rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50">
+                            Siguiente →
+                        </button>
+                        <button id="subcat-last-page" ${currentPage === totalPages ? 'disabled' : ''} 
+                            class="px-2.5 py-1.5 border rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50">
+                            »»
+                        </button>
+                    </div>
+                </div>
+            `
+
+            const addListener = (id, callback) => {
+                const el = document.getElementById(id)
+                if (el) el.addEventListener('click', callback)
+            }
+
+            addListener('subcat-first-page', () => {
+                if (currentPage > 1) {
+                    store.subcategoryPaginationState.currentPage = 1
+                    renderActiveContent()
+                }
+            })
+
+            addListener('subcat-prev-page', () => {
+                if (currentPage > 1) {
+                    store.subcategoryPaginationState.currentPage--
+                    renderActiveContent()
+                }
+            })
+
+            addListener('subcat-next-page', () => {
+                if (currentPage < totalPages) {
+                    store.subcategoryPaginationState.currentPage++
+                    renderActiveContent()
+                }
+            })
+
+            addListener('subcat-last-page', () => {
+                if (currentPage < totalPages) {
+                    store.subcategoryPaginationState.currentPage = totalPages
+                    renderActiveContent()
+                }
+            })
+
+            const pageSelect = document.getElementById('subcat-page-select')
+            if (pageSelect) {
+                pageSelect.addEventListener('change', (e) => {
+                    store.subcategoryPaginationState.currentPage = parseInt(e.target.value)
+                    renderActiveContent()
+                })
+            }
+        }
+
+        const sizeSelect = document.getElementById('subcat-page-size-select')
+        if (sizeSelect) {
+            sizeSelect.addEventListener('change', (e) => {
+                const newSize = parseInt(e.target.value)
+                store.subcategoryPaginationState.pageSize = newSize
+                store.subcategoryPaginationState.currentPage = 1
+                renderActiveContent()
+            })
         }
     }
 
@@ -268,6 +431,22 @@ function closeCategoryView() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
 }
 
-export { openCategoryView, closeCategoryView }
+function initSubcategoryPaginationState() {
+    if (!store.subcategoryPaginationState) {
+        store.subcategoryPaginationState = {
+            currentPage: 1,
+            pageSize: SUBCAT_DEFAULT_PAGE_SIZE,
+            totalPages: 1
+        }
+    }
+}
+
+export {
+    openCategoryView,
+    closeCategoryView,
+    initSubcategoryPaginationState,
+    SUBCAT_PAGE_SIZE_OPTIONS,
+    SUBCAT_DEFAULT_PAGE_SIZE
+}
 
 window.closeCategoryView = closeCategoryView

@@ -42,6 +42,13 @@ window.searchVerbs = function () {
         (v.verb || '').toLowerCase().includes(query) ||
         (v.translation || '').toLowerCase().includes(query) ||
         (v.past_simple || '').toLowerCase().includes(query) ||
+        (v.pronunciation_ps || '').toLowerCase().includes(query) ||
+        (v.past_participle || '').toLowerCase().includes(query) ||
+        (v.pronunciation_pp || '').toLowerCase().includes(query) ||
+        (v.adjective || '').toLowerCase().includes(query) ||
+        (v.pronunciation_adj || '').toLowerCase().includes(query) ||
+        (v.adverb || '').toLowerCase().includes(query) ||
+        (v.pronunciation_adv || '').toLowerCase().includes(query) ||        
         (v.category || '').toLowerCase().includes(query)
     )
 

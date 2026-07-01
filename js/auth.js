@@ -67,17 +67,22 @@ async function loadUserCustomItems() {
     }
 }
 
+function clearCategoriesCache() {
+    localStorage.removeItem('vocabulary_cache')
+    localStorage.removeItem('vocabulary_cache_timestamp')
+}
+
 async function logout() {
     await supabase.auth.signOut()
     store.currentUser = null
     store.wordStatusMap.clear()
     store.userCustomItems.length = 0
+    clearCategoriesCache()
     updateAuthUI()
     location.reload()
 }
 
 
-// MODALES DE LOGIN
 window.abrirModalLogin = function () {
     const modalBody = document.getElementById('login-modal-body')
     if (modalBody) {
@@ -120,8 +125,13 @@ async function loginWithEmail() {
     const password = document.getElementById('login-password')?.value
     if (!email || !password) { alert('❌ Ingresa email y contraseña'); return }
     const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) alert('❌ Error: ' + error.message)
-    else { window.cerrarModalLogin(); location.reload() }
+    if (error) {
+        alert('❌ Error: ' + error.message)
+    } else {
+        clearCategoriesCache()
+        window.cerrarModalLogin()
+        location.reload()
+    }
 }
 
 async function signUpWithEmail() {
@@ -130,8 +140,10 @@ async function signUpWithEmail() {
     if (!email || !password) { alert('❌ Ingresa email y contraseña'); return }
     if (password.length < 6) { alert('❌ La contraseña debe tener al menos 6 caracteres'); return }
     const { error } = await supabase.auth.signUp({ email, password })
-    if (error) alert('❌ Error: ' + error.message)
-    else {
+    if (error) {
+        alert('❌ Error: ' + error.message)
+    } else {
+        clearCategoriesCache()
         alert('✅ Registro exitoso! Ahora inicia sesión.')
         document.getElementById('signup-email').value = ''
         document.getElementById('signup-password').value = ''

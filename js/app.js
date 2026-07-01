@@ -5,11 +5,10 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 import { checkUser } from "./auth.js";
 import { renderCategories, loadCategoriesFromSupabase } from "./data.js";
-import { performSearch } from "./search.js";
+import { performSearch, initSearchModeListeners } from "./search.js";
 import { closeCategoryView } from "./category-view.js";
 import { updateAIButton } from "./ai.js";
 
-// EVENT LISTENERS
 function setupEventListeners() {
     const searchInput = document.getElementById("global-search");
     const clearBtn = document.getElementById("clear-search");
@@ -70,6 +69,10 @@ async function initApp() {
     renderCategories(data);
     updateAIButton();
     setupEventListeners();
+
+    setTimeout(() => {
+        initSearchModeListeners();
+    }, 100);
 }
 
 initApp();

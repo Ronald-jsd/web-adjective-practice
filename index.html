@@ -24,7 +24,7 @@
                 </div>
                 <div>
                     <h1 class="font-serif-oxford font-bold text-lg leading-tight text-gray-900">
-                         Visual Guide
+                        Visual Guide
                     </h1>
                     <p class="text-xs text-gray-500 uppercase tracking-widest font-semibold">
                         Adjectives & Verbs
@@ -80,6 +80,22 @@
                         </svg>
                     </button>
                 </div>
+
+                <div class="flex items-center justify-center gap-4 mt-3">
+                    <div class="flex items-center gap-2 bg-gray-100 rounded-lg p-1">
+                        <button id="search-mode-partial"
+                            class="px-4 py-1.5 rounded-md text-sm font-medium transition-all bg-amber-500 text-white">
+                            🔍 Contiene
+                        </button>
+                        <button id="search-mode-exact"
+                            class="px-4 py-1.5 rounded-md text-sm font-medium transition-all text-gray-600 hover:bg-gray-200">
+                            🎯 Palabra exacta
+                        </button>
+                    </div>
+                    <span class="text-xs text-gray-400" id="search-mode-hint">(Busca palabras que contengan el
+                        texto)</span>
+                </div>
+
                 <p class="text-sm text-gray-500 mt-4">
                     🔊 Click en cualquier palabra para escuchar | ✏️ Doble click para
                     editar (requiere login) | ⋮⋮ Arrastrar para reordenar
@@ -122,6 +138,9 @@
                                     </th>
                                     <th class="py-3 px-4 text-xs font-bold text-gray-500 uppercase">
                                         Example
+                                    </th>
+                                    <th class="py-3 px-4 text-xs font-bold text-gray-500 uppercase">
+                                        Example ES
                                     </th>
                                 </tr>
                             </thead>
@@ -228,7 +247,6 @@
                             📚 Ver todos
                         </button>
                     </div>
-
                 </div>
 
                 <div class="mb-6">
