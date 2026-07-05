@@ -1,16 +1,14 @@
-// data.js - VERSIÓN CORREGIDA
 import { supabase } from './app.js'
 import { saveToCache, loadFromCache, showToast } from './cache.js'
 import { store } from './config.js'
 
 async function loadCategoriesFromSupabase(forceRefresh = false) {
-    console.log('🔄 Cargando datos...')
-    console.log('🔍 store.currentUser:', store.currentUser)
+    console.log('Cargando datos...')
 
     if (!forceRefresh) {
         const cachedData = loadFromCache()
         if (cachedData) {
-            console.log('📦 Usando caché')
+            console.log('Usando caché')
             return cachedData
         }
     }
@@ -42,7 +40,15 @@ async function loadCategoriesFromSupabase(forceRefresh = false) {
                     color: sub.color,
                     items: (sub.items || [])
                         .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
-                        .map(item => [item.word, item.pronunciation, item.spanish, item.example_en, item.example_es, item.id])
+                        .map(item => [
+                            item.word, 
+                            item.pronunciation, 
+                            item.spanish, 
+                            item.example_en, 
+                            item.example_es, 
+                            item.id,
+                            item.sort_order || 0
+                        ])
                 }))
         }))
 
@@ -56,7 +62,7 @@ async function loadCategoriesFromSupabase(forceRefresh = false) {
                     .from('user_custom_items')
                     .select('*')
                     .eq('user_id', store.currentUser.id)
-                    .order('created_at', { ascending: false })
+                    .order('sort_order', { ascending: true })
 
                 if (customError) {
                     console.error('❌ Error:', customError)
@@ -88,7 +94,8 @@ async function loadCategoriesFromSupabase(forceRefresh = false) {
                             item.example_en || '',
                             item.example_es || '',
                             `custom_${item.id}`,
-                            item.id
+                            item.id,
+                            item.sort_order || 0
                         ])
 
                         misExp.items = formattedItems

@@ -44,6 +44,7 @@ async function checkUser() {
 
 async function loadUserWordStatus() {
     if (!store.currentUser) return
+    
     const { data, error } = await supabase
         .from('user_word_status')
         .select('item_id, status')
@@ -51,7 +52,39 @@ async function loadUserWordStatus() {
 
     if (!error && data) {
         store.wordStatusMap.clear()
-        data.forEach(item => store.wordStatusMap.set(item.item_id.toString(), item.status))
+        
+        const validItems = data.filter(item => 
+            item && item.item_id !== null && 
+            item.item_id !== undefined && 
+            item.item_id !== ''
+        )
+        
+        const nullItems = data.filter(item => 
+            !item || item.item_id === null || 
+            item.item_id === undefined || item.item_id === ''
+        )
+        
+        if (nullItems.length > 0) {
+            console.warn(`⚠️ Encontrados ${nullItems.length} registros con item_id nulo:`, nullItems)
+            try {
+                const idsToDelete = nullItems.map(item => item.id).filter(id => id)
+                if (idsToDelete.length > 0) {
+                    await supabase
+                        .from('user_word_status')
+                        .delete()
+                        .in('id', idsToDelete)
+                    console.log(`🗑️ Eliminados ${idsToDelete.length} registros con item_id nulo`)
+                }
+            } catch (err) {
+                console.error('Error al eliminar registros nulos:', err)
+            }
+        }
+        
+        validItems.forEach(item => {
+            if (item && item.item_id) {
+                store.wordStatusMap.set(item.item_id.toString(), item.status)
+            }
+        })
     }
 }
 

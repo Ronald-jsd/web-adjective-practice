@@ -1,26 +1,49 @@
 import { supabase } from './app.js'
 import { store } from './config.js'
-import { showToast } from './cache.js'
+import { showToast, clearCache } from './cache.js'
 
 async function saveItemOrder(items, subcategoryId) {
-    if (!store.currentUser) return
+    if (!store.currentUser) {
+        showToast('Inicia sesión para guardar el orden', 'error')
+        return
+    }
+    
+    console.log('Guardando orden para', items.length, 'items')
+    
     for (let idx = 0; idx < items.length; idx++) {
         const item = items[idx]
-        const itemId = item[5]
+        const itemId = item[5] 
         const isCustom = itemId && itemId.toString().startsWith('custom_')
+        
         if (isCustom) {
             const customId = item[6]
-            await supabase.from('user_custom_items').update({ sort_order: idx }).eq('id', customId).eq('user_id', store.currentUser.id)
+            console.log(`  📝 Custom item ${customId} -> sort_order: ${idx}`)
+            await supabase
+                .from('user_custom_items')
+                .update({ sort_order: idx })
+                .eq('id', customId)
+                .eq('user_id', store.currentUser.id)
         } else {
-            await supabase.from('items').update({ sort_order: idx }).eq('id', parseInt(itemId))
+            const numericId = parseInt(itemId)
+            if (!isNaN(numericId)) {
+                console.log(`  📚 Item ${numericId} -> sort_order: ${idx}`)
+                await supabase
+                    .from('items')
+                    .update({ sort_order: idx })
+                    .eq('id', numericId)
+            }
         }
     }
+    
+    clearCache()
+    console.log('✅ Orden guardado y caché limpiada')
 }
 
 function initDragAndDrop(tbody, allItems, subcategoryId, refreshCallback) {
     let dragState = { active: false, sourceIndex: null, targetIndex: null }
 
     function getRows() { return Array.from(tbody.querySelectorAll('tr')) }
+    
     function clearHighlights() {
         getRows().forEach(row => {
             row.classList.remove('drag-over-top', 'drag-over-bottom', 'dragging-source')
@@ -76,7 +99,7 @@ function initDragAndDrop(tbody, allItems, subcategoryId, refreshCallback) {
             const [movedItem] = allItems.splice(src, 1)
             allItems.splice(tgt, 0, movedItem)
             await saveItemOrder(allItems, subcategoryId)
-            showToast('Orden guardado', 'success')
+            showToast('✅ Orden guardado', 'success')
             refreshCallback([...allItems])
         }
         dragState.sourceIndex = null

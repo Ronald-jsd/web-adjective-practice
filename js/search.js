@@ -1,4 +1,3 @@
-// search.js - CON DOS MODOS DE BÚSQUEDA
 import { store } from './config.js'
 import { makeClickableText } from './audio.js'
 import { renderCategories } from './data.js'
@@ -93,7 +92,7 @@ export function setSearchMode(mode) {
     const exactBtn = document.getElementById('search-mode-exact')
     const hint = document.getElementById('search-mode-hint')
 
-    console.log('🔄 Cambiando modo a:', mode)
+    console.log('Cambiando modo a:', mode)
 
     if (mode === 'partial') {
         if (partialBtn) {
@@ -407,7 +406,7 @@ export function initSearchModeListeners() {
     const partialBtn = document.getElementById('search-mode-partial')
     const exactBtn = document.getElementById('search-mode-exact')
 
-    console.log('🔍 Inicializando listeners de búsqueda...')
+    console.log('Inicializando listeners de búsqueda...')
     console.log('partialBtn:', partialBtn)
     console.log('exactBtn:', exactBtn)
 
@@ -415,7 +414,6 @@ export function initSearchModeListeners() {
         const newPartialBtn = partialBtn.cloneNode(true)
         partialBtn.parentNode.replaceChild(newPartialBtn, partialBtn)
         newPartialBtn.addEventListener('click', () => {
-            console.log('🔄 Click en "Contiene"')
             setSearchMode('partial')
         })
     } else {
@@ -426,7 +424,6 @@ export function initSearchModeListeners() {
         const newExactBtn = exactBtn.cloneNode(true)
         exactBtn.parentNode.replaceChild(newExactBtn, exactBtn)
         newExactBtn.addEventListener('click', () => {
-            console.log('🔄 Click en "Palabra exacta"')
             setSearchMode('exact')
         })
     } else {
