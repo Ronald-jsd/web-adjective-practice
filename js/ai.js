@@ -238,9 +238,10 @@ Responde SOLO en formato JSON válido, sin texto adicional, sin markdown:
   "example_es": "Ejemplo de oración en español"
 }`
 
-
-    const modelsToTry = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'gemma2-9b-it']
-
+    const modelsToTry = [
+        'openai/gpt-oss-20b',
+        'llama-3.3-70b-versatile'
+    ];
     for (const model of modelsToTry) {
         try {
             console.log(`[Groq] Intentando con modelo: ${model}`)
