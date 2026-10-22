@@ -9,6 +9,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/merriweather@5.0.8/index.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.8/index.min.css" />
     <link rel="stylesheet" href="styles.css" />
+    <link id="mysentences-styles" rel="stylesheet" href="sentences.css" disabled />
 </head>
 
 <body class="text-gray-900 antialiased min-h-screen flex flex-col">
@@ -52,6 +53,10 @@
             <button class="nav-tab" data-section="verbs" onclick="switchSection('verbs', this)">
                 📝 Verbos
             </button>
+            <button class="nav-tab" data-section="practice" onclick="switchSection('practice', this)">
+                🎧 Practicar
+            </button>
+            <button class="nav-tab" data-section="mysentences" onclick="switchSection('mysentences', this)">💬 MySentences</button>
         </div>
 
         <div id="adjectives-section" class="section active">
@@ -235,6 +240,130 @@
             </div>
         </div>
 
+        <div id="practice-section" class="section">
+            <div class="practice-layout">
+                <div class="practice-heading">
+                    <p class="practice-eyebrow">VOCABULARIO ACTIVO</p>
+                    <h2>Entrena tu <span>listening</span></h2>
+                    <p>Elige las categorías y practica con palabras de tu guía.</p>
+                </div>
+
+                <section class="practice-controls" aria-label="Configuración de práctica">
+                    <div class="practice-control-heading">
+                        <h3>Categorías</h3>
+                        <span id="practice-category-count" class="practice-count"></span>
+                    </div>
+                    <div id="practice-category-list" class="practice-category-list"></div>
+
+                    <div class="practice-control-heading practice-mode-heading">
+                        <h3>Modo</h3>
+                    </div>
+                    <div class="practice-mode-switch">
+                        <label for="practice-exercise-mode">Tipo de ejercicio</label>
+                        <select id="practice-exercise-mode" class="practice-exercise-mode">
+                            <option value="mixed">🎲 Práctica mixta</option>
+                            <option value="listening">🎧 Escuchar y escribir</option>
+                            <option value="translation">↔ Traducción</option>
+                            <option value="choice">☑ Opción múltiple</option>
+                            <option value="fill">✍ Completar frase</option>
+                        </select>
+                    </div>
+                </section>
+
+                <section class="practice-exercise" aria-live="polite" aria-label="Ejercicio de vocabulario">
+                    <div class="practice-exercise-topline">
+                        <span id="practice-category-label">LISTA PARA PRACTICAR</span>
+                        <span id="practice-score">0 correctas</span>
+                        <span id="practice-review-summary" class="practice-review-summary">0 nuevas · 0 para repasar · 0 firmes</span>
+                    </div>
+                    <div id="practice-prompt" class="practice-prompt">Selecciona tus categorías y comienza.</div>
+                    <div id="practice-meaning" class="practice-meaning hidden" aria-live="polite"></div>
+                    <p id="practice-hint" class="practice-hint">Las palabras se reproducen con la voz en inglés de tu dispositivo.</p>
+                    <div id="practice-choice-options" class="practice-choice-options hidden"></div>
+                    <div class="practice-audio-row">
+                        <button id="practice-listen" type="button" class="practice-listen-button" aria-label="Reproducir palabra" disabled>
+                            <span aria-hidden="true">▶</span> Escuchar
+                        </button>
+                    </div>
+                    <form id="practice-answer-form" class="practice-answer-form">
+                        <label for="practice-answer">Tu respuesta en inglés</label>
+                        <div class="practice-answer-row">
+                            <input id="practice-answer" type="text" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="Escribe la palabra..." disabled />
+                            <button id="practice-submit" type="submit" disabled>Comprobar</button>
+                        </div>
+                    </form>
+                    <div id="practice-feedback" class="practice-feedback" role="status"></div>
+                    <div class="practice-actions">
+                        <button id="practice-start" type="button" class="practice-next-button" disabled>Comenzar práctica</button>
+                        <button id="practice-next" type="button" class="practice-next-button hidden">Siguiente palabra <span aria-hidden="true">→</span></button>
+                    </div>
+                </section>
+            </div>
+        </div>
+
+        <div id="mysentences-section" class="section">
+            <div class="mysentences-shell">
+                <section id="auth-panel" class="auth-panel panel hidden">
+                    <div class="eyebrow">TU INGLÉS, TUS PALABRAS</div>
+                    <h2>Practica lo que realmente quieres decir.</h2>
+                    <p class="muted">Inicia sesión para guardar tus frases y sincronizar tu progreso.</p>
+                    <form id="auth-form" class="form-stack">
+                        <label>Correo electrónico<input name="email" type="email" autocomplete="email" required></label>
+                        <label>Contraseña<input name="password" type="password" autocomplete="current-password" required minlength="6"></label>
+                        <button class="button primary" type="submit">Iniciar sesión</button>
+                        <button class="text-button" id="signup-button" type="button">Crear una cuenta</button>
+                    </form>
+                </section>
+                <section id="app-panel" class="hidden">
+                    <div class="welcome">
+                        <div><p class="eyebrow">TU PRÁCTICA PERSONAL</p><h1>English, from your life.</h1><p class="muted">Guarda frases reales y recupéralas de memoria.</p></div>
+                        <div class="stats" aria-live="polite">
+                            <div class="stat"><strong id="due-count">0</strong><span>Para repasar hoy</span></div>
+                            <div class="stat"><strong id="daily-count">0</strong><span>Hechas hoy</span></div>
+                            <div class="stat"><strong id="accuracy">—</strong><span>Recuerdo total</span></div>
+                        </div>
+                    </div>
+                    <nav class="tabs" aria-label="Navegación de MySentences">
+                        <button class="tab active" data-screen="add">＋ Añadir</button>
+                        <button class="tab" data-screen="review">↻ Repasar <span id="review-tab-count" class="tab-count">0</span></button>
+                        <button class="tab" data-screen="practice">✎ Practicar</button>
+                    </nav>
+                    <div id="notice" class="notice hidden" role="status"></div>
+                    <section id="add-screen" class="screen active">
+                        <div class="section-heading"><div><p class="eyebrow">CAPTURA RÁPIDA</p><h2 id="form-title">Una frase que quieres recordar</h2></div></div>
+                        <form id="sentence-form" class="panel form-stack">
+                            <input type="hidden" name="id">
+                            <label>English sentence or idea <span class="required">Required</span><textarea name="englishText" rows="3" required placeholder="For example: I want a table for two, I am hungry"></textarea><small class="field-hint">Escribe tu idea en español o inglés, aunque no estés seguro de la gramática. La IA sugerirá una frase natural en inglés. No guardamos palabras aisladas como frase final.</small></label>
+                            <fieldset><legend>Topic <span class="required">Choose at least one</span></legend><div id="topic-options" class="topic-options"></div></fieldset>
+                            <label>Why are you saving it?<select name="reasonForSaving" required></select></label>
+                            <div class="form-grid">
+                                <label class="translation-field">Traducción al español <span class="optional">Optional · Puedes escribirla o pedir una recomendación</span><span class="translation-row"><input name="spanishTranslation" type="text" placeholder="¿Podría darme una mesa para dos, por favor?"><button class="button secondary translate-button" id="translate-button" type="button">Mejorar + traducir con IA</button></span><small class="field-hint">Usa la IA configurada en la Guía Oxford para corregir la idea y proponer su traducción.</small><small id="translation-status" class="field-hint" aria-live="polite"></small></label>
+                                <label>Grammar pattern <span class="optional">Optional</span><input name="grammarPattern" type="text" list="grammar-suggestions" placeholder="Suggested when possible"><datalist id="grammar-suggestions"><option>Simple present</option><option>Simple past</option><option>Present perfect</option><option>Continuous tense</option><option>Modal verb</option><option>Conditional sentence</option><option>Complex sentence</option><option>Question form</option></datalist></label>
+                            </div>
+                            <div id="recommendation-panel" class="recommendation-panel hidden" aria-live="polite">
+                                <p class="eyebrow">SUGERENCIA DE LA IA</p>
+                                <p class="recommendation-english" id="recommendation-english"></p>
+                                <p class="recommendation-spanish" id="recommendation-spanish"></p>
+                                <button class="button primary" id="apply-recommendation" type="button">Usar frase y traducción</button>
+                            </div>
+                            <div class="form-actions"><button class="button primary" type="submit">Guardar frase</button><button class="button secondary hidden" id="cancel-edit" type="button">Cancelar edición</button><span class="save-note">Se guarda al instante en tu cuenta.</span></div>
+                        </form>
+                        <div class="section-heading list-heading"><div><p class="eyebrow">TU COLECCIÓN</p><h2>Mis frases</h2></div><input id="search-input" class="search" type="search" placeholder="Buscar en mis frases…" aria-label="Buscar frases"></div>
+                        <div id="sentence-list" class="sentence-list"></div>
+                    </section>
+                    <section id="review-screen" class="screen">
+                        <div class="section-heading"><div><p class="eyebrow">REPETICIÓN ESPACIADA</p><h2>Recuerda antes de mirar</h2><p class="muted">Las frases olvidadas vuelven al primer repaso. Las dominadas regresan cada 30 días.</p></div></div>
+                        <div id="review-card" class="exercise-card panel"></div>
+                    </section>
+                    <section id="practice-screen" class="screen">
+                        <div class="section-heading"><div><p class="eyebrow">PRODUCE EN INGLÉS</p><h2>Completa la frase</h2><p class="muted">Cada ejercicio sale de tus propias frases. La respuesta revelada no cuenta como recuerdo.</p></div></div>
+                        <div id="practice-card" class="exercise-card panel"></div>
+                        <section class="mistakes-area"><h3>Frases difíciles</h3><p class="muted">Reintenta las frases con más errores.</p><div id="difficult-list" class="sentence-list"></div><h3>Errores recientes</h3><div id="mistakes-list" class="mistakes-list"></div></section>
+                    </section>
+                </section>
+            </div>
+        </div>
+
         <div id="verbs-section" class="section">
             <div class="container mx-auto px-4 py-6">
                 <div class="flex items-center justify-between mb-6 flex-wrap gap-2">
@@ -387,6 +516,8 @@
 
     <script>
         function switchSection(section, btn) {
+            const mySentencesStyles = document.getElementById("mysentences-styles");
+            if (mySentencesStyles) mySentencesStyles.disabled = section !== "mysentences";
             document
                 .querySelectorAll(".section")
                 .forEach((s) => s.classList.remove("active"));
@@ -403,9 +534,18 @@
                     window.loadVerbsFromSupabase();
                 }
             }
+            if (section === "mysentences" && window.initializeMySentences) {
+                window.initializeMySentences();
+            }
+
         }
 
         window.switchSection = switchSection;
+        window.addEventListener("DOMContentLoaded", function () {
+            if (new URLSearchParams(window.location.search).get("section") === "mysentences") {
+                switchSection("mysentences", document.querySelector('[data-section="mysentences"]'));
+            }
+        });
         window.cerrarModalLogin = function () {
             document.getElementById("login-modal").classList.add("hidden");
             const modalBody = document.getElementById("login-modal-body");

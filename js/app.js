@@ -8,6 +8,7 @@ import { renderCategories, loadCategoriesFromSupabase } from "./data.js";
 import { performSearch, initSearchModeListeners } from "./search.js";
 import { closeCategoryView } from "./category-view.js";
 import { updateAIButton } from "./ai.js";
+import { initializePractice } from "./practice.js";
 
 function setupEventListeners() {
     const searchInput = document.getElementById("global-search");
@@ -67,6 +68,7 @@ async function initApp() {
     const data = await loadCategoriesFromSupabase();
     store.categoriesData = data;
     renderCategories(data);
+    await initializePractice(data, { supabase, userId: store.currentUser?.id });
     updateAIButton();
     setupEventListeners();
 
@@ -74,6 +76,20 @@ async function initApp() {
         initSearchModeListeners();
     }, 100);
 }
+
+let mySentencesInitialized = false;
+window.initializeMySentences = async function () {
+    if (mySentencesInitialized) return;
+    mySentencesInitialized = true;
+    try {
+        const { initializeSentencesApp } = await import("./sentences/app.js");
+        await initializeSentencesApp();
+    } catch (error) {
+        mySentencesInitialized = false;
+        console.error("Unable to initialize MySentences", error);
+        window.alert("No se pudo abrir MySentences. Recarga la página e inténtalo de nuevo.");
+    }
+};
 
 initApp();
 

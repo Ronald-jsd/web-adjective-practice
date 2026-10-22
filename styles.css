@@ -393,3 +393,271 @@
         0% { transform: rotate(0deg); }
         100% { transform: rotate(360deg); }
     }
+
+    .practice-layout {
+        max-width: 1080px;
+        margin: 0 auto;
+        display: grid;
+        grid-template-columns: minmax(240px, 0.8fr) minmax(0, 1.4fr);
+        gap: 24px 40px;
+        padding: 28px 0 48px;
+    }
+
+    .practice-heading {
+        grid-column: 1 / -1;
+        padding: 24px 0 10px;
+        border-bottom: 1px solid #d9e2dc;
+    }
+
+    .practice-eyebrow {
+        color: #a34f2d;
+        font-size: 0.72rem;
+        font-weight: 800;
+        letter-spacing: 0.12em;
+    }
+
+    .practice-heading h2 {
+        margin: 8px 0;
+        color: #20392f;
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: 2.6rem;
+        font-weight: 700;
+        line-height: 1.05;
+    }
+
+    .practice-heading h2 span { color: #a34f2d; }
+    .practice-heading > p:last-child { color: #68746d; }
+
+    .practice-controls {
+        align-self: start;
+        padding: 4px 0;
+    }
+
+    .practice-control-heading {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 10px;
+    }
+
+    .practice-control-heading h3 {
+        margin: 0;
+        color: #20392f;
+        font-size: 0.95rem;
+        font-weight: 750;
+    }
+
+    .practice-count { color: #7a847d; font-size: 0.75rem; }
+
+    .practice-category-list {
+        display: grid;
+        gap: 2px;
+        max-height: 350px;
+        overflow-y: auto;
+        border-top: 1px solid #e4e9e5;
+        border-bottom: 1px solid #e4e9e5;
+    }
+
+    .practice-category-option {
+        display: grid;
+        grid-template-columns: 18px minmax(0, 1fr) auto;
+        align-items: center;
+        gap: 10px;
+        min-height: 42px;
+        padding: 7px 8px;
+        border-radius: 5px;
+        color: #38473f;
+        cursor: pointer;
+        font-size: 0.84rem;
+    }
+
+    .practice-category-option:hover { background: #edf3ee; }
+    .practice-category-option input { accent-color: #28745a; }
+    .practice-category-option small { color: #869089; font-size: 0.72rem; }
+    .practice-category-all { border-bottom: 1px solid #e4e9e5; font-weight: 700; }
+    .practice-mode-heading { margin-top: 24px; }
+
+    .practice-mode-switch {
+        display: grid;
+        gap: 8px;
+    }
+
+    .practice-mode-switch label {
+        color: #526057;
+        font-size: 0.78rem;
+        font-weight: 700;
+    }
+
+    .practice-exercise-mode {
+        width: 100%;
+        min-height: 44px;
+        padding: 9px 11px;
+        border: 1px solid #dce4de;
+        border-radius: 5px;
+        background: #fff;
+        color: #38473f;
+        cursor: pointer;
+        font-size: 0.82rem;
+    }
+
+    .practice-exercise-mode:focus { border-color: #28745a; outline: 3px solid rgba(40, 116, 90, 0.13); }
+
+    .practice-exercise {
+        min-height: 420px;
+        padding: 22px clamp(18px, 4vw, 38px) 26px;
+        border: 1px solid #dce4de;
+        border-top: 4px solid #28745a;
+        background: #fff;
+        box-shadow: 0 12px 35px rgba(34, 60, 45, 0.07);
+    }
+
+    .practice-exercise-topline {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: space-between;
+        gap: 12px;
+        color: #7a847d;
+        font-size: 0.68rem;
+        font-weight: 750;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+    }
+
+    .practice-review-summary {
+        flex-basis: 100%;
+        color: #627067;
+        font-size: 0.7rem;
+        font-weight: 600;
+        letter-spacing: 0;
+        text-align: right;
+        text-transform: none;
+    }
+
+    .practice-prompt {
+        display: grid;
+        min-height: 145px;
+        place-items: center;
+        margin: 12px 0 0;
+        color: #20392f;
+        font-family: Georgia, 'Times New Roman', serif;
+        font-size: 1.8rem;
+        font-weight: 700;
+        line-height: 1.25;
+        text-align: center;
+    }
+
+    .practice-hint { min-height: 22px; color: #7a847d; font-size: 0.8rem; text-align: center; }
+    .practice-audio-row { display: flex; justify-content: center; min-height: 48px; margin: 10px 0; }
+    .practice-choice-options { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; max-width: 520px; margin: 0 auto 16px; }
+
+    .practice-choice-button {
+        min-height: 46px;
+        padding: 10px 12px;
+        border: 1px solid #d5dfd8;
+        border-radius: 5px;
+        background: #f8faf8;
+        color: #304238;
+        cursor: pointer;
+        font-size: 0.88rem;
+        font-weight: 650;
+        overflow-wrap: anywhere;
+    }
+
+    .practice-choice-button:hover:not(:disabled) { border-color: #28745a; background: #edf5ef; }
+    .practice-choice-button:disabled { cursor: default; }
+    .practice-choice-button.is-correct { border-color: #24835f; background: #e2f3e9; color: #176647; }
+    .practice-choice-button.is-incorrect { border-color: #b95743; background: #fff0ec; color: #a04432; }
+
+    .practice-listen-button, .practice-next-button, #practice-submit {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        min-height: 42px;
+        padding: 9px 18px;
+        border: 0;
+        border-radius: 5px;
+        background: #28745a;
+        color: #fff;
+        cursor: pointer;
+        font-size: 0.86rem;
+        font-weight: 700;
+    }
+
+    .practice-listen-button:hover, .practice-next-button:hover, #practice-submit:hover { background: #205b46; }
+    .practice-listen-button:disabled, .practice-next-button:disabled, #practice-submit:disabled { cursor: not-allowed; opacity: 0.45; }
+    .practice-answer-form { max-width: 520px; margin: 0 auto; }
+    .practice-answer-form label { display: block; margin-bottom: 7px; color: #435148; font-size: 0.78rem; font-weight: 700; }
+
+    .practice-answer-row { display: flex; gap: 8px; }
+
+    .practice-answer-row input {
+        width: 100%;
+        min-width: 0;
+        min-height: 42px;
+        padding: 9px 12px;
+        border: 1px solid #ccd7cf;
+        border-radius: 5px;
+        outline: none;
+    }
+
+    .practice-answer-row input:focus { border-color: #28745a; box-shadow: 0 0 0 3px rgba(40, 116, 90, 0.13); }
+    .practice-answer-row input:disabled { background: #f4f6f4; }
+    .practice-feedback { display: grid; gap: 5px; max-width: 520px; margin: 14px auto 0; font-size: 0.86rem; }
+    .practice-feedback.is-correct { color: #176647; }
+    .practice-feedback.is-incorrect { color: #a04432; }
+    .practice-schedule-note { color: #647168; font-size: 0.78rem; }
+    .practice-example { margin-top: 6px; color: #38473f; font-style: italic; }
+    .practice-example-translation { color: #7a847d; font-size: 0.78rem; }
+    .practice-actions { display: flex; justify-content: center; margin-top: 20px; }
+
+    @media (max-width: 700px) {
+        .practice-layout { grid-template-columns: 1fr; gap: 18px; padding-top: 12px; }
+        .practice-heading { padding-top: 16px; }
+        .practice-heading h2 { font-size: 2rem; }
+        .practice-category-list { max-height: 240px; }
+        .practice-exercise { min-height: 390px; }
+        .practice-prompt { font-size: 1.45rem; }
+        .practice-choice-options { grid-template-columns: 1fr; }
+        .practice-answer-row { flex-direction: column; }
+        .practice-answer-row #practice-submit { width: 100%; }
+    }
+
+    .nav-tabs > a.nav-tab {
+        display: inline-flex;
+        align-items: center;
+        text-decoration: none;
+    }
+
+    .practice-meaning {
+        max-width: 520px;
+        margin: -4px auto 14px;
+        padding: 10px 14px;
+        border-left: 3px solid #a34f2d;
+        background: #f5eee8;
+        color: #5b463a;
+        font-size: 0.9rem;
+        font-weight: 650;
+        line-height: 1.5;
+        text-align: center;
+    }
+
+    .practice-audio-answer {
+        align-self: center;
+        justify-self: center;
+        margin: 6px 0;
+        padding: 7px 11px;
+        border: 1px solid #d9e2dc;
+        border-radius: 6px;
+        background: #fff;
+        color: #28745a;
+        cursor: pointer;
+        font-size: 0.78rem;
+        font-weight: 700;
+    }
+
+    .practice-audio-answer:hover {
+        border-color: #28745a;
+        background: #edf5ef;
+    }
