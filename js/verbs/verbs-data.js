@@ -1,9 +1,5 @@
 export { verbsData, verbCategories } from "./verbs-state.js";
-export {
-    loadVerbsFromSupabase,
-    loadUserVerbProgress,
-    saveVerbProgress,
-} from "./verbs-loader.js";
+export { loadVerbsFromSupabase } from "./verbs-loader.js";
 export {
     renderVerbTable,
     renderVerbCategories,

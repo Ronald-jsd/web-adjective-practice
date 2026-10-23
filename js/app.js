@@ -10,11 +10,23 @@ import { closeCategoryView } from "./category-view.js";
 import { updateAIButton } from "./ai.js";
 import { initializePractice } from "./practice.js";
 import { initializeBrowserAI } from "./browser-ai.js";
+import { toggleFavorite } from "./favorites.js";
+
+window.toggleVocabularyFavorite = (itemType, itemId) =>
+    toggleFavorite(supabase, itemType, itemId);
 
 function setupEventListeners() {
     const searchInput = document.getElementById("global-search");
     const clearBtn = document.getElementById("clear-search");
     const backBtn = document.getElementById("back-to-categories");
+    const adjectiveFavoriteFilter = document.getElementById("adjective-search-favorite-filter");
+
+    if (adjectiveFavoriteFilter) {
+        adjectiveFavoriteFilter.addEventListener("change", () => {
+            store.adjectiveFavoritesOnly = adjectiveFavoriteFilter.value === "favorites";
+            if (store.lastSearchQuery?.trim()) performSearch(store.lastSearchQuery);
+        });
+    }
 
     if (searchInput) {
         searchInput.value = "";
@@ -71,8 +83,23 @@ async function initApp() {
     store.categoriesData = data;
     renderCategories(data);
     await initializePractice(data, { supabase, userId: store.currentUser?.id });
-    window.refreshPracticeCategories = async function () {
-        await initializePractice(store.categoriesData, { supabase, userId: store.currentUser?.id });
+    window.refreshPracticeCategories = async function (options = {}) {
+        await initializePractice(store.categoriesData, {
+            supabase,
+            userId: store.currentUser?.id,
+            refreshVerbs: options.refreshVerbs !== false,
+            refreshAIQueries: options.refreshAIQueries !== false
+        });
+    };
+    window.refreshPracticeFavorites = async function () {
+        await initializePractice(store.categoriesData, {
+            supabase,
+            userId: store.currentUser?.id,
+            refreshVerbs: false,
+            refreshAIQueries: false,
+            skipProgressSync: true,
+            favoritesChanged: true
+        });
     };
     updateAIButton();
     setupEventListeners();

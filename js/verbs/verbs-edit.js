@@ -1,7 +1,12 @@
 import { supabase } from '../app.js'
 import { store } from '../config.js'
 import { showToast } from '../cache.js'
-import { verbsData, isVerbEditing, setIsVerbEditing } from './verbs-state.js'
+import {
+    verbsData,
+    currentVerbCategory,
+    isVerbEditing,
+    setIsVerbEditing
+} from './verbs-state.js'
 
 window.editVerbCell = function (cell, field, verbId) {
     if (!store.currentUser) {
@@ -131,6 +136,49 @@ window.playVerbAudio = function (cell) {
     const lang = cell.getAttribute('data-audio-lang') || 'en-US'
     if (text && text !== '—' && text !== '') {
         playAudioWithLang(text, lang)
+    }
+}
+
+window.deleteVerbRow = async function (verbId) {
+    if (!store.currentUser) {
+        showToast('Inicia sesión para eliminar verbos.', 'warning')
+        return
+    }
+
+    const verb = verbsData.find(item => String(item.id) === String(verbId))
+    const name = verb?.verb || 'este verbo'
+    if (!window.confirm(`¿Eliminar "${name}" de la guía compartida? Se quitará para todos los usuarios y no se puede deshacer.`)) {
+        return
+    }
+
+    try {
+        const { data, error } = await supabase
+            .from('verbs')
+            .delete()
+            .eq('id', verbId)
+            .select('id')
+        if (error) throw error
+        if (!data?.length) {
+            throw new Error('No se eliminó ninguna fila. Puede que no tengas permiso para eliminar este verbo.')
+        }
+
+        showToast(`Se eliminó "${name}" de la guía.`, 'success')
+        const { loadVerbsFromSupabase } = await import('./verbs-loader.js')
+        await loadVerbsFromSupabase(true)
+
+        const searchInput = document.getElementById('verbs-search-input')
+        if (searchInput?.value.trim()) {
+            window.searchVerbs?.()
+        } else if (currentVerbCategory) {
+            const { openVerbCategory } = await import('./verbs-render.js')
+            openVerbCategory(currentVerbCategory)
+        } else {
+            window.showAllVerbs?.()
+        }
+        await window.refreshPracticeCategories?.()
+    } catch (error) {
+        console.error('No se pudo eliminar el verbo:', error)
+        showToast(`No se pudo eliminar el verbo: ${error.message}`, 'error')
     }
 }
 

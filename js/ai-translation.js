@@ -3,9 +3,7 @@ import {
     GEMINI_KEY_STORAGE,
     GROQ_KEY_STORAGE
 } from "./config.js"
-
-const GROQ_MODELS = ["openai/gpt-oss-20b", "llama-3.3-70b-versatile"]
-const GEMINI_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash"]
+import { GEMINI_TEXT_MODELS, GROQ_TEXT_MODELS, parseAIJson } from "./ai-models.js"
 
 export async function recommendEnglishSentence(input) {
     const text = String(input || "").trim()
@@ -54,7 +52,7 @@ const RECOMMENDATION_INSTRUCTIONS = `El usuario puede escribir una idea o frase 
 {"english":"frase recomendada en inglés","spanish":"traducción natural al español"}`
 
 async function recommendWithGroq(input, apiKey) {
-    for (const model of GROQ_MODELS) {
+    for (const model of GROQ_TEXT_MODELS) {
         const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
             method: "POST",
             headers: {
@@ -82,7 +80,7 @@ async function recommendWithGroq(input, apiKey) {
 }
 
 async function recommendWithGemini(input, apiKey) {
-    for (const model of GEMINI_MODELS) {
+    for (const model of GEMINI_TEXT_MODELS) {
         const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -108,18 +106,11 @@ async function recommendWithGemini(input, apiKey) {
 }
 
 function parseRecommendation(content) {
-    if (!content) return null
-    try {
-        const cleaned = content.replace(/```(?:json)?\s*/gi, "").replace(/```/g, "").trim()
-        const match = cleaned.match(/\{[\s\S]*\}/)
-        if (!match) return null
-        const result = JSON.parse(match[0])
-        const english = typeof result.english === "string" ? result.english.trim() : ""
-        const spanish = typeof result.spanish === "string" ? result.spanish.trim() : ""
-        return english && spanish ? { english, spanish } : null
-    } catch {
-        return null
-    }
+    const result = parseAIJson(content)
+    if (!result || typeof result !== "object" || Array.isArray(result)) return null
+    const english = typeof result.english === "string" ? result.english.trim() : ""
+    const spanish = typeof result.spanish === "string" ? result.spanish.trim() : ""
+    return english && spanish ? { english, spanish } : null
 }
 
 function invalidKeyError() {

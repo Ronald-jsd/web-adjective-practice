@@ -9,6 +9,7 @@ import {
 import { renderVerbTable, renderVerbCategories, openVerbCategory, showVerbAIPreview, VERB_FIELDS } from './verbs-render.js'
 import { sortVerbs } from './verbs-sort.js'
 import { renderVerbPagination } from './verbs-pagination.js'
+import { filterFavoriteVerbs } from './verbs-render.js'
 
 window.searchVerbs = function () {
     const input = document.getElementById('verbs-search-input')
@@ -38,7 +39,7 @@ window.searchVerbs = function () {
     if (grid) grid.classList.add('hidden')
     if (view) view.classList.add('hidden')
 
-    let results = verbsData.filter(v =>
+    let results = filterFavoriteVerbs(verbsData.filter(v =>
         (v.verb || '').toLowerCase().includes(query) ||
         (v.translation || '').toLowerCase().includes(query) ||
         (v.past_simple || '').toLowerCase().includes(query) ||
@@ -50,7 +51,7 @@ window.searchVerbs = function () {
         (v.adverb || '').toLowerCase().includes(query) ||
         (v.pronunciation_adv || '').toLowerCase().includes(query) ||        
         (v.category || '').toLowerCase().includes(query)
-    )
+    ))
 
     console.log(`Resultados filtrados: ${results.length} verbos`)
 
@@ -69,8 +70,9 @@ window.searchVerbs = function () {
     const thead = resultsContainer?.querySelector('thead')
     if (thead) {
         thead.innerHTML = `<tr>
+            <th class="px-3 py-3 text-center text-xs font-bold text-gray-600 uppercase">Importante</th>
             ${VERB_FIELDS.map(f => `<th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">${f.label}</th>`).join('')}
-            <th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Progreso</th>
+            <th class="px-3 py-3 text-center text-xs font-bold text-gray-600 uppercase">Acciones</th>
         </tr>`
     }
 
@@ -95,7 +97,7 @@ window.searchVerbs = function () {
         if (resultsCount) resultsCount.textContent = `0 resultados para "${query}"`
         if (resultsTbody) resultsTbody.innerHTML = `
             <tr>
-                <td colspan="${VERB_FIELDS.length + 1}" class="text-center py-8">
+                <td colspan="${VERB_FIELDS.length + 2}" class="text-center py-8">
                     <div class="flex flex-col items-center gap-2">
                         <p class="text-gray-500">No se encontraron verbos para "<strong>${query}</strong>"</p>
                         <p class="text-xs text-gray-400">Usa el botón de abajo para generar este verbo con IA</p>
@@ -148,18 +150,14 @@ function buildSearchRowsHelper(pageData) {
             >${value || '<span class="text-gray-400">—</span>'}</td>`
         }).join('')
 
-        const progressCell = store.currentUser
-            ? `<td class="border-b px-4 py-3">
-                   <div class="flex items-center gap-3">
-                       <div class="w-20 h-2.5 bg-gray-200 rounded-full overflow-hidden">
-                           <div class="h-full bg-green-500 rounded-full" style="width:${v.percentage || 0}%"></div>
-                       </div>
-                       <span class="text-xs font-medium text-gray-600">${v.percentage || 0}%</span>
-                   </div>
-               </td>`
-            : `<td class="border-b px-4 py-3 text-center text-gray-400">—</td>`
+        const favorite = store.favoriteSet.has(`verb:${String(v.id)}`)
+        const favoriteId = JSON.stringify(String(v.id)).replace(/"/g, '&quot;')
+        const favoriteCell = `<td class="border-b px-3 py-2 text-center"><button type="button" class="favorite-toggle ${favorite ? 'is-favorite' : ''}" aria-pressed="${favorite}" title="${favorite ? 'Quitar de Favoritos' : 'Marcar como importante'}" aria-label="${favorite ? 'Quitar de Favoritos' : 'Marcar como importante'}" onclick="event.stopPropagation(); window.toggleVocabularyFavorite('verb', ${favoriteId})">${favorite ? '★' : '☆'}</button></td>`
+        const deleteCell = store.currentUser
+            ? `<td class="border-b px-3 py-2 text-center"><button type="button" class="px-2 py-1 text-red-700 hover:bg-red-50 rounded" title="Eliminar este verbo" aria-label="Eliminar ${String(v.verb).replace(/"/g, '&quot;')}" onclick="event.stopPropagation(); window.deleteVerbRow(${JSON.stringify(String(v.id)).replace(/"/g, '&quot;')})">🗑️</button></td>`
+            : '<td class="border-b px-3 py-2"></td>'
 
-        return `<tr class="hover:bg-gray-50 transition-colors" data-verb-id="${v.id}">${cells}${progressCell}</tr>`
+        return `<tr class="hover:bg-gray-50 transition-colors" data-verb-id="${v.id}">${favoriteCell}${cells}${deleteCell}</tr>`
     }).join('')
 
     return { buildSearchRows }

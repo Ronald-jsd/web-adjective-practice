@@ -18,6 +18,8 @@ export const store = {
     currentUtterance: null,
     currentUser: null,
     wordStatusMap: new Map(),
+    favoriteSet: new Set(),
+    adjectiveFavoritesOnly: false,
     isEditing: false,
     lastSearchQuery: '',
     currentAIData: null,
@@ -35,6 +37,8 @@ export function resetStore() {
     store.currentUtterance = null
     store.currentUser = null
     store.wordStatusMap = new Map()
+    store.favoriteSet = new Set()
+    store.adjectiveFavoritesOnly = false
     store.isEditing = false
     store.lastSearchQuery = ''
     store.currentAIData = null

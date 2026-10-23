@@ -8,12 +8,17 @@ import {
     selectPracticeDistractors
 } from "./practice-utils.js";
 import { createPracticeAudioPlayer } from "./practice-audio.js";
+import { store } from "./config.js";
 import {
     createAIPracticeCategory,
     createAIExamplePrompt,
     createVerbPracticeCategory,
+    createFavoritesPracticeCategory,
     AI_PRACTICE_CATEGORY_ID,
-    VERB_PRACTICE_CATEGORY_ID
+    VERB_PRACTICE_CATEGORY_ID,
+    FAVORITE_ADJECTIVES_PRACTICE_CATEGORY_ID,
+    FAVORITE_VERBS_PRACTICE_CATEGORY_ID,
+    FAVORITES_PRACTICE_CATEGORY_ID
 } from "./ai-practice.js";
 
 const PROGRESS_STORAGE_KEY = "vocabulary_practice_progress_v1";
@@ -39,6 +44,11 @@ let progressSync = null;
 let progressWriteQueue = Promise.resolve();
 let audioCourse = null;
 let audioCourseFilter = "all";
+let practiceVerbsCache = null;
+let practiceVerbsUserId = null;
+let practiceVerbCategoryCache = null;
+let practiceAIQueriesCache = null;
+let practiceAIQueriesUserId = null;
 
 function getAudioSessionScope() {
     return `${audioCourseFilter}:${[...selectedCategories].sort().join(",")}`;
@@ -329,7 +339,12 @@ function updateCategoryChoices(categories) {
         ...category,
         itemCount: (category.subcategories || []).reduce((total, subcategory) =>
             total + (subcategory.items || []).filter(item => item[0] && item[2]).length, 0),
-    })).filter(category => category.itemCount > 0);
+    })).filter(category => category.itemCount > 0
+        || [
+            FAVORITES_PRACTICE_CATEGORY_ID,
+            FAVORITE_ADJECTIVES_PRACTICE_CATEGORY_ID,
+            FAVORITE_VERBS_PRACTICE_CATEGORY_ID
+        ].includes(String(category.id)));
 
     const availableIds = new Set(available.map(category => String(category.id)));
     let savedCategoryIds = null;
@@ -337,7 +352,11 @@ function updateCategoryChoices(categories) {
         try {
             const storedIds = JSON.parse(localStorage.getItem(CATEGORY_SELECTION_STORAGE_KEY) || "null");
             if (Array.isArray(storedIds) && storedIds.every(id => typeof id === "string")) {
-                savedCategoryIds = storedIds.filter(id => availableIds.has(id));
+                savedCategoryIds = storedIds
+                    .flatMap(id => id === FAVORITES_PRACTICE_CATEGORY_ID
+                        ? [FAVORITE_ADJECTIVES_PRACTICE_CATEGORY_ID, FAVORITE_VERBS_PRACTICE_CATEGORY_ID]
+                        : [id])
+                    .filter(id => availableIds.has(id));
             }
         } catch (error) {
             console.warn("No se pudo leer la selección de categorías guardada:", error);
@@ -577,7 +596,8 @@ async function initializePractice(categories = [], options = {}) {
     let practiceCategories = categories.filter(category =>
         ![AI_PRACTICE_CATEGORY_ID, VERB_PRACTICE_CATEGORY_ID].includes(String(category.id))
     );
-    if (options.supabase) {
+    const userId = options.userId || null;
+    if (options.supabase && (practiceVerbsCache === null || options.refreshVerbs || practiceVerbsUserId !== userId)) {
         try {
             const verbs = [];
             const pageSize = 1000;
@@ -592,14 +612,40 @@ async function initializePractice(categories = [], options = {}) {
                 if (!data || data.length < pageSize) break;
             }
 
-            const verbCategory = createVerbPracticeCategory(verbs);
-            if (verbCategory) practiceCategories = [...practiceCategories, verbCategory];
+            practiceVerbsCache = verbs;
+            practiceVerbsUserId = userId;
+            practiceVerbCategoryCache = createVerbPracticeCategory(verbs);
         } catch (error) {
             console.error("No se pudieron cargar los verbos para practicar:", error);
             showToast(`No se pudieron cargar los verbos guardados para practicar. ${error.message || ""}`, "warning");
         }
     }
-    if (options.supabase && options.userId) {
+    if (practiceVerbsCache) {
+        try {
+            if (!practiceVerbCategoryCache) {
+                practiceVerbCategoryCache = createVerbPracticeCategory(practiceVerbsCache);
+            }
+            if (practiceVerbCategoryCache) {
+                practiceCategories = [...practiceCategories, practiceVerbCategoryCache];
+            }
+        } catch (error) {
+            console.error("No se pudieron preparar las categorías de verbos para practicar:", error);
+            showToast(`No se pudieron preparar los verbos para practicar. ${error.message || ""}`, "warning");
+        }
+    }
+    try {
+        const favoritesCategories = createFavoritesPracticeCategory(
+            categories,
+            practiceVerbsCache || [],
+            store.favoriteSet
+        );
+        practiceCategories = [...practiceCategories, ...favoritesCategories];
+    } catch (error) {
+        console.error("No se pudo preparar la categoría de Favoritos:", error);
+        showToast(`No se pudo preparar la categoría de Favoritos. ${error.message || ""}`, "warning");
+    }
+    if (options.supabase && options.userId
+        && (practiceAIQueriesCache === null || options.refreshAIQueries || practiceAIQueriesUserId !== userId)) {
         try {
             const queries = [];
             const pageSize = 1000;
@@ -615,11 +661,20 @@ async function initializePractice(categories = [], options = {}) {
                 if (!data || data.length < pageSize) break;
             }
 
-            const aiCategory = createAIPracticeCategory(queries);
-            if (aiCategory) practiceCategories = [...practiceCategories, aiCategory];
+            practiceAIQueriesCache = queries;
+            practiceAIQueriesUserId = userId;
         } catch (error) {
             console.error("No se pudieron cargar las tarjetas de consultas IA para practicar:", error);
             showToast(`No se pudieron cargar las tarjetas de tus consultas IA. Verifica supabase/ai_queries.sql. ${error.message || ""}`, "warning");
+        }
+    }
+    if (userId && practiceAIQueriesCache && practiceAIQueriesUserId === userId) {
+        try {
+            const aiCategory = createAIPracticeCategory(practiceAIQueriesCache);
+            if (aiCategory) practiceCategories = [...practiceCategories, aiCategory];
+        } catch (error) {
+            console.error("No se pudieron preparar las tarjetas de consultas IA para practicar:", error);
+            showToast(`No se pudieron preparar las tarjetas de tus consultas IA. ${error.message || ""}`, "warning");
         }
     }
 
@@ -627,7 +682,7 @@ async function initializePractice(categories = [], options = {}) {
     progressSync = options.supabase && options.userId
         ? createPracticeProgressSync(options.supabase, options.userId)
         : null;
-    if (progressSync) {
+    if (progressSync && !options.skipProgressSync) {
         try {
             progressByItem = await progressSync.loadAndMerge(progressByItem);
             saveProgress();
@@ -635,6 +690,11 @@ async function initializePractice(categories = [], options = {}) {
             console.error("No se pudo sincronizar el progreso de práctica:", error);
             showToast(`El progreso queda guardado en este dispositivo, pero no se pudo sincronizar con la cuenta. Ejecuta supabase/practice_progress.sql y vuelve a intentarlo. ${error.message || ""}`, "warning");
         }
+    }
+    if (options.favoritesChanged) {
+        currentItem = null;
+        isAnswered = false;
+        clearFeedback();
     }
     updateCategoryChoices(practiceCategories);
     if (audioCourse) renderAudioCourseState({ status: "idle", total: getSelectedItems().length });
@@ -708,3 +768,7 @@ async function initializePractice(categories = [], options = {}) {
 }
 
 export { initializePractice };
+
+window.addEventListener("vocabulary-favorites-changed", () => {
+    window.refreshPracticeFavorites?.();
+});

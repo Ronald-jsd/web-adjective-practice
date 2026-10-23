@@ -1,5 +1,4 @@
 import { supabase } from '../app.js'
-import { store } from '../config.js'
 import { showToast } from '../cache.js'
 import {
     setVerbsData, setVerbCategories,
@@ -71,8 +70,7 @@ export async function loadVerbsFromSupabase(forceRefresh = false) {
             pronunciationNoun: v.pronunciation_noun,
             translationNoun: v.translation_noun,
             exampleNoun: v.example_noun,
-            translationExampleNoun: v.translation_example_noun,
-            percentage: 0
+            translationExampleNoun: v.translation_example_noun
         }))
 
         setVerbsData(mapped)
@@ -82,8 +80,6 @@ export async function loadVerbsFromSupabase(forceRefresh = false) {
             if (v.category && v.category !== 'Sin Categoría') categoriesSet.add(v.category)
         })
         setVerbCategories(Array.from(categoriesSet).sort())
-
-        if (store.currentUser) await loadUserVerbProgress()
 
         console.log(`Verbos cargados: ${mapped.length}, Categorías: ${verbCategories.length}`)
 
@@ -97,40 +93,4 @@ export async function loadVerbsFromSupabase(forceRefresh = false) {
         showToast('Error cargando verbos: ' + error.message, 'error')
         return []
     }
-}
-
-export async function loadUserVerbProgress() {
-    if (!store.currentUser) return
-
-    const { data, error } = await supabase
-        .from('user_verb_progress')
-        .select('verb_id, percentage, level, last_practice')
-        .eq('user_id', store.currentUser.id)
-
-    if (error) {
-        console.error('Error cargando progreso:', error)
-        return
-    }
-
-    if (data) {
-        const progressMap = {}
-        data.forEach(p => { progressMap[p.verb_id] = p.percentage || 0 })
-        verbsData.forEach(v => { v.percentage = progressMap[v.id] || 0 })
-    }
-}
-
-export async function saveVerbProgress(verbId, percentage) {
-    if (!store.currentUser) return
-
-    const { error } = await supabase
-        .from('user_verb_progress')
-        .upsert({
-            user_id: store.currentUser.id,
-            verb_id: verbId,
-            percentage: Math.min(100, Math.max(0, percentage)),
-            last_practice: new Date().toISOString(),
-            level: Math.floor(percentage / 20) + 1
-        }, { onConflict: 'user_id, verb_id' })
-
-    if (error) console.error('Error guardando progreso:', error)
 }

@@ -1,7 +1,8 @@
 import { store } from './config.js'
 import { makeClickableText } from './audio.js'
 import { renderCategories } from './data.js'
-import { editCell, updateWordStatus, getStatusBadge } from './editing.js'
+import { editCell, getStatusBadge } from './editing.js'
+import { getFavoriteKey } from './favorites.js'
 
 const PAGE_SIZE_OPTIONS = [10, 15, 25, 50, 100]
 const DEFAULT_PAGE_SIZE = 15
@@ -79,7 +80,9 @@ function performSearch(query) {
         })
     }
 
-    store.currentSearchResults = results
+    store.currentSearchResults = store.adjectiveFavoritesOnly
+        ? results.filter(item => store.favoriteSet.has(getFavoriteKey('adjective', item.id)))
+        : results
     store.searchPaginationState.currentPage = 1
     store.searchPaginationState.pageSize = store.searchPaginationState.pageSize || DEFAULT_PAGE_SIZE
     store.searchPaginationState.totalPages = Math.ceil(results.length / store.searchPaginationState.pageSize)
@@ -141,6 +144,8 @@ function renderSearchResults() {
     const pageResults = store.currentSearchResults.slice(start, start + pageSize)
 
     const countEl = document.getElementById('search-results-count')
+    const favoriteFilter = document.getElementById('adjective-search-favorite-filter')
+    if (favoriteFilter) favoriteFilter.value = store.adjectiveFavoritesOnly ? 'favorites' : 'all'
     if (countEl) {
         const end = Math.min(start + pageSize, totalResults)
         countEl.textContent = `Mostrando ${totalResults > 0 ? start + 1 : 0}-${end} de ${totalResults} resultados`
@@ -158,7 +163,7 @@ function renderSearchResults() {
                 </tr>
             `
         } else {
-            tbody.innerHTML = pageResults.map((r, idx) => {
+            tbody.innerHTML = pageResults.map(r => {
                 const wordWithAudio = makeClickableText(r.word, 'en')
                 const spanishWithAudio = makeClickableText(r.spanish, 'es')
                 const exampleWithAudio = makeClickableText(r.example_en, 'en')
@@ -166,6 +171,7 @@ function renderSearchResults() {
 
                 const status = store.wordStatusMap.get(r.id.toString()) || 0
                 const statusBadge = getStatusBadge(status)
+                const favorite = store.favoriteSet.has(getFavoriteKey('adjective', r.id))
 
                 const itemObj = {
                     id: r.isCustom ? r.customData?.id : r.id,
@@ -185,9 +191,13 @@ function renderSearchResults() {
                 const escapedPronunciation = (r.pronunciation || '').replace(/'/g, "\\'")
                 const escapedExampleEn = (r.example_en || '').replace(/'/g, "\\'")
                 const escapedExampleEs = (r.example_es || '').replace(/'/g, "\\'")
+                const favoriteId = JSON.stringify(String(r.id)).replace(/"/g, '&quot;')
 
                 return `
                     <tr class="hover:bg-gray-50 ${r.isCustom ? 'bg-purple-50/50' : ''}">
+                        <td class="py-2 px-3 text-center">
+                            <button type="button" class="favorite-toggle ${favorite ? 'is-favorite' : ''}" aria-pressed="${favorite}" title="${favorite ? 'Quitar de Favoritos' : 'Marcar como importante'}" aria-label="${favorite ? 'Quitar de Favoritos' : 'Marcar como importante'}" onclick="event.stopPropagation(); window.toggleVocabularyFavorite('adjective', ${favoriteId})">${favorite ? '★' : '☆'}</button>
+                        </td>
                         <td class="py-2.5 px-3 text-sm">${r.category || ''}</td>
                         <td class="py-2.5 px-3 text-sm">${r.subcategory || ''}</td>
                         <td class="py-2.5 px-3 font-bold" ondblclick="window.editCell('word', '${escapedWord}', ${itemObjStr})">
@@ -208,14 +218,6 @@ function renderSearchResults() {
                         <td class="py-2.5 px-3 text-sm text-gray-600" ondblclick="window.editCell('example_es', '${escapedExampleEs}', ${itemObjStr})">
                             ${exampleEsWithAudio}
                         </td>
-                        ${store.currentUser ? `
-                        <td class="py-2.5 px-3">
-                            <div class="flex gap-1 flex-wrap">
-                                <button onclick="event.stopPropagation(); window.updateWordStatus('${r.id}', 1)" class="px-2.5 py-1.5 text-xs rounded ${status === 1 ? 'bg-yellow-500 text-white' : 'bg-gray-200 hover:bg-yellow-200'}">📚</button>
-                                <button onclick="event.stopPropagation(); window.updateWordStatus('${r.id}', 2)" class="px-2.5 py-1.5 text-xs rounded ${status === 2 ? 'bg-green-500 text-white' : 'bg-gray-200 hover:bg-green-200'}">✅</button>
-                                <button onclick="event.stopPropagation(); window.updateWordStatus('${r.id}', 3)" class="px-2.5 py-1.5 text-xs rounded ${status === 3 ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-blue-200'}">⚠️</button>
-                            </div>
-                        </td>` : ''}
                     </tr>
                 `
             }).join('')
@@ -419,6 +421,13 @@ export function initSearchModeListeners() {
     } else {
         console.warn('⚠️ No se encontró el botón "search-mode-partial"')
     }
+
+    window.addEventListener('vocabulary-favorites-changed', () => {
+        const searchDiv = document.getElementById('search-results')
+        if (store.lastSearchQuery?.trim() && searchDiv && !searchDiv.classList.contains('hidden')) {
+            performSearch(store.lastSearchQuery)
+        }
+    })
 
     if (exactBtn) {
         const newExactBtn = exactBtn.cloneNode(true)

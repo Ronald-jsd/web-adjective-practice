@@ -1,5 +1,6 @@
 import { supabase } from './app.js'
 import { store } from './config.js'
+import { loadUserFavorites } from './favorites.js'
 
 function updateAuthUI() {
     const authContainer = document.getElementById('auth-container')
@@ -38,6 +39,9 @@ async function checkUser() {
     if (user) {
         await loadUserWordStatus()
         await loadUserCustomItems()
+        await loadUserFavorites(supabase, user.id)
+    } else {
+        store.favoriteSet.clear()
     }
     return user
 }
@@ -52,6 +56,7 @@ async function loadUserWordStatus() {
 
     if (!error && data) {
         store.wordStatusMap.clear()
+        store.favoriteSet.clear()
         
         const validItems = data.filter(item => 
             item && item.item_id !== null && 

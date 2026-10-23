@@ -1,5 +1,8 @@
 const AI_PRACTICE_CATEGORY_ID = "ai-queries";
 const VERB_PRACTICE_CATEGORY_ID = "saved-verbs";
+export const FAVORITES_PRACTICE_CATEGORY_ID = "vocabulary-favorites";
+export const FAVORITE_ADJECTIVES_PRACTICE_CATEGORY_ID = "favorite-adjectives";
+export const FAVORITE_VERBS_PRACTICE_CATEGORY_ID = "favorite-verbs";
 
 export function createAIPracticeCategory(queries) {
     const items = queries.flatMap(query => {
@@ -112,6 +115,48 @@ export function createVerbPracticeCategory(verbs) {
             items
         }]
     };
+}
+
+export function createFavoritesPracticeCategory(categories, verbs, favoriteSet) {
+    const adjectiveItems = [...new Map(categories.flatMap(category =>
+        (category.subcategories || []).flatMap(subcategory =>
+            (subcategory.items || []).filter(item =>
+                item[5] && favoriteSet.has(`adjective:${String(item[5])}`)
+            )
+        )
+    ).map(item => [String(item[5]), item])).values()];
+    const favoriteVerbs = verbs.filter(verb =>
+        favoriteSet.has(`verb:${String(verb.id)}`)
+    );
+    const verbItems = createVerbPracticeCategory(favoriteVerbs)?.subcategories[0].items || [];
+    return [
+        {
+            id: FAVORITE_ADJECTIVES_PRACTICE_CATEGORY_ID,
+            title: "Favoritos · Adjetivos",
+            subtitle: "Adjetivos marcados como importantes",
+            icon: "★",
+            color: "bg-amber-100",
+            subcategories: [{
+                id: "favorite-adjective-cards",
+                title: "Adjetivos importantes",
+                color: "bg-amber-100",
+                items: adjectiveItems
+            }]
+        },
+        {
+            id: FAVORITE_VERBS_PRACTICE_CATEGORY_ID,
+            title: "Favoritos · Verbos",
+            subtitle: "Verbos marcados como importantes",
+            icon: "★",
+            color: "bg-blue-100",
+            subcategories: [{
+                id: "favorite-verb-cards",
+                title: "Verbos importantes",
+                color: "bg-blue-100",
+                items: verbItems
+            }]
+        }
+    ];
 }
 
 function getUsableValue(value) {

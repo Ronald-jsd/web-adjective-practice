@@ -1,9 +1,10 @@
 import { store } from "./config.js";
 import { showToast } from "./cache.js";
-import { editCell, updateWordStatus, getStatusBadge } from "./editing.js";
+import { editCell, getStatusBadge } from "./editing.js";
 import { loadUserCustomItems } from "./auth.js";
 import { initDragAndDrop } from "./drag-drop.js";
 import { makeClickableText } from "./audio.js";
+import { getFavoriteKey } from "./favorites.js";
 
 const SUBCAT_PAGE_SIZE_OPTIONS = [10, 15, 25, 50, 100];
 const SUBCAT_DEFAULT_PAGE_SIZE = 15;
@@ -190,6 +191,12 @@ function openCategoryView(data) {
             }
         }
 
+        if (store.adjectiveFavoritesOnly) {
+            allItems = allItems.filter(item =>
+                store.favoriteSet.has(getFavoriteKey("adjective", item[5]))
+            );
+        }
+
         const pageSize =
             store.subcategoryPaginationState.pageSize || SUBCAT_DEFAULT_PAGE_SIZE;
         const totalItems = allItems.length;
@@ -221,6 +228,7 @@ function openCategoryView(data) {
                 const customId = isCustom ? item[6] : null;
                 const status = store.wordStatusMap.get(itemId.toString()) || 0;
                 const statusBadge = getStatusBadge(status);
+                const favorite = store.favoriteSet.has(getFavoriteKey("adjective", itemId));
 
                 const itemObj = {
                     id: isCustom ? customId : itemId,
@@ -245,6 +253,10 @@ function openCategoryView(data) {
                 const escapedPronunciation = (item[1] || '').replace(/'/g, "\\'");
                 const escapedExampleEn = (item[3] || '').replace(/'/g, "\\'");
                 const escapedExampleEs = (item[4] || '').replace(/'/g, "\\'");
+                const favoriteId = JSON.stringify(String(itemId)).replace(/"/g, '&quot;');
+                const favoriteButton = isTemporalId
+                    ? `<button type="button" class="favorite-toggle" disabled title="Este término no tiene un ID estable" aria-label="Favorito no disponible">☆</button>`
+                    : `<button type="button" class="favorite-toggle ${favorite ? 'is-favorite' : ''}" aria-pressed="${favorite}" title="${favorite ? 'Quitar de Favoritos' : 'Marcar como importante'}" aria-label="${favorite ? 'Quitar de Favoritos' : 'Marcar como importante'}" onclick="event.stopPropagation(); window.toggleVocabularyFavorite('adjective', ${favoriteId})">${favorite ? '★' : '☆'}</button>`;
 
                 const dragHandleHtml = store.currentUser
                     ? `<td class="py-3 px-2 border-b w-12 text-center">
@@ -256,6 +268,7 @@ function openCategoryView(data) {
 
                 return `
                     <tr data-item-id="${itemId}" class="${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-100 transition-colors ${isCustom ? 'custom-row' : ''}">
+                        <td class="py-2 px-3 border-b text-center">${favoriteButton}</td>
                         ${dragHandleHtml}
                         <td class="py-3 px-4 border-b" ondblclick="window.editCell('word', '${escapedWord}', ${itemObjStr})">
                             <div class="flex items-center gap-2 flex-wrap">
@@ -267,19 +280,9 @@ function openCategoryView(data) {
                         <td class="py-3 px-4 border-b" ondblclick="window.editCell('pronunciation', '${escapedPronunciation}', ${itemObjStr})">
                             <span class="text-sm text-gray-500 font-mono break-all">[${item[1] || ''}]</span>
                         </td>
-                        <td class="py-3 px-4 border-b" ondblclick="window.editCell('spanish', '${escapedSpanish}', ${itemObjStr})">${wordEs}</td>
+                        <td class="py-3 px-4 border-b" ondblclick="window.editCell('spanish', '${escapedSpanish}', ${itemObjStr})">${wordEs}                        </td>
                         <td class="py-3 px-4 border-b" ondblclick="window.editCell('example_en', '${escapedExampleEn}', ${itemObjStr})">${exampleEn}</td>
                         <td class="py-3 px-4 border-b" ondblclick="window.editCell('example_es', '${escapedExampleEs}', ${itemObjStr})">${exampleEs}</td>
-                        ${store.currentUser ? `
-                        <td class="py-3 px-4 border-b">
-                            <div class="flex gap-1 flex-wrap">
-                                ${!isTemporalId ? `
-                                    <button onclick="event.stopPropagation(); window.updateWordStatus('${itemId}', 1)" class="px-2.5 py-1.5 text-xs rounded ${status === 1 ? 'bg-yellow-500 text-white' : 'bg-gray-200 hover:bg-yellow-200'}">📚</button>
-                                    <button onclick="event.stopPropagation(); window.updateWordStatus('${itemId}', 2)" class="px-2.5 py-1.5 text-xs rounded ${status === 2 ? 'bg-green-500 text-white' : 'bg-gray-200 hover:bg-green-200'}">✅</button>
-                                    <button onclick="event.stopPropagation(); window.updateWordStatus('${itemId}', 3)" class="px-2.5 py-1.5 text-xs rounded ${status === 3 ? 'bg-blue-500 text-white' : 'bg-gray-200 hover:bg-blue-200'}">⚠️</button>
-                                ` : '<span class="text-xs text-gray-400">ID temporal</span>'}
-                            </div>
-                        </td>` : ''}
                     </tr>
                 `;
             }).join('');
@@ -304,8 +307,17 @@ function openCategoryView(data) {
                             ${totalItems > pageSize ? `• Mostrando ${startDisplay}-${endDisplay}` : ""}
                         </p>
                     </div>
-                    <div class="text-xs text-gray-400 bg-gray-100 px-3 py-1.5 rounded-full">
-                        ${data.title} → ${sub.title}
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <label class="text-xs text-gray-600 flex items-center gap-2">
+                            <span>Mostrar</span>
+                            <select id="adjective-favorite-filter" class="border rounded-md px-2 py-1.5 bg-white text-sm">
+                                <option value="all" ${store.adjectiveFavoritesOnly ? "" : "selected"}>Todos</option>
+                                <option value="favorites" ${store.adjectiveFavoritesOnly ? "selected" : ""}>★ Solo importantes</option>
+                            </select>
+                        </label>
+                        <div class="text-xs text-gray-400 bg-gray-100 px-3 py-1.5 rounded-full">
+                            ${data.title} → ${sub.title}
+                        </div>
                     </div>
                 </div>
             `;
@@ -318,13 +330,13 @@ function openCategoryView(data) {
                         <table class="w-full text-left">
                             <thead class="bg-gray-50 border-b-2 border-gray-200">
                                 <tr>
+                                    <th class="py-3 px-3 text-xs font-bold text-gray-600 uppercase tracking-wider text-center">Importante</th>
                                     ${dragHandleHeader}
                                     <th class="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wider">Adjective 🔊</th>
                                     <th class="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wider">Pronun.</th>
                                     <th class="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wider">Español 🔊</th>
                                     <th class="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wider">Example EN 🔊</th>
                                     <th class="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wider">Example ES 🔊</th>
-                                    ${store.currentUser ? '<th class="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wider">Progreso</th>' : ""}
                                 </tr>
                             </thead>
                             <tbody id="sortable-tbody">${buildRows(pageItems)}</tbody>
@@ -345,14 +357,19 @@ function openCategoryView(data) {
             `;
 
             renderSubcategoryPagination(totalItems, pageSize, totalPages);
+            document.getElementById("adjective-favorite-filter")?.addEventListener("change", event => {
+                store.adjectiveFavoritesOnly = event.target.value === "favorites";
+                store.subcategoryPaginationState.currentPage = 1;
+                renderActiveContent();
+            });
 
-            if (store.currentUser && allItems.length > 0) {
+            if (store.dragCleanup) {
+                store.dragCleanup();
+                store.dragCleanup = null;
+            }
+            if (store.currentUser && allItems.length > 0 && !store.adjectiveFavoritesOnly) {
                 const tbodyEl = contentEl.querySelector("#sortable-tbody");
                 if (tbodyEl) {
-                    if (store.dragCleanup) {
-                        store.dragCleanup();
-                        store.dragCleanup = null;
-                    }
                     store.dragCleanup = initDragAndDrop(
                         tbodyEl,
                         allItems,
@@ -499,6 +516,7 @@ function openCategoryView(data) {
         }
     }
 
+    store.refreshCategoryView = () => renderActiveContent();
     selectSubcategory(store.activeSubcatIndex);
 }
 
@@ -516,6 +534,7 @@ function closeCategoryView() {
 
     store.currentCategoryData = null;
     store.currentSubcategoryId = null;
+    store.refreshCategoryView = null;
 
     window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -539,3 +558,7 @@ export {
 };
 
 window.closeCategoryView = closeCategoryView;
+
+window.addEventListener("vocabulary-favorites-changed", () => {
+    store.refreshCategoryView?.();
+});

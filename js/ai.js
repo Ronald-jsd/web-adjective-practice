@@ -7,6 +7,7 @@ import {
 import { showToast } from './cache.js'
 import { loadUserCustomItems } from './auth.js'
 import { renderCategories } from './data.js'
+import { GEMINI_TEXT_MODELS, GROQ_TEXT_MODELS, parseAIJson } from './ai-models.js'
 import { supabase } from './app.js'
 
 
@@ -126,7 +127,7 @@ function configureProviderKey(provider) {
 
 ✅ Límite: 30 requests/min, 14,400/día
 ⚡ Velocidad: ~0.5 segundos por respuesta
-🧠 Modelo: Llama 3.3 70B (muy potente)`
+🧠 Modelos: GPT-OSS 20B / 120B y Qwen 3.8 27B`
     } : {
         name: 'Gemini (Google)',
         url: 'https://aistudio.google.com/app/apikey',
@@ -139,7 +140,7 @@ function configureProviderKey(provider) {
 4. Copia la key y pégala abajo
 
 ✅ Límite: 15 requests/min
-🧠 Modelo: Gemini 2.5 Flash`
+🧠 Modelo: Gemini 3.6 Flash`
     }
 
     const currentKey = getApiKey(provider)
@@ -256,11 +257,7 @@ Responde SOLO en formato JSON válido, sin texto adicional, sin markdown:
 }`
     const systemPrompt = guide ? guideInstructions : vocabularyInstructions
 
-    const modelsToTry = [
-        'openai/gpt-oss-20b',
-        'llama-3.3-70b-versatile'
-    ];
-    for (const model of modelsToTry) {
+    for (const model of GROQ_TEXT_MODELS) {
         try {
             console.log(`[Groq] Intentando con modelo: ${model}`)
             const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
@@ -294,11 +291,8 @@ Responde SOLO en formato JSON válido, sin texto adicional, sin markdown:
             const text = data.choices[0].message.content
             console.log(`[Groq]  Éxito con ${model}:`, text)
 
-            const cleaned = text.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim()
-            const jsonMatch = cleaned.match(/\{[\s\S]*\}/)
-            if (!jsonMatch) continue
-
-            const result = JSON.parse(jsonMatch[0])
+            const result = parseAIJson(text)
+            if (!result || typeof result !== "object" || Array.isArray(result)) continue
             return { word: word, ...result, modelUsed: `Groq: ${model}`, provider: 'groq' }
         } catch (error) {
             console.warn(`[Groq] Error con ${model}:`, error.message)
@@ -350,7 +344,7 @@ Responde SOLO en formato JSON válido, sin texto adicional:
 }`
     const prompt = guide ? guidePrompt : vocabularyPrompt
 
-    const modelsToTry = ["gemini-3.8-flash", "gemini-3.5-flash-lite",'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-001', 'gemini-1.5-flash']
+    const modelsToTry = GEMINI_TEXT_MODELS
 
     const requestBody = {
         contents: [{ parts: [{ text: prompt }] }],
@@ -359,6 +353,7 @@ Responde SOLO en formato JSON válido, sin texto adicional:
             topK: 40,
             topP: 0.95,
             maxOutputTokens: guide ? 4096 : 2048,
+            responseMimeType: "application/json",
         }
     }
 
@@ -388,14 +383,13 @@ Responde SOLO en formato JSON válido, sin texto adicional:
             const data = await response.json()
             if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) continue
 
-            const text = data.candidates[0].content.parts[0].text
+            const text = data.candidates[0].content.parts
+                .map(part => part.text || "")
+                .join("")
             console.log(`[Gemini]  Éxito con ${model}:`, text)
 
-            const cleaned = text.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim()
-            const jsonMatch = cleaned.match(/\{[\s\S]*\}/)
-            if (!jsonMatch) continue
-
-            const result = JSON.parse(jsonMatch[0])
+            const result = parseAIJson(text)
+            if (!result || typeof result !== "object" || Array.isArray(result)) continue
             return { word: word, ...result, modelUsed: `Gemini: ${model}`, provider: 'gemini' }
         } catch (error) {
             console.warn(`[Gemini] Error con ${model}:`, error.message)

@@ -46,6 +46,13 @@ function createHistoryEntry(query, expanded = false) {
     answer.textContent = query.summary
     content.appendChild(answer)
 
+    if (!query.cards.length) {
+        const emptyCards = document.createElement('p')
+        emptyCards.className = 'text-sm text-gray-500 mb-3'
+        emptyCards.textContent = 'Esta consulta todavía no tiene tarjetas.'
+        content.appendChild(emptyCards)
+    }
+
     query.cards.forEach((card, index) => {
         const section = document.createElement('section')
         section.className = 'bg-purple-50 border border-purple-100 rounded-lg p-4 mb-3'
@@ -69,8 +76,42 @@ function createHistoryEntry(query, expanded = false) {
         translation.className = 'text-sm text-gray-600'
         translation.textContent = card.example_es
         section.appendChild(translation)
+
+        const editButton = document.createElement('button')
+        editButton.type = 'button'
+        editButton.className = 'mt-3 px-3 py-2 bg-white hover:bg-purple-100 text-purple-800 border border-purple-200 rounded-lg text-sm font-medium'
+        editButton.textContent = 'Editar tarjeta'
+        editButton.addEventListener('click', () => {
+            section.replaceChildren(createCardEditForm(query, card, index))
+        })
+        section.appendChild(editButton)
+
+        const removeButton = document.createElement('button')
+        removeButton.type = 'button'
+        removeButton.className = 'mt-3 ml-2 px-3 py-2 bg-white hover:bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm font-medium'
+        removeButton.textContent = 'Eliminar tarjeta'
+        removeButton.addEventListener('click', () => {
+            if (!window.confirm(`¿Eliminar la tarjeta "${card.word}"?`)) return
+            saveQueryCards(query, query.cards.filter((_, cardIndex) => cardIndex !== index), 'delete')
+        })
+        section.appendChild(removeButton)
         content.appendChild(section)
     })
+
+    const addButton = document.createElement('button')
+    addButton.type = 'button'
+    addButton.className = 'px-4 py-2 bg-purple-100 hover:bg-purple-200 text-purple-800 rounded-lg text-sm font-medium disabled:opacity-50'
+    addButton.textContent = '＋ Agregar tarjeta'
+    addButton.addEventListener('click', () => {
+        addButton.replaceWith(createCardEditForm(query, {
+            word: '',
+            pronunciation: '',
+            spanish: '',
+            example_en: '',
+            example_es: ''
+        }, query.cards.length))
+    })
+    content.appendChild(addButton)
 
     details.appendChild(content)
     return details
@@ -94,6 +135,131 @@ function renderHistory(queries) {
     })
 }
 
+function createCardEditForm(query, card, index) {
+    const form = document.createElement('form')
+    form.className = 'space-y-3'
+
+    const fields = [
+        ['word', 'Palabra o expresión', 'input'],
+        ['pronunciation', 'Pronunciación', 'input'],
+        ['spanish', 'Significado y explicación', 'textarea'],
+        ['example_en', 'Ejemplo en inglés', 'textarea'],
+        ['example_es', 'Traducción del ejemplo', 'textarea']
+    ]
+
+    for (const [name, labelText, elementName] of fields) {
+        const label = document.createElement('label')
+        label.className = 'block text-sm font-medium text-gray-700'
+        label.textContent = labelText
+        const input = document.createElement(elementName)
+        input.name = name
+        input.required = true
+        input.maxLength = name === 'spanish' || name.startsWith('example_') ? 2000 : 300
+        input.className = 'mt-1 w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 outline-none'
+        input.value = card[name]
+        if (elementName === 'textarea') input.rows = 3
+        label.appendChild(input)
+        form.appendChild(label)
+    }
+
+    const actions = document.createElement('div')
+    actions.className = 'flex flex-wrap gap-2'
+    const save = document.createElement('button')
+    save.type = 'submit'
+    save.className = 'px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 text-white rounded-lg text-sm font-medium'
+    save.textContent = index === query.cards.length ? 'Agregar y guardar tarjeta' : 'Guardar cambios'
+    const cancel = document.createElement('button')
+    cancel.type = 'button'
+    cancel.className = 'px-4 py-2 bg-white hover:bg-gray-100 text-gray-700 border border-gray-300 rounded-lg text-sm font-medium'
+    cancel.textContent = 'Cancelar'
+    cancel.addEventListener('click', () => loadQueryHistory())
+    actions.append(save, cancel)
+    form.appendChild(actions)
+
+    form.addEventListener('submit', async event => {
+        event.preventDefault()
+        if (!store.currentUser) {
+            showToast('Inicia sesión para editar tus tarjetas.', 'warning')
+            return
+        }
+
+        const updatedCard = Object.fromEntries(
+            fields.map(([name]) => [name, String(new FormData(form).get(name) || '').trim()])
+        )
+        if (Object.values(updatedCard).some(value => !value)) {
+            showToast('Completa todos los campos de la tarjeta.', 'warning')
+            return
+        }
+
+        save.disabled = true
+        save.textContent = 'Guardando...'
+        cancel.disabled = true
+        const updatedCards = query.cards.slice()
+        updatedCards[index] = updatedCard
+        const saved = await saveQueryCards(
+            query,
+            updatedCards,
+            index === query.cards.length ? 'add' : 'update'
+        )
+        if (!saved) {
+            save.disabled = false
+            save.textContent = index === query.cards.length ? 'Agregar y guardar tarjeta' : 'Guardar cambios'
+            cancel.disabled = false
+        }
+    })
+
+    return form
+}
+
+async function saveQueryCards(query, cards, operation = 'update') {
+    try {
+        const category = store.categoriesData.find(item => item.id === 'grammar')
+        if (!category) throw new Error('No se encontró la categoría de las tarjetas.')
+
+        const { error } = await supabase.rpc('set_user_ai_query_cards', {
+            p_query_id: query.id,
+            p_cards: cards,
+            p_category: category.title
+        })
+        if (error) throw error
+
+        const message = operation === 'add'
+            ? 'Tarjeta agregada y guardada en Supabase.'
+            : operation === 'delete'
+                ? 'Tarjeta eliminada y cambios guardados en Supabase.'
+                : 'Tarjeta actualizada y guardada en Supabase.'
+        showToast(message, 'success')
+    } catch (error) {
+        console.error('No se pudieron guardar las tarjetas de IA:', error)
+        const migrationHint = error.message.includes('set_user_ai_query_cards')
+            ? ' Ejecuta de nuevo supabase/ai_queries.sql.'
+            : ''
+        showToast(`No se pudieron guardar los cambios: ${error.message}.${migrationHint}`, 'error')
+        return false
+    }
+
+    try {
+        await refreshSavedAIItems()
+    } catch (error) {
+        console.error('Las tarjetas se guardaron, pero no se pudo actualizar la práctica:', error)
+        showToast('Los cambios se guardaron. Recarga la práctica para ver las tarjetas actualizadas.', 'warning')
+    }
+    await loadQueryHistory()
+    return true
+}
+
+async function refreshSavedAIItems() {
+    if (!store.currentUser) return
+    await loadUserCustomItems()
+    const categories = await loadCategoriesFromSupabase(true)
+    store.categoriesData = categories
+    renderCategories(categories)
+    await initializePractice(categories, {
+        supabase,
+        userId: store.currentUser.id
+    })
+}
+
 async function deleteQuery(query, button) {
     if (!store.currentUser) {
         showToast('Inicia sesión para eliminar consultas.', 'warning')
@@ -113,14 +279,7 @@ async function deleteQuery(query, button) {
         if (error) throw error
 
         showToast('Consulta y tarjetas eliminadas.', 'success')
-        await loadUserCustomItems()
-        const categories = await loadCategoriesFromSupabase(true)
-        store.categoriesData = categories
-        renderCategories(categories)
-        await initializePractice(categories, {
-            supabase,
-            userId: store.currentUser.id
-        })
+        await refreshSavedAIItems()
         await loadQueryHistory()
     } catch (error) {
         console.error('No se pudo eliminar la consulta de IA:', error)
@@ -184,11 +343,11 @@ async function createAndSaveCard(question) {
     if (!store.currentUser) {
         showToast('Inicia sesión para crear y guardar tarjetas.', 'warning')
         window.abrirModalLogin?.()
-        return
+        return false
     }
 
     const guide = await generateWithAI(question, { guide: true })
-    if (!guide) return
+    if (!guide) return false
     if (typeof guide.summary !== 'string' || !guide.summary.trim() ||
         !Array.isArray(guide.cards) || guide.cards.length < 1 || guide.cards.length > 6) {
         throw new Error('La respuesta de la IA no contiene una guía válida con entre 1 y 6 tarjetas.')
@@ -221,15 +380,21 @@ async function createAndSaveCard(question) {
     }
 
     showToast(`${cards.length} ${cards.length === 1 ? 'tarjeta guardada' : 'tarjetas guardadas'} en Mis Expresiones.`, 'success')
-    await loadUserCustomItems()
-    const categories = await loadCategoriesFromSupabase(true)
-    store.categoriesData = categories
-    renderCategories(categories)
-    await initializePractice(categories, {
-        supabase,
-        userId: store.currentUser.id
-    })
+    await refreshSavedAIItems()
     await loadQueryHistory()
+    return true
+}
+
+function showBackgroundRequestStatus() {
+    document.getElementById('browser-ai-background-status')?.remove()
+    const status = document.createElement('div')
+    status.id = 'browser-ai-background-status'
+    status.className = 'fixed bottom-4 right-4 z-50 max-w-sm rounded-xl bg-gray-900 px-4 py-3 text-sm font-medium text-white shadow-lg'
+    status.setAttribute('role', 'status')
+    status.setAttribute('aria-live', 'polite')
+    status.textContent = '🤖 Generando y guardando tu consulta. Puedes cambiar de sección; seguirá trabajando.'
+    document.body.appendChild(status)
+    return status
 }
 
 function initializeBrowserAI() {
@@ -252,15 +417,25 @@ function initializeBrowserAI() {
 
         submit.disabled = true
         submit.textContent = 'Generando y guardando...'
+        const backgroundStatus = showBackgroundRequestStatus()
         showToast('Consultando el proveedor de IA configurado...', 'info')
+        let saved = false
+        let failed = false
         try {
-            await createAndSaveCard(question)
+            saved = await createAndSaveCard(question)
         } catch (error) {
+            failed = true
             console.error('Error al crear la tarjeta con IA:', error)
             showToast(error.message || 'No se pudo crear la tarjeta.', 'error')
         } finally {
             submit.textContent = 'Generar explicación y guardar tarjetas'
             updateAvailability()
+            backgroundStatus.textContent = saved
+                ? '✅ Consulta y tarjetas guardadas en Supabase.'
+                : failed
+                    ? '⚠️ No se pudo completar la consulta. Revisa el mensaje de error.'
+                    : '⚠️ La consulta no se completó.'
+            window.setTimeout(() => backgroundStatus.remove(), 6000)
         }
     })
 }

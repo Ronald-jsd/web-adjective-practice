@@ -8,6 +8,21 @@ import {
 } from './verbs-state.js'
 import { renderVerbPagination } from './verbs-pagination.js'
 import { sortVerbs } from './verbs-sort.js'
+import { getFavoriteKey } from '../favorites.js'
+
+let showOnlyFavoriteVerbs = false
+
+export function filterFavoriteVerbs(verbs) {
+    return showOnlyFavoriteVerbs
+        ? (verbs || []).filter(verb => store.favoriteSet.has(getFavoriteKey('verb', verb.id)))
+        : (verbs || [])
+}
+
+function favoriteButton(verb) {
+    const favorite = store.favoriteSet.has(getFavoriteKey('verb', verb.id))
+    const id = JSON.stringify(String(verb.id)).replace(/"/g, '&quot;')
+    return `<button type="button" class="favorite-toggle ${favorite ? 'is-favorite' : ''}" aria-pressed="${favorite}" title="${favorite ? 'Quitar de Favoritos' : 'Marcar como importante'}" aria-label="${favorite ? 'Quitar de Favoritos' : 'Marcar como importante'}" onclick="event.stopPropagation(); window.toggleVocabularyFavorite('verb', ${id})">${favorite ? '★' : '☆'}</button>`
+}
 
 export const VERB_FIELDS = [
     { key: 'category', label: 'Categoría', isCategory: true },
@@ -68,8 +83,7 @@ function buildThead(includeCategory = true) {
         })
         .join('')
 
-    const progressTh = `<th class="px-4 py-3 text-left text-xs font-bold text-gray-600 uppercase">Progreso</th>`
-    return `<tr>${cols}${progressTh}</tr>`
+    return `<tr><th class="px-3 py-3 text-center text-xs font-bold text-gray-600 uppercase">Importante</th>${cols}<th class="px-3 py-3 text-center text-xs font-bold text-gray-600 uppercase">Acciones</th></tr>`
 }
 
 function buildVerbRow(v, includeCategory = true) {
@@ -95,24 +109,17 @@ function buildVerbRow(v, includeCategory = true) {
         >${value || '<span class="text-gray-400">—</span>'}</td>`
     }).join('')
 
-    const progressCell = store.currentUser
-        ? `<td class="border-b px-4 py-3">
-               <div class="flex items-center gap-3">
-                   <div class="w-20 h-2.5 bg-gray-200 rounded-full overflow-hidden">
-                       <div class="h-full bg-green-500 rounded-full" style="width:${v.percentage || 0}%"></div>
-                   </div>
-                   <span class="text-xs font-medium text-gray-600">${v.percentage || 0}%</span>
-               </div>
-           </td>`
-        : `<td class="border-b px-4 py-3 text-center text-gray-400">—</td>`
-
-    return `<tr class="hover:bg-gray-50 transition-colors" data-verb-id="${v.id}">${cells}${progressCell}</tr>`
+    const deleteCell = store.currentUser
+        ? `<td class="border-b px-3 py-2 text-center"><button type="button" class="px-2 py-1 text-red-700 hover:bg-red-50 rounded" title="Eliminar este verbo" aria-label="Eliminar ${String(v.verb).replace(/"/g, '&quot;')}" onclick="event.stopPropagation(); window.deleteVerbRow(${JSON.stringify(String(v.id)).replace(/"/g, '&quot;')})">🗑️</button></td>`
+        : '<td class="border-b px-3 py-2"></td>'
+    return `<tr class="hover:bg-gray-50 transition-colors" data-verb-id="${v.id}"><td class="border-b px-3 py-2 text-center">${favoriteButton(v)}</td>${cells}${deleteCell}</tr>`
 }
 
 export function renderVerbTable(verbs, includeCategory = true) {
     const tbody = document.getElementById('verbs-table-body')
     if (!tbody) return
 
+    verbs = filterFavoriteVerbs(verbs)
     const total = verbs?.length || 0
     const totalPages = Math.ceil(total / verbPaginationState.itemsPerPage) || 1
     const currentPage = Math.min(verbPaginationState.currentPage, totalPages)
@@ -134,7 +141,8 @@ export function renderVerbTable(verbs, includeCategory = true) {
     const pageData = (verbs || []).slice(start, start + verbPaginationState.itemsPerPage)
 
     if (!pageData.length) {
-        tbody.innerHTML = `<tr><td colspan="${VERB_FIELDS.length + 1}" class="text-center py-8 text-gray-500">No hay verbos en esta categoría</td></tr>`
+        const visibleFieldCount = VERB_FIELDS.filter(field => includeCategory || !field.isCategory).length
+        tbody.innerHTML = `<tr><td colspan="${visibleFieldCount + 2}" class="text-center py-8 text-gray-500">No hay verbos en esta categoría</td></tr>`
         renderVerbPagination()
         return
     }
@@ -162,7 +170,7 @@ export function renderVerbCategories() {
     }
 
     verbCategories.forEach(cat => {
-        const count = verbsData.filter(v => v.category === cat).length
+        const count = filterFavoriteVerbs(verbsData.filter(v => v.category === cat)).length
         const card = document.createElement('div')
         card.className = 'category-card bg-white border border-gray-200 rounded-2xl p-5 cursor-pointer text-center hover:border-gray-300'
         card.innerHTML = `
@@ -188,7 +196,7 @@ export function openVerbCategory(category) {
     if (view) view.classList.remove('hidden')
 
     const title = document.getElementById('verbs-category-title')
-    if (title) title.textContent = `📂 Categoría: ${category} (${filtered.length} verbos)`
+    if (title) title.textContent = `📂 Categoría: ${category} (${filterFavoriteVerbs(filtered).length} verbos)`
 
     renderVerbTable(filtered)
 }
@@ -223,7 +231,7 @@ window.showAllVerbs = function () {
     if (view) view.classList.remove('hidden')
 
     const title = document.getElementById('verbs-category-title')
-    if (title) title.textContent = `📚 Todos los verbos (${verbsData.length} total)`
+    if (title) title.textContent = `📚 Todos los verbos (${filterFavoriteVerbs(verbsData).length} total)`
 
     const searchInput = document.getElementById('verbs-search-input')
     if (searchInput) searchInput.value = ''
@@ -249,7 +257,7 @@ export function showVerbAIPreview(data, query) {
 
     resultsTbody.innerHTML = `
         <tr>
-            <td colspan="${VERB_FIELDS.length + 1}" class="text-center py-6 text-gray-400 text-sm">
+            <td colspan="${VERB_FIELDS.length + 2}" class="text-center py-6 text-gray-400 text-sm">
                 Revisa el verbo generado abajo 👇
             </td>
         </tr>
@@ -266,6 +274,7 @@ export function showVerbAIPreview(data, query) {
         if (aiContainer && aiContainer.parentNode) {
             aiContainer.parentNode.insertBefore(previewCard, aiContainer)
         }
+
     }
 
     previewCard.innerHTML = `
@@ -298,3 +307,29 @@ export function showVerbAIPreview(data, query) {
         </div>
     `
 }
+
+export function setVerbFavoriteFilter(value) {
+    showOnlyFavoriteVerbs = value === 'favorites'
+    const search = document.getElementById('verbs-search-results')
+    if (search && !search.classList.contains('hidden')) {
+        window.searchVerbs?.()
+    } else if (document.getElementById('verbs-table-view')?.classList.contains('hidden')) {
+        renderVerbCategories()
+    } else {
+        renderVerbTable(currentViewVerbs)
+    }
+}
+
+function refreshVerbFavoriteView() {
+    const search = document.getElementById('verbs-search-results')
+    if (search && !search.classList.contains('hidden')) {
+        window.searchVerbs?.()
+    } else if (!document.getElementById('verbs-table-view')?.classList.contains('hidden')) {
+        renderVerbTable(currentViewVerbs)
+    } else {
+        renderVerbCategories()
+    }
+}
+
+window.setVerbFavoriteFilter = setVerbFavoriteFilter
+window.addEventListener('vocabulary-favorites-changed', refreshVerbFavoriteView)

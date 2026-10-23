@@ -8,8 +8,10 @@ import { showToast } from '../cache.js'
 import { loadUserCustomItems } from '../auth.js'
 import { renderCategories } from '../data.js'
 import { supabase } from '../app.js'
+import { GEMINI_TEXT_MODELS, GROQ_TEXT_MODELS, parseAIJson } from '../ai-models.js'
 
 let tempAIData = null
+const AI_MODEL_TIMEOUT_MS = 12000
 
 function getApiKey(provider) {
     const key = provider === 'groq' ? GROQ_KEY_STORAGE : GEMINI_KEY_STORAGE
@@ -125,7 +127,7 @@ function configureProviderKey(provider) {
 
 ✅ Límite: 30 requests/min, 14,400/día
 ⚡ Velocidad: ~0.5 segundos por respuesta
-🧠 Modelo: Llama 3.3 70B (muy potente)`
+🧠 Modelos: GPT-OSS 20B / 120B y Qwen 3.8 27B`
     } : {
         name: 'Gemini (Google)',
         url: 'https://aistudio.google.com/app/apikey',
@@ -138,7 +140,7 @@ function configureProviderKey(provider) {
 4. Copia la key y pégala abajo
 
 ✅ Límite: 15 requests/min
-🧠 Modelo: Gemini 2.5 Flash`
+🧠 Modelo: Gemini 3.6 Flash`
     }
 
     const currentKey = getApiKey(provider)
@@ -216,9 +218,14 @@ async function generateWithGroq(word, apiKey) {
     const systemPrompt = `Eres un experto en verbos ingleses. Analiza el verbo "${word}" y proporciona TODOS los siguientes campos.
 
  - IMPORTANTE: Debes incluir TODOS los campos listados, incluso si no existen (usa "--" o "N/A").
+ - La entrada puede estar en inglés o español. El campo "verb" debe contener el verbo en inglés: si la entrada está en español, tradúcela al equivalente inglés más común; si ya está en inglés, conserva ese verbo o phrasal verb.
+ - Si una entrada en español tiene varios equivalentes posibles, elige el más común y aclara brevemente la ambigüedad en "usage". No listes sinónimos en el campo "verb".
+ - En "translation" escribe solo la traducción principal al español del verbo inglés elegido. No combines significados distintos con "/".
+ - Si la entrada es un phrasal verb, conserva sus partículas y no lo reemplaces por el verbo simple ni por otro verbo. En "usage" puedes explicar brevemente otros sentidos del mismo phrasal verb, sin enumerar verbos distintos.
+ - Las formas pasadas deben corresponder al verbo inglés elegido, manteniendo las partículas del phrasal verb cuando corresponda.
  - Los ejemplos deben incluir la traducción entre paréntesis: "I take out the trash (Yo saco la basura)"
  - El campo "type" debe ser "R" de Regular o "I" de Irregular
- - Si no encuentras una palabra entonces que sea su aproximado y de esa buscas
+ - Si la entrada no parece ser un verbo, no inventes otro verbo aproximado: indícalo en "usage" y usa "--" en las formas verbales que no correspondan.
 
 
 Responde SOLO en formato JSON válido, sin texto adicional, sin markdown. El JSON debe tener EXACTAMENTE esta estructura:
@@ -226,7 +233,7 @@ Responde SOLO en formato JSON válido, sin texto adicional, sin markdown. El JSO
 {
   "category": "Categoría del verbo",
   "type": "R o I",
-  "verb": "${word}",
+  "verb": "Verbo en inglés en forma base; traduce al inglés si la entrada está en español",
   "pronunciation": "Pronunciación aproximado al español",
   "translation": "Traducción al español",
   "example_base": "Ejemplo en inglés con el verbo base (traducción entre paréntesis)",
@@ -258,13 +265,17 @@ Responde SOLO en formato JSON válido, sin texto adicional, sin markdown. El JSO
 
 Recuerda: ¡RESPONDE SOLO EN FORMATO JSON!`
 
-    const modelsToTry = ['llama-3.3-70b-versatile', 'llama-3.1-8b-instant', 'gemma2-9b-it']
+    const modelsToTry = GROQ_TEXT_MODELS
 
     for (const model of modelsToTry) {
+        const controller = new AbortController()
+        const timeoutId = window.setTimeout(() => controller.abort(), AI_MODEL_TIMEOUT_MS)
         try {
             console.log(`[Groq-Verb] Intentando con modelo: ${model}`)
+            showToast(`Probando Groq · ${model} (máx. 12 s)...`, 'info')
             const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                 method: 'POST',
+                signal: controller.signal,
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${apiKey}`
@@ -297,11 +308,8 @@ Recuerda: ¡RESPONDE SOLO EN FORMATO JSON!`
             console.log('Resultados: ' + data)
                         console.log('Resultados: ' + text)
 
-            const cleaned = text.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim()
-            const jsonMatch = cleaned.match(/\{[\s\S]*\}/)
-            if (!jsonMatch) continue
-
-            const result = JSON.parse(jsonMatch[0])
+            const result = parseAIJson(text)
+            if (!result || typeof result !== "object" || Array.isArray(result)) continue
             result.word = word
 
             const defaultFields = {
@@ -338,7 +346,15 @@ Recuerda: ¡RESPONDE SOLO EN FORMATO JSON!`
 
             return { ...defaultFields, ...result, modelUsed: `Groq: ${model}`, provider: 'groq' }
         } catch (error) {
-            console.warn(`[Groq-Verb] Error con ${model}:`, error.message)
+            const reason = controller.signal.aborted
+                ? `superó el límite de 12 segundos; probando el siguiente modelo`
+                : error.message
+            console.warn(`[Groq-Verb] Error con ${model}:`, reason)
+            if (controller.signal.aborted) {
+                showToast(`Groq · ${model} tardó demasiado; probando el siguiente modelo...`, 'warning')
+            }
+        } finally {
+            window.clearTimeout(timeoutId)
         }
     }
     return null
@@ -349,6 +365,11 @@ async function generateWithGemini(word, apiKey) {
 
 ⚠️ IMPORTANTE: Debes incluir TODOS los campos listados. Si un campo no existe, usa "--".
 ⚠️ El campo "type" debe ser "Regular" o "Irregular"
+⚠️ La entrada puede estar en inglés o español. El campo "verb" debe contener el verbo en inglés: traduce al equivalente inglés más común si la entrada está en español; si ya está en inglés, conserva ese verbo o phrasal verb.
+⚠️ No agregues sinónimos ni verbos relacionados en el campo "verb". Si una entrada española tiene varios equivalentes posibles, elige el más común y aclara brevemente la ambigüedad en "usage".
+⚠️ En "translation" da únicamente la traducción principal al español del verbo inglés elegido; no mezcles significados diferentes con "/".
+⚠️ Si es un phrasal verb, conserva sus partículas. No lo sustituyas por el verbo simple ni por otro verbo. Puedes mencionar brevemente otros sentidos del mismo phrasal verb en "usage".
+⚠️ Las formas pasada y participio deben corresponder al verbo inglés elegido, conservando sus partículas cuando corresponda.
 ⚠️ Los ejemplos deben incluir la traducción entre paréntesis: "I take out the trash (Yo saco la basura)"
 
 Responde SOLO en formato JSON válido, sin texto adicional. El JSON debe tener EXACTAMENTE esta estructura:
@@ -356,7 +377,7 @@ Responde SOLO en formato JSON válido, sin texto adicional. El JSON debe tener E
 {
   "category": "Categoría del verbo",
   "type": "Regular o Irregular",
-  "verb": "${word}" y otras palabras mas usadas que puede significar separados entre / ,
+  "verb": "Verbo en inglés en forma base; traduce al inglés si la entrada está en español",
   "pronunciation": "Pronunciación en IPA",
   "translation": "Traducción al español",
   "example_base": "Ejemplo en inglés con el verbo base (traducción entre paréntesis)",
@@ -388,7 +409,7 @@ Responde SOLO en formato JSON válido, sin texto adicional. El JSON debe tener E
 
 Recuerda: ¡RESPONDE SOLO EN FORMATO JSON!`
 
-    const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash']
+    const modelsToTry = GEMINI_TEXT_MODELS
 
     const requestBody = {
         contents: [{
@@ -401,14 +422,19 @@ Recuerda: ¡RESPONDE SOLO EN FORMATO JSON!`
             topK: 40,
             topP: 0.95,
             maxOutputTokens: 2048,
+            responseMimeType: "application/json",
         }
     }
 
     for (const model of modelsToTry) {
+        const controller = new AbortController()
+        const timeoutId = window.setTimeout(() => controller.abort(), AI_MODEL_TIMEOUT_MS)
         try {
             console.log(`[Gemini-Verb] Intentando con modelo: ${model}`)
+            showToast(`Probando Gemini · ${model} (máx. 12 s)...`, 'info')
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
                 method: 'POST',
+                signal: controller.signal,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(requestBody)
             })
@@ -430,17 +456,17 @@ Recuerda: ¡RESPONDE SOLO EN FORMATO JSON!`
             const data = await response.json()
             if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) continue
 
-            const text = data.candidates[0].content.parts[0].text
+            const text = data.candidates[0].content.parts
+                .map(part => part.text || "")
+                .join("")
             console.log(`[Gemini-Verb] Éxito con ${model}`)
 
-            const cleaned = text.replace(/```json\s*/gi, '').replace(/```\s*/gi, '').trim()
-            const jsonMatch = cleaned.match(/\{[\s\S]*\}/)
-            if (!jsonMatch) {
+            const result = parseAIJson(text)
+            if (!result || typeof result !== "object" || Array.isArray(result)) {
                 console.warn('No se encontró JSON en la respuesta de Gemini')
                 continue
             }
 
-            const result = JSON.parse(jsonMatch[0])
             result.word = word
 
             const defaultFields = {
@@ -477,7 +503,15 @@ Recuerda: ¡RESPONDE SOLO EN FORMATO JSON!`
 
             return { ...defaultFields, ...result, modelUsed: `Gemini: ${model}`, provider: 'gemini' }
         } catch (error) {
-            console.warn(`[Gemini-Verb] Error con ${model}:`, error.message)
+            const reason = controller.signal.aborted
+                ? `superó el límite de 12 segundos; probando el siguiente modelo`
+                : error.message
+            console.warn(`[Gemini-Verb] Error con ${model}:`, reason)
+            if (controller.signal.aborted) {
+                showToast(`Gemini · ${model} tardó demasiado; probando el siguiente modelo...`, 'warning')
+            }
+        } finally {
+            window.clearTimeout(timeoutId)
         }
     }
     return null

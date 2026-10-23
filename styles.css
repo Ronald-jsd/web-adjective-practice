@@ -480,6 +480,36 @@
     .practice-category-all { border-bottom: 1px solid #e4e9e5; font-weight: 700; }
     .practice-mode-heading { margin-top: 24px; }
 
+    .favorite-toggle {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        border: 1px solid #e7e0c8;
+        border-radius: 8px;
+        background: #fffdf5;
+        color: #8a8061;
+        cursor: pointer;
+        font-size: 1.35rem;
+        line-height: 1;
+        touch-action: manipulation;
+    }
+
+    .favorite-toggle:hover:not(:disabled),
+    .favorite-toggle.is-favorite {
+        background: #fff4cf;
+        border-color: #e9c75a;
+        color: #b7791f;
+    }
+
+    .favorite-toggle:focus-visible {
+        outline: 3px solid rgba(183, 121, 31, 0.3);
+        outline-offset: 2px;
+    }
+
+    .favorite-toggle:disabled { cursor: not-allowed; opacity: 0.5; }
+
     .practice-mode-switch {
         display: grid;
         gap: 8px;

@@ -17,6 +17,7 @@ import { createPracticeAudioPlayer, PRACTICE_AUDIO_RATES } from "../js/practice-
 import {
     createAIExamplePrompt,
     createAIPracticeCategory,
+    createFavoritesPracticeCategory,
     createVerbPracticeCategory,
     splitTranslatedExample
 } from "../js/ai-practice.js"
@@ -347,6 +348,48 @@ test("saved verbs without a stored tense form do not create placeholder exercise
         past_participle: "N/A"
     }])
     assert.equal(category.subcategories[0].items.length, 1)
+})
+
+test("favorites practice includes only marked adjective IDs and all usable forms of starred verbs", () => {
+    const adjectiveCategories = [{
+        id: "adjectives",
+        title: "Adjetivos",
+        subcategories: [{
+            id: "feelings",
+            title: "Sentimientos",
+            items: [
+                ["happy", "/ˈhæpi/", "feliz", "I feel happy.", "Me siento feliz.", 15],
+                ["calm", "/kɑːm/", "tranquilo", "Stay calm.", "Mantén la calma.", "custom_abc", "abc"],
+                ["sad", "/sæd/", "triste", "I feel sad.", "Me siento triste.", 16]
+            ]
+        }]
+    }]
+    const verbs = [
+        {
+            id: 42, verb: "begin", translation: "empezar", example_base: "I begin work.",
+            past_simple: "began", translation_ps: "empezó",
+            past_participle: "begun", translation_pp: "empezado"
+        },
+        { id: 43, verb: "walk", translation: "caminar", past_simple: "walked", past_participle: "walked" }
+    ]
+    const favorites = new Set(["adjective:15", "adjective:custom_abc", "verb:42"])
+
+    const [adjectiveFavorites, verbFavorites] = createFavoritesPracticeCategory(adjectiveCategories, verbs, favorites)
+    assert.equal(adjectiveFavorites.id, "favorite-adjectives")
+    assert.equal(verbFavorites.id, "favorite-verbs")
+    assert.equal(adjectiveFavorites.title, "Favoritos · Adjetivos")
+    assert.equal(verbFavorites.title, "Favoritos · Verbos")
+    assert.deepEqual(adjectiveFavorites.subcategories[0].items.map(item => item[0]), ["happy", "calm"])
+    assert.deepEqual(verbFavorites.subcategories[0].items.map(item => item[0]), ["begin", "began", "begun"])
+    assert.deepEqual(verbFavorites.subcategories[0].items.map(item => item[5]), [
+        "saved-verb-42-base",
+        "saved-verb-42-past-simple",
+        "saved-verb-42-past-participle"
+    ])
+    assert.equal(verbFavorites.subcategories[0].items[0][3], "I begin work.")
+    const emptyFavorites = createFavoritesPracticeCategory(adjectiveCategories, verbs, new Set())
+    assert.deepEqual(emptyFavorites.map(category => category.id), ["favorite-adjectives", "favorite-verbs"])
+    assert.deepEqual(emptyFavorites.map(category => category.subcategories[0].items), [[], []])
 })
 
 test("practice choice distractors are unique and selected efficiently from large lists", () => {
