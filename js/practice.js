@@ -683,8 +683,14 @@ async function initializePractice(categories = [], options = {}) {
         } else {
             const status = document.getElementById("practice-audio-course-status");
             const start = document.getElementById("practice-audio-course-start");
+            const pause = document.getElementById("practice-audio-course-pause");
+            const skip = document.getElementById("practice-audio-course-skip");
+            const stop = document.getElementById("practice-audio-course-stop");
             if (status) status.textContent = "La reproducción de voz no está disponible en este navegador.";
             if (start) start.disabled = true;
+            if (pause) pause.disabled = true;
+            if (skip) skip.disabled = true;
+            if (stop) stop.disabled = true;
         }
         document.getElementById("practice-exercise-mode")?.addEventListener("change", event => {
             selectedExerciseType = event.target.value;

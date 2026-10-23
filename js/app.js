@@ -66,6 +66,7 @@ window.loadVerbsFromSupabase = async function (forceRefresh) {
 
 async function initApp() {
     await checkUser();
+    initializeBrowserAI();
     const data = await loadCategoriesFromSupabase();
     store.categoriesData = data;
     renderCategories(data);
@@ -73,7 +74,6 @@ async function initApp() {
     window.refreshPracticeCategories = async function () {
         await initializePractice(store.categoriesData, { supabase, userId: store.currentUser?.id });
     };
-    initializeBrowserAI();
     updateAIButton();
     setupEventListeners();
 

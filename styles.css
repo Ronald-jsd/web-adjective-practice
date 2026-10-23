@@ -566,6 +566,9 @@
     }
 
     .practice-audio-course-controls button {
+        position: relative;
+        z-index: 1;
+        touch-action: manipulation;
         min-height: 40px;
         padding: 8px 12px;
         border: 1px solid #d8c9e3;
@@ -702,6 +705,14 @@
         .practice-choice-options { grid-template-columns: 1fr; }
         .practice-answer-row { flex-direction: column; }
         .practice-answer-row #practice-submit { width: 100%; }
+        .practice-audio-course-controls button {
+            min-height: 48px;
+            flex: 1 1 calc(50% - 8px);
+        }
+        .practice-audio-course-speed {
+            flex: 1 1 100%;
+        }
+        .practice-audio-course-speed select { width: 100%; }
     }
 
     .nav-tabs > a.nav-tab {

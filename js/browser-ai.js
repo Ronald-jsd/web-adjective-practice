@@ -142,22 +142,42 @@ async function loadQueryHistory() {
         return
     }
 
-    const { data, error } = await supabase
-        .from('user_ai_queries')
-        .select('id, question, summary, provider, cards, created_at')
-        .eq('user_id', store.currentUser.id)
-        .order('created_at', { ascending: false })
+    history.replaceChildren()
+    const loading = document.createElement('p')
+    loading.className = 'text-sm text-gray-500'
+    loading.textContent = 'Cargando consultas guardadas...'
+    history.appendChild(loading)
 
-    if (error) {
+    const controller = new AbortController()
+    const timeout = window.setTimeout(() => controller.abort(), 20000)
+    try {
+        const { data, error } = await supabase
+            .from('user_ai_queries')
+            .select('id, question, summary, provider, cards, created_at')
+            .eq('user_id', store.currentUser.id)
+            .order('created_at', { ascending: false })
+            .abortSignal(controller.signal)
+
+        if (error) throw error
+        renderHistory(data || [])
+    } catch (error) {
         history.replaceChildren()
         const errorMessage = document.createElement('p')
         errorMessage.className = 'text-sm text-red-700'
-        errorMessage.textContent = `No se pudo cargar el historial: ${error.message}. Verifica que ejecutaste supabase/ai_queries.sql.`
+        errorMessage.textContent = error.name === 'AbortError'
+            ? 'La carga del historial tardó demasiado. Comprueba tu conexión y vuelve a intentarlo.'
+            : `No se pudo cargar el historial: ${error.message}. Verifica que ejecutaste supabase/ai_queries.sql.`
         history.appendChild(errorMessage)
-        return
-    }
 
-    renderHistory(data || [])
+        const retry = document.createElement('button')
+        retry.type = 'button'
+        retry.className = 'mt-2 px-3 py-2 rounded-lg border border-purple-200 bg-white text-purple-800 text-sm font-medium'
+        retry.textContent = 'Reintentar carga'
+        retry.addEventListener('click', loadQueryHistory)
+        history.appendChild(retry)
+    } finally {
+        window.clearTimeout(timeout)
+    }
 }
 
 async function createAndSaveCard(question) {
