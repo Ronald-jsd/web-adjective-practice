@@ -287,6 +287,7 @@ window.saveGeneratedVerb = async function (data) {
 
             const { loadVerbsFromSupabase } = await import('./verbs-loader.js')
             await loadVerbsFromSupabase(true)
+            await window.refreshPracticeCategories?.()
 
             if (currentVerbCategory) openVerbCategory(currentVerbCategory)
             return

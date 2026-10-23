@@ -431,6 +431,8 @@
     .practice-controls {
         align-self: start;
         padding: 4px 0;
+        grid-column: 1;
+        grid-row: 2;
     }
 
     .practice-control-heading {
@@ -503,6 +505,81 @@
 
     .practice-exercise-mode:focus { border-color: #28745a; outline: 3px solid rgba(40, 116, 90, 0.13); }
 
+    .practice-audio-course {
+        display: grid;
+        gap: 14px;
+        padding: 18px;
+        border: 1px solid #dce4de;
+        border-left: 4px solid #7a4ca0;
+        background: #fff;
+        grid-column: 1 / -1;
+        grid-row: 3;
+    }
+
+    .practice-audio-course h3 {
+        margin: 0;
+        color: #20392f;
+        font-size: 1rem;
+        font-weight: 750;
+    }
+
+    .practice-audio-course-status {
+        margin: 5px 0 0;
+        color: #627067;
+        font-size: 0.82rem;
+    }
+
+    .practice-audio-course-current {
+        padding: 12px 14px;
+        border-radius: 5px;
+        background: #f5eff9;
+        color: #433451;
+        font-size: 0.88rem;
+        line-height: 1.55;
+        white-space: pre-line;
+    }
+
+    .practice-audio-course-controls {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: end;
+        gap: 8px;
+    }
+
+    .practice-audio-course-speed {
+        display: grid;
+        gap: 4px;
+        color: #526057;
+        font-size: 0.72rem;
+        font-weight: 700;
+    }
+
+    .practice-audio-course-speed select {
+        max-width: 100%;
+        min-height: 40px;
+        padding: 7px 10px;
+        border: 1px solid #d8c9e3;
+        border-radius: 5px;
+        background: #fff;
+        color: #493758;
+        font-size: 0.82rem;
+    }
+
+    .practice-audio-course-controls button {
+        min-height: 40px;
+        padding: 8px 12px;
+        border: 1px solid #d8c9e3;
+        border-radius: 5px;
+        background: #f8f5fa;
+        color: #493758;
+        cursor: pointer;
+        font-size: 0.82rem;
+        font-weight: 650;
+    }
+
+    .practice-audio-course-controls button:hover:not(:disabled) { background: #eee5f4; }
+    .practice-audio-course-controls button:disabled { cursor: not-allowed; opacity: 0.5; }
+
     .practice-exercise {
         min-height: 420px;
         padding: 22px clamp(18px, 4vw, 38px) 26px;
@@ -510,6 +587,8 @@
         border-top: 4px solid #28745a;
         background: #fff;
         box-shadow: 0 12px 35px rgba(34, 60, 45, 0.07);
+        grid-column: 2;
+        grid-row: 2;
     }
 
     .practice-exercise-topline {
@@ -616,6 +695,7 @@
         .practice-layout { grid-template-columns: 1fr; gap: 18px; padding-top: 12px; }
         .practice-heading { padding-top: 16px; }
         .practice-heading h2 { font-size: 2rem; }
+        .practice-controls, .practice-audio-course, .practice-exercise { grid-column: auto; grid-row: auto; }
         .practice-category-list { max-height: 240px; }
         .practice-exercise { min-height: 390px; }
         .practice-prompt { font-size: 1.45rem; }

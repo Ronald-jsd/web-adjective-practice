@@ -855,6 +855,7 @@ async function saveAIResult() {
     try {
         const { loadVerbsFromSupabase } = await import('./verbs-loader.js')
         await loadVerbsFromSupabase(true)
+        await window.refreshPracticeCategories?.()
     } catch (e) {
         console.warn('Error recargando datos:', e)
     }

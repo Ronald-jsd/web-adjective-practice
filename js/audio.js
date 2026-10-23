@@ -57,4 +57,4 @@ window.playAudioFromGlobal = function (text, lang) {
 
 initVoices()
 
-export { playAudioEnhanced, makeClickableText, initVoices, currentUtterance }
+export { playAudioEnhanced, makeClickableText, initVoices, currentUtterance, getBestVoice }

@@ -1,8 +1,24 @@
-import { playAudioEnhanced } from "./audio.js";
+import { playAudioEnhanced, getBestVoice } from "./audio.js";
 import { createPracticeProgressSync } from "./practice-progress.js";
 import { showToast } from "./cache.js";
+import {
+    filterAudioPracticeItems,
+    getPracticeFillHint,
+    rankPracticeReviews,
+    selectPracticeDistractors
+} from "./practice-utils.js";
+import { createPracticeAudioPlayer } from "./practice-audio.js";
+import {
+    createAIPracticeCategory,
+    createAIExamplePrompt,
+    createVerbPracticeCategory,
+    AI_PRACTICE_CATEGORY_ID,
+    VERB_PRACTICE_CATEGORY_ID
+} from "./ai-practice.js";
 
 const PROGRESS_STORAGE_KEY = "vocabulary_practice_progress_v1";
+const CATEGORY_SELECTION_STORAGE_KEY = "practice_selected_categories_v1";
+const AUDIO_FILTER_STORAGE_KEY = "practice_audio_course_filter_v1";
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 let practiceItems = [];
@@ -15,11 +31,81 @@ let answeredQuestions = 0;
 let isAnswered = false;
 let initialized = false;
 let categoriesInitialized = false;
+let previousAvailableCategoryIds = new Set();
 let forgottenQueue = [];
 let questionsSinceForgotten = 0;
 let progressByItem = loadProgress();
 let progressSync = null;
 let progressWriteQueue = Promise.resolve();
+let audioCourse = null;
+let audioCourseFilter = "all";
+
+function getAudioSessionScope() {
+    return `${audioCourseFilter}:${[...selectedCategories].sort().join(",")}`;
+}
+
+function getAudioCourseItems() {
+    return filterAudioPracticeItems(getSelectedItems(), audioCourseFilter, getItemProgress);
+}
+
+function saveCategorySelection() {
+    try {
+        localStorage.setItem(CATEGORY_SELECTION_STORAGE_KEY, JSON.stringify([...selectedCategories]));
+    } catch (error) {
+        console.warn("No se pudo guardar la selección de categorías:", error);
+    }
+}
+
+function renderAudioCourseState(state) {
+    const status = document.getElementById("practice-audio-course-status");
+    const current = document.getElementById("practice-audio-course-current");
+    const start = document.getElementById("practice-audio-course-start");
+    const pause = document.getElementById("practice-audio-course-pause");
+    const skip = document.getElementById("practice-audio-course-skip");
+    const stop = document.getElementById("practice-audio-course-stop");
+    if (!status || !start || !pause || !skip || !stop) return;
+
+    const active = state.status === "playing" || state.status === "paused";
+    const audioItems = getAudioCourseItems();
+    const selectedItemCount = audioItems.length;
+    const canResume = audioCourse?.canResume(audioItems, getAudioSessionScope()) || false;
+    const rateSelect = document.getElementById("practice-audio-course-rate");
+    if (rateSelect && state.rate) rateSelect.value = String(state.rate);
+    start.disabled = state.status === "playing" || selectedItemCount === 0 || !window.speechSynthesis;
+    if (state.status === "paused" || canResume) start.textContent = "▶ Reanudar";
+    else if (state.status === "complete") start.textContent = "↻ Repetir";
+    else start.textContent = "▶ Empezar";
+    pause.disabled = state.status !== "playing";
+    pause.textContent = state.status === "paused" ? "⏸ Pausado" : "⏸ Pausar";
+    skip.disabled = !active;
+    stop.disabled = !active;
+
+    if (state.status === "playing" && state.item) {
+        status.textContent = `Elemento ${state.itemIndex + 1} de ${state.total} · ${state.segmentLabel || "Reproduciendo"} · ${Math.round(state.rate * 100)}%`;
+        current.textContent = [
+            `${state.item.word} — ${state.item.spanish}`,
+            state.item.example,
+            state.item.exampleSpanish
+        ].filter(Boolean).join("\n");
+        current.classList.remove("hidden");
+    } else if (state.status === "paused") {
+        status.textContent = `Pausado · elemento ${state.itemIndex + 1} de ${state.total}`;
+    } else if (state.status === "complete") {
+        status.textContent = `Terminaste los ${state.total} elementos seleccionados.`;
+        current.classList.add("hidden");
+    } else if (state.status === "error") {
+        status.textContent = `No se pudo reproducir el audio: ${state.error}`;
+    } else if (state.status === "idle") {
+        status.textContent = selectedItemCount
+            ? `${selectedItemCount} elementos en esta selección · ${canResume ? "puedes reanudar donde lo dejaste." : "se reproducen en orden aleatorio."}`
+            : "No hay elementos para este filtro en las categorías elegidas.";
+        current.classList.add("hidden");
+    }
+}
+
+function stopAudioCourse(preserveProgress = false) {
+    audioCourse?.stop(preserveProgress);
+}
 
 function loadProgress() {
     try {
@@ -107,6 +193,7 @@ function normalizeAnswer(value) {
 }
 
 function chooseExerciseType() {
+    if (selectedExerciseType === "mixed" && currentItem?.categoryId === AI_PRACTICE_CATEGORY_ID) return "fill";
     if (selectedExerciseType !== "mixed") return selectedExerciseType;
     const exerciseTypes = ["listening", "translation", "choice", "fill"];
     return exerciseTypes[Math.floor(Math.random() * exerciseTypes.length)];
@@ -116,6 +203,10 @@ function getPromptText() {
     if (currentExerciseType === "listening") return "Escucha y escribe la palabra en inglés";
     if (currentExerciseType === "translation") return `Traduce: ${currentItem.spanish}`;
     if (currentExerciseType === "choice") return `¿Qué palabra corresponde a “${currentItem.spanish}”?`;
+
+    if (currentItem.categoryId === AI_PRACTICE_CATEGORY_ID) {
+        return createAIExamplePrompt(currentItem.word, currentItem.example, currentItem.exampleSpanish);
+    }
 
     if (currentItem.example) {
         const escapedWord = currentItem.word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -131,13 +222,7 @@ function renderChoiceOptions() {
     const optionsContainer = document.getElementById("practice-choice-options");
     if (!optionsContainer || !currentItem) return;
 
-    const distractors = getSelectedItems()
-        .filter(item => normalizeAnswer(item.word) !== normalizeAnswer(currentItem.word))
-        .filter((item, index, items) => items.findIndex(candidate => normalizeAnswer(candidate.word) === normalizeAnswer(item.word)) === index);
-    for (let index = distractors.length - 1; index > 0; index -= 1) {
-        const randomIndex = Math.floor(Math.random() * (index + 1));
-        [distractors[index], distractors[randomIndex]] = [distractors[randomIndex], distractors[index]];
-    }
+    const distractors = selectPracticeDistractors(getSelectedItems(), currentItem.word);
 
     const options = [currentItem, ...distractors.slice(0, 3)];
     for (let index = options.length - 1; index > 0; index -= 1) {
@@ -194,9 +279,11 @@ function renderQuestion() {
     };
     prompt.textContent = getPromptText();
     if (meaning) {
-        const showMeaning = currentExerciseType === "fill" && currentItem.spanish;
-        meaning.textContent = showMeaning ? `Significado de la palabra: ${currentItem.spanish}` : "";
-        meaning.classList.toggle("hidden", !showMeaning);
+        const showHint = currentExerciseType === "fill";
+        meaning.textContent = showHint
+            ? getPracticeFillHint(currentItem.spanish, currentItem.exampleSpanish)
+            : "";
+        meaning.classList.toggle("hidden", !showHint);
     }
     if (categoryLabel) categoryLabel.textContent = `${currentItem.categoryIcon} ${currentItem.categoryTitle} · ${exerciseLabels[currentExerciseType]}`;
     if (hint) {
@@ -245,11 +332,29 @@ function updateCategoryChoices(categories) {
     })).filter(category => category.itemCount > 0);
 
     const availableIds = new Set(available.map(category => String(category.id)));
+    let savedCategoryIds = null;
+    if (!categoriesInitialized) {
+        try {
+            const storedIds = JSON.parse(localStorage.getItem(CATEGORY_SELECTION_STORAGE_KEY) || "null");
+            if (Array.isArray(storedIds) && storedIds.every(id => typeof id === "string")) {
+                savedCategoryIds = storedIds.filter(id => availableIds.has(id));
+            }
+        } catch (error) {
+            console.warn("No se pudo leer la selección de categorías guardada:", error);
+        }
+    }
+    const wereAllPreviouslySelected = categoriesInitialized
+        && previousAvailableCategoryIds.size > 0
+        && previousAvailableCategoryIds.size === selectedCategories.size
+        && [...previousAvailableCategoryIds].every(id => selectedCategories.has(id));
     selectedCategories = new Set([...selectedCategories].filter(id => availableIds.has(id)));
     if (!categoriesInitialized) {
-        selectedCategories = new Set(availableIds);
+        selectedCategories = new Set(savedCategoryIds ?? availableIds);
         categoriesInitialized = true;
+    } else if (wereAllPreviouslySelected) {
+        selectedCategories = new Set(availableIds);
     }
+    previousAvailableCategoryIds = availableIds;
     list.replaceChildren();
 
     const masterLabel = document.createElement("label");
@@ -260,6 +365,7 @@ function updateCategoryChoices(categories) {
     master.indeterminate = selectedCategories.size > 0 && selectedCategories.size < availableIds.size;
     master.addEventListener("change", () => {
         selectedCategories = master.checked ? new Set(availableIds) : new Set();
+        saveCategorySelection();
         updateCategoryChoices(categories);
         onSelectionChanged();
     });
@@ -278,6 +384,7 @@ function updateCategoryChoices(categories) {
         checkbox.addEventListener("change", () => {
             if (checkbox.checked) selectedCategories.add(checkbox.value);
             else selectedCategories.delete(checkbox.value);
+            saveCategorySelection();
             updateCategoryChoices(categories);
             onSelectionChanged();
         });
@@ -297,6 +404,7 @@ function updateCategoryChoices(categories) {
 }
 
 function onSelectionChanged() {
+    stopAudioCourse(true);
     currentItem = null;
     isAnswered = false;
     forgottenQueue = forgottenQueue.filter(id => getSelectedItems().some(item => item.id === id));
@@ -324,9 +432,10 @@ function nextQuestion() {
         if (candidates.length === 0) candidates = eligibleItems.filter(item => item.id !== currentItem?.id);
 
         const now = Date.now();
-        const reviewedDue = candidates
-            .filter(item => getItemProgress(item).attempts > 0 && getItemProgress(item).dueAt <= now)
-            .sort((first, second) => getItemProgress(first).dueAt - getItemProgress(second).dueAt);
+        const reviewedDue = rankPracticeReviews(
+            candidates.filter(item => getItemProgress(item).attempts > 0 && getItemProgress(item).dueAt <= now),
+            getItemProgress
+        );
         const newItems = candidates.filter(item => getItemProgress(item).attempts === 0);
         const futureReviews = candidates
             .filter(item => getItemProgress(item).dueAt > now)
@@ -464,7 +573,57 @@ function submitAnswer(event) {
 }
 
 async function initializePractice(categories = [], options = {}) {
-    practiceItems = getPracticeItems(categories);
+    if (initialized) stopAudioCourse();
+    let practiceCategories = categories.filter(category =>
+        ![AI_PRACTICE_CATEGORY_ID, VERB_PRACTICE_CATEGORY_ID].includes(String(category.id))
+    );
+    if (options.supabase) {
+        try {
+            const verbs = [];
+            const pageSize = 1000;
+            for (let start = 0; ; start += pageSize) {
+                const { data, error } = await options.supabase
+                    .from("verbs")
+                    .select("id, verb, pronunciation, translation, example_base, past_simple, pronunciation_ps, translation_ps, example_ps, past_participle, pronunciation_pp, translation_pp, example_pp")
+                    .order("verb")
+                    .range(start, start + pageSize - 1);
+                if (error) throw error;
+                verbs.push(...(data || []));
+                if (!data || data.length < pageSize) break;
+            }
+
+            const verbCategory = createVerbPracticeCategory(verbs);
+            if (verbCategory) practiceCategories = [...practiceCategories, verbCategory];
+        } catch (error) {
+            console.error("No se pudieron cargar los verbos para practicar:", error);
+            showToast(`No se pudieron cargar los verbos guardados para practicar. ${error.message || ""}`, "warning");
+        }
+    }
+    if (options.supabase && options.userId) {
+        try {
+            const queries = [];
+            const pageSize = 1000;
+            for (let start = 0; ; start += pageSize) {
+                const { data, error } = await options.supabase
+                    .from("user_ai_queries")
+                    .select("id, cards")
+                    .eq("user_id", options.userId)
+                    .order("created_at", { ascending: true })
+                    .range(start, start + pageSize - 1);
+                if (error) throw error;
+                queries.push(...(data || []));
+                if (!data || data.length < pageSize) break;
+            }
+
+            const aiCategory = createAIPracticeCategory(queries);
+            if (aiCategory) practiceCategories = [...practiceCategories, aiCategory];
+        } catch (error) {
+            console.error("No se pudieron cargar las tarjetas de consultas IA para practicar:", error);
+            showToast(`No se pudieron cargar las tarjetas de tus consultas IA. Verifica supabase/ai_queries.sql. ${error.message || ""}`, "warning");
+        }
+    }
+
+    practiceItems = getPracticeItems(practiceCategories);
     progressSync = options.supabase && options.userId
         ? createPracticeProgressSync(options.supabase, options.userId)
         : null;
@@ -477,10 +636,56 @@ async function initializePractice(categories = [], options = {}) {
             showToast(`El progreso queda guardado en este dispositivo, pero no se pudo sincronizar con la cuenta. Ejecuta supabase/practice_progress.sql y vuelve a intentarlo. ${error.message || ""}`, "warning");
         }
     }
-    updateCategoryChoices(categories);
+    updateCategoryChoices(practiceCategories);
+    if (audioCourse) renderAudioCourseState({ status: "idle", total: getSelectedItems().length });
     updateScore();
 
     if (!initialized) {
+        if (window.speechSynthesis && typeof window.SpeechSynthesisUtterance === "function") {
+            audioCourse = createPracticeAudioPlayer({
+                synthesis: window.speechSynthesis,
+                createUtterance: text => new SpeechSynthesisUtterance(text),
+                getVoice: getBestVoice,
+                storage: window.localStorage,
+                storageKey: "practice_audio_course_session_v1",
+                onState: renderAudioCourseState
+            });
+            document.getElementById("practice-audio-course-rate")?.addEventListener("change", event => {
+                audioCourse.setRate(event.target.value);
+            });
+            document.getElementById("practice-audio-course-start")?.addEventListener("click", () => {
+                audioCourse.start(getAudioCourseItems(), getAudioSessionScope());
+            });
+            document.getElementById("practice-audio-course-filter")?.addEventListener("change", event => {
+                audioCourse.stop(true);
+                audioCourseFilter = event.target.value;
+                try {
+                    localStorage.setItem(AUDIO_FILTER_STORAGE_KEY, audioCourseFilter);
+                } catch (error) {
+                    console.warn("No se pudo guardar el filtro de escucha:", error);
+                }
+                renderAudioCourseState({ status: "idle", total: getAudioCourseItems().length, rate: Number(document.getElementById("practice-audio-course-rate")?.value || 1) });
+            });
+            document.getElementById("practice-audio-course-pause")?.addEventListener("click", () => audioCourse.pause());
+            document.getElementById("practice-audio-course-skip")?.addEventListener("click", () => audioCourse.skip());
+            document.getElementById("practice-audio-course-stop")?.addEventListener("click", stopAudioCourse);
+            const filterSelect = document.getElementById("practice-audio-course-filter");
+            try {
+                const savedFilter = localStorage.getItem(AUDIO_FILTER_STORAGE_KEY);
+                if (["all", "new", "review"].includes(savedFilter)) {
+                    audioCourseFilter = savedFilter;
+                    if (filterSelect) filterSelect.value = savedFilter;
+                }
+            } catch (error) {
+                console.warn("No se pudo restaurar el filtro de escucha:", error);
+            }
+            renderAudioCourseState({ status: "idle", total: getAudioCourseItems().length, rate: 1 });
+        } else {
+            const status = document.getElementById("practice-audio-course-status");
+            const start = document.getElementById("practice-audio-course-start");
+            if (status) status.textContent = "La reproducción de voz no está disponible en este navegador.";
+            if (start) start.disabled = true;
+        }
         document.getElementById("practice-exercise-mode")?.addEventListener("change", event => {
             selectedExerciseType = event.target.value;
         });

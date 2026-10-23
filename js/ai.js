@@ -214,13 +214,30 @@ function changePreferredProvider() {
 }
 
 // GENERACIÓN CON IA
-async function generateWithGroq(word, apiKey) {
+async function generateWithGroq(word, apiKey, guide = false) {
     const categoriesList = store.categoriesData.map(cat => {
         const subcats = cat.subcategories.map(sub => sub.title).join(', ')
         return `${cat.title}: [${subcats}]`
     }).join('\n')
 
-    const systemPrompt = `Eres un experto en vocabulario inglés. Analiza la palabra o frase que te dará el usuario (si te da en español tú conviertelo a ingles) y proporciona:
+    const guideInstructions = `Eres un profesor bilingüe de inglés y español. Responde la consulta del usuario como una guía breve y clara en español.
+Explica los usos distintos que sean relevantes. Crea entre 1 y 6 tarjetas, una por cada palabra, expresión o uso que enseñes. Cada tarjeta debe tener exactamente un ejemplo natural en inglés y su traducción natural al español.
+Responde SOLO con JSON válido, sin markdown, con esta forma:
+{
+  "summary": "respuesta directa y explicación general en español",
+  "cards": [
+    {
+      "word": "palabra o expresión en inglés",
+      "pronunciation": "pronunciación IPA",
+      "spanish": "significado y cuándo se usa, explicado en español",
+      "example_en": "un ejemplo en inglés",
+      "example_es": "traducción del ejemplo al español"
+    }
+  ]
+}
+Cada tarjeta debe representar un uso o expresión diferente, y su ejemplo debe ilustrar ese uso. No incluyas ejemplos adicionales fuera de las tarjetas.`
+
+    const vocabularyInstructions = `Eres un experto en vocabulario inglés. Analiza la palabra o frase que te dará el usuario (si te da en español tú conviertelo a ingles) y proporciona:
 1. La categoría más apropiada de esta lista: ${categoriesList}
 2. La subcategoría más específica dentro de esa categoría
 3. Pronunciación fonética en inglés (formato IPA)
@@ -237,6 +254,7 @@ Responde SOLO en formato JSON válido, sin texto adicional, sin markdown:
   "example_en": "Example sentence in English",
   "example_es": "Ejemplo de oración en español"
 }`
+    const systemPrompt = guide ? guideInstructions : vocabularyInstructions
 
     const modelsToTry = [
         'openai/gpt-oss-20b',
@@ -258,7 +276,7 @@ Responde SOLO en formato JSON válido, sin texto adicional, sin markdown:
                         { role: 'user', content: `Palabra/frase: "${word}"` }
                     ],
                     temperature: 0.7,
-                    max_tokens: 1024,
+                    max_tokens: guide ? 4096 : 1024,
                     response_format: { type: 'json_object' }
                 })
             })
@@ -289,13 +307,31 @@ Responde SOLO en formato JSON válido, sin texto adicional, sin markdown:
     return null
 }
 
-async function generateWithGemini(word, apiKey) {
+async function generateWithGemini(word, apiKey, guide = false) {
     const categoriesList = store.categoriesData.map(cat => {
         const subcats = cat.subcategories.map(sub => sub.title).join(', ')
         return `${cat.title}: [${subcats}]`
     }).join('\n')
 
-    const prompt = `Eres un experto en vocabulario inglés. Analiza la palabra o frase "${word}" y proporciona:
+    const guidePrompt = `Eres un profesor bilingüe de inglés y español. Responde la consulta del usuario como una guía breve y clara en español.
+Explica los usos distintos que sean relevantes. Crea entre 1 y 6 tarjetas, una por cada palabra, expresión o uso que enseñes. Cada tarjeta debe tener exactamente un ejemplo natural en inglés y su traducción natural al español.
+Consulta del usuario: "${word}"
+Responde SOLO con JSON válido, sin markdown, con esta forma:
+{
+  "summary": "respuesta directa y explicación general en español",
+  "cards": [
+    {
+      "word": "palabra o expresión en inglés",
+      "pronunciation": "pronunciación IPA",
+      "spanish": "significado y cuándo se usa, explicado en español",
+      "example_en": "un ejemplo en inglés",
+      "example_es": "traducción del ejemplo al español"
+    }
+  ]
+}
+Cada tarjeta debe representar un uso o expresión diferente, y su ejemplo debe ilustrar ese uso. No incluyas ejemplos adicionales fuera de las tarjetas.`
+
+    const vocabularyPrompt = `Eres un experto en vocabulario inglés. Analiza la palabra o frase "${word}" y proporciona:
 1. La categoría más apropiada de esta lista: ${categoriesList}
 2. La subcategoría más específica dentro de esa categoría
 3. Pronunciación fonética en inglés (formato IPA)
@@ -312,8 +348,9 @@ Responde SOLO en formato JSON válido, sin texto adicional:
   "example_en": "Example sentence in English",
   "example_es": "Ejemplo de oración en español"
 }`
+    const prompt = guide ? guidePrompt : vocabularyPrompt
 
-    const modelsToTry = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-001', 'gemini-1.5-flash']
+    const modelsToTry = ["gemini-3.8-flash", "gemini-3.5-flash-lite",'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-2.0-flash-001', 'gemini-1.5-flash']
 
     const requestBody = {
         contents: [{ parts: [{ text: prompt }] }],
@@ -321,7 +358,7 @@ Responde SOLO en formato JSON válido, sin texto adicional:
             temperature: 0.7,
             topK: 40,
             topP: 0.95,
-            maxOutputTokens: 2048,
+            maxOutputTokens: guide ? 4096 : 2048,
         }
     }
 
@@ -367,7 +404,7 @@ Responde SOLO en formato JSON válido, sin texto adicional:
     return null
 }
 
-async function generateWithAI(word) {
+async function generateWithAI(word, { guide = false } = {}) {
     if (!store.currentUser) {
         alert('🔐 Debes iniciar sesión para usar la IA')
         return null
@@ -406,7 +443,9 @@ async function generateWithAI(word) {
         const providerName = provider === 'groq' ? 'Groq ⚡' : 'Gemini 🤖'
         showToast(`Consultando con ${providerName}...`, 'info')
 
-        let result = provider === 'groq' ? await generateWithGroq(word, apiKey) : await generateWithGemini(word, apiKey)
+        let result = provider === 'groq'
+            ? await generateWithGroq(word, apiKey, guide)
+            : await generateWithGemini(word, apiKey, guide)
 
         if (result && result.error === 'invalid_key') {
             removeApiKey(provider)

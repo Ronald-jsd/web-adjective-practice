@@ -9,6 +9,7 @@ import { performSearch, initSearchModeListeners } from "./search.js";
 import { closeCategoryView } from "./category-view.js";
 import { updateAIButton } from "./ai.js";
 import { initializePractice } from "./practice.js";
+import { initializeBrowserAI } from "./browser-ai.js";
 
 function setupEventListeners() {
     const searchInput = document.getElementById("global-search");
@@ -69,6 +70,10 @@ async function initApp() {
     store.categoriesData = data;
     renderCategories(data);
     await initializePractice(data, { supabase, userId: store.currentUser?.id });
+    window.refreshPracticeCategories = async function () {
+        await initializePractice(store.categoriesData, { supabase, userId: store.currentUser?.id });
+    };
+    initializeBrowserAI();
     updateAIButton();
     setupEventListeners();
 
