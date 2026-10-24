@@ -27,11 +27,6 @@ export function validateSentence(value) {
         return { valid: false, message: "Make a sentence with this word first." }
     }
 
-    const meaningfulEnding = /[.!?]$/.test(text) || meaningfulExpression
-    if (!meaningfulEnding) {
-        return { valid: false, message: "Write a complete sentence or a meaningful expression." }
-    }
-
     return { valid: true, message: "" }
 }
 

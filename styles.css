@@ -974,13 +974,14 @@
     .ai-query-dialog::backdrop { background: rgba(28, 20, 36, 0.58); }
 
     .ai-query-image-dialog {
-        display: grid;
+        display: flex;
         width: min(96vw, 1400px);
         max-width: none;
         max-height: 95vh;
-        justify-items: center;
+        height: 95vh;
+        flex-direction: column;
         gap: 12px;
-        overflow: auto;
+        overflow: hidden;
         padding: 16px;
         border: 1px solid #e8e2f1;
         border-radius: 16px;
@@ -989,15 +990,54 @@
 
     .ai-query-image-dialog::backdrop { background: rgba(15, 10, 20, 0.82); }
 
+    .ai-query-image-controls {
+        display: flex;
+        flex: 0 0 auto;
+        align-items: center;
+        justify-content: flex-end;
+        gap: 10px;
+        color: #fff;
+    }
+
+    .ai-query-image-controls input[type="range"] {
+        width: min(200px, 28vw);
+        accent-color: #c59ae5;
+    }
+
+    .ai-query-image-zoom-button,
+    .ai-query-image-zoom-reset {
+        min-width: 38px;
+        min-height: 36px;
+        padding: 5px 10px;
+        border: 1px solid #665b6c;
+        border-radius: 9px;
+        background: #28212e;
+        color: white;
+        cursor: pointer;
+    }
+
+    .ai-query-image-zoom-button { font-size: 1.2rem; }
+    .ai-query-image-zoom-label { min-width: 42px; font-size: 0.85rem; text-align: center; }
+
+    .ai-query-image-stage {
+        min-height: 0;
+        flex: 1 1 auto;
+        overflow: auto;
+        overscroll-behavior: contain;
+    }
+
+    .ai-query-image-canvas {
+        position: relative;
+        margin: 0 auto;
+    }
+
     .ai-query-image-dialog img {
         display: block;
-        max-width: 100%;
-        max-height: calc(95vh - 70px);
-        object-fit: contain;
+        width: 100%;
+        height: 100%;
     }
 
     .ai-query-image-close {
-        justify-self: end;
         padding: 7px 14px;
         border: 1px solid #665b6c;
         border-radius: 9px;
@@ -1053,5 +1093,8 @@
         .ai-query-dialog .grid { grid-template-columns: minmax(0, 1fr); }
         .ai-query-dialog button,
         .ai-query-dialog label { max-width: 100%; white-space: normal; }
-        .ai-query-image-dialog { width: calc(100% - 16px); padding: 10px; }
+        .ai-query-image-dialog { width: calc(100% - 16px); height: 90vh; max-height: 90vh; padding: 10px; }
+        .ai-query-image-controls { flex-wrap: wrap; justify-content: center; gap: 6px; }
+        .ai-query-image-controls input[type="range"] { width: min(140px, 30vw); }
+        .ai-query-image-close { margin-left: auto; }
     }

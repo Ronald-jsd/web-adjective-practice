@@ -335,21 +335,97 @@ function openQueryImage(query) {
     if (!query.image_url) return
     const dialog = document.createElement('dialog')
     dialog.className = 'ai-query-image-dialog'
+    const controls = document.createElement('div')
+    controls.className = 'ai-query-image-controls'
     const closeButton = document.createElement('button')
     closeButton.type = 'button'
     closeButton.className = 'ai-query-image-close'
     closeButton.textContent = 'Cerrar'
     closeButton.addEventListener('click', () => dialog.close())
+    const zoomOut = document.createElement('button')
+    zoomOut.type = 'button'
+    zoomOut.className = 'ai-query-image-zoom-button'
+    zoomOut.textContent = '−'
+    zoomOut.setAttribute('aria-label', 'Reducir zoom')
+    const zoomIn = document.createElement('button')
+    zoomIn.type = 'button'
+    zoomIn.className = 'ai-query-image-zoom-button'
+    zoomIn.textContent = '+'
+    zoomIn.setAttribute('aria-label', 'Aumentar zoom')
+    const zoomRange = document.createElement('input')
+    zoomRange.type = 'range'
+    zoomRange.min = '50'
+    zoomRange.max = '300'
+    zoomRange.step = '10'
+    zoomRange.value = '100'
+    zoomRange.setAttribute('aria-label', 'Nivel de zoom')
+    const zoomLabel = document.createElement('output')
+    zoomLabel.className = 'ai-query-image-zoom-label'
+    zoomLabel.textContent = '100%'
+    const zoomReset = document.createElement('button')
+    zoomReset.type = 'button'
+    zoomReset.className = 'ai-query-image-zoom-reset'
+    zoomReset.textContent = 'Restablecer'
     const image = document.createElement('img')
     image.src = query.image_url
     image.alt = `Imagen para la consulta: ${query.question}`
-    dialog.append(closeButton, image)
+    const stage = document.createElement('div')
+    stage.className = 'ai-query-image-stage'
+    const canvas = document.createElement('div')
+    canvas.className = 'ai-query-image-canvas'
+    canvas.appendChild(image)
+    stage.appendChild(canvas)
+    controls.append(zoomOut, zoomRange, zoomIn, zoomLabel, zoomReset, closeButton)
+    dialog.append(controls, stage)
+
+    let zoom = 1
+    let fitWidth = 0
+    let fitHeight = 0
+    const setZoom = value => {
+        zoom = Math.max(0.5, Math.min(3, value))
+        zoomRange.value = String(Math.round(zoom * 100))
+        zoomLabel.textContent = `${zoomRange.value}%`
+        canvas.style.width = `${fitWidth * zoom}px`
+        canvas.style.height = `${fitHeight * zoom}px`
+    }
+    const fitImage = () => {
+        if (!image.naturalWidth || !stage.clientWidth || !stage.clientHeight) return
+        const fit = Math.min(
+            stage.clientWidth / image.naturalWidth,
+            stage.clientHeight / image.naturalHeight,
+            1
+        )
+        fitWidth = image.naturalWidth * fit
+        fitHeight = image.naturalHeight * fit
+        setZoom(zoom)
+    }
+    image.addEventListener('load', fitImage, { once: true })
+    zoomOut.addEventListener('click', () => setZoom(zoom - 0.1))
+    zoomIn.addEventListener('click', () => setZoom(zoom + 0.1))
+    zoomRange.addEventListener('input', () => setZoom(Number(zoomRange.value) / 100))
+    zoomReset.addEventListener('click', () => setZoom(1))
+    dialog.addEventListener('keydown', event => {
+        if (event.key === '+' || event.key === '=') {
+            event.preventDefault()
+            setZoom(zoom + 0.1)
+        } else if (event.key === '-') {
+            event.preventDefault()
+            setZoom(zoom - 0.1)
+        } else if (event.key === '0') {
+            setZoom(1)
+        }
+    })
     dialog.addEventListener('click', event => {
         if (event.target === dialog) dialog.close()
     })
-    dialog.addEventListener('close', () => dialog.remove(), { once: true })
+    dialog.addEventListener('close', () => {
+        window.removeEventListener('resize', fitImage)
+        dialog.remove()
+    }, { once: true })
     document.body.appendChild(dialog)
     dialog.showModal()
+    window.addEventListener('resize', fitImage)
+    if (image.complete) fitImage()
 }
 
 function openQueryDetails(query) {

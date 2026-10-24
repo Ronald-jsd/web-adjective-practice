@@ -1,11 +1,10 @@
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
-import { SUPABASE_URL, SUPABASE_ANON_KEY, store } from "../config.js"
+import { store } from "../config.js"
+import { supabase } from "../app.js"
 import { playAudioEnhanced } from "../audio.js"
 import { REASONS, TOPICS, suggestGrammarPattern, validateSentence } from "./model.js"
 import { isDue, scheduleReview } from "./scheduler.js"
 import { createSentenceRepository } from "./repository.js"
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 const repository = createSentenceRepository(supabase)
 const state = { user: null, sentences: [], vocabulary: null, review: null }
 const byId = id => document.getElementById(id)
@@ -84,8 +83,19 @@ function renderSentenceList(items = state.sentences) {
         item.className = "sentence-item"
         const content = document.createElement("div")
         content.className = "sentence-content"
+        const sentenceHeading = document.createElement("div")
+        sentenceHeading.className = "sentence-item-heading"
         const sentenceText = document.createElement("p")
         sentenceText.textContent = sentence.englishText
+        const playSentence = document.createElement("button")
+        playSentence.type = "button"
+        playSentence.className = "icon-button audio-button"
+        playSentence.textContent = "🔊"
+        playSentence.disabled = !window.speechSynthesis
+        playSentence.title = "Escuchar frase"
+        playSentence.setAttribute("aria-label", `Escuchar frase: ${sentence.englishText}`)
+        playSentence.addEventListener("click", () => playAudioEnhanced(sentence.englishText, "en"))
+        sentenceHeading.append(sentenceText, playSentence)
         const meta = document.createElement("div")
         meta.className = "sentence-meta"
         for (const tag of sentence.topicTags) {
@@ -103,21 +113,23 @@ function renderSentenceList(items = state.sentences) {
             translation.textContent = `· ${sentence.spanishTranslation}`
             meta.append(translation)
         }
-        content.append(sentenceText, meta)
+        content.append(sentenceHeading, meta)
         item.append(content)
         const actions = document.createElement("div")
         actions.className = "item-actions"
         const edit = document.createElement("button")
         edit.type = "button"
         edit.className = "icon-button"
-        edit.textContent = "Edit"
-        edit.setAttribute("aria-label", `Edit ${sentence.englishText}`)
+        edit.textContent = "✏️"
+        edit.title = "Editar frase"
+        edit.setAttribute("aria-label", `Editar frase: ${sentence.englishText}`)
         edit.addEventListener("click", () => beginEdit(sentence))
         const remove = document.createElement("button")
         remove.type = "button"
         remove.className = "icon-button delete"
-        remove.textContent = "Delete"
-        remove.setAttribute("aria-label", `Delete ${sentence.englishText}`)
+        remove.textContent = "🗑️"
+        remove.title = "Eliminar frase"
+        remove.setAttribute("aria-label", `Eliminar frase: ${sentence.englishText}`)
         remove.addEventListener("click", () => deleteSentence(sentence))
         actions.append(edit, remove)
         item.append(actions)
@@ -145,16 +157,19 @@ function renderVocabularyList() {
         word.textContent = `${vocabulary.word}${vocabulary.pronunciation ? ` ${vocabulary.pronunciation}` : ""}`
         const playWord = document.createElement("button")
         playWord.type = "button"
-        playWord.className = "icon-button"
-        playWord.textContent = "🔊 Escuchar palabra"
+        playWord.className = "icon-button audio-button"
+        playWord.textContent = "🔊"
         playWord.disabled = !window.speechSynthesis
+        playWord.title = "Escuchar palabra"
         playWord.setAttribute("aria-label", `Escuchar ${vocabulary.word}`)
         playWord.addEventListener("click", () => playAudioEnhanced(vocabulary.word, "en"))
-        word.append(" ", playWord)
+        const wordHeading = document.createElement("div")
+        wordHeading.className = "sentence-item-heading"
+        wordHeading.append(word, playWord)
         const meaning = document.createElement("div")
         meaning.className = "sentence-meta"
         meaning.textContent = vocabulary.spanish || ""
-        content.append(word, meaning)
+        content.append(wordHeading, meaning)
         if (vocabulary.example_en) {
             const example = document.createElement("p")
             example.className = "mt-2 text-sm"
@@ -162,9 +177,10 @@ function renderVocabularyList() {
             exampleText.textContent = `${vocabulary.example_en}${vocabulary.example_es ? ` — ${vocabulary.example_es}` : ""}`
             const playExample = document.createElement("button")
             playExample.type = "button"
-            playExample.className = "icon-button ml-2"
-            playExample.textContent = "🔊 Escuchar ejemplo"
+            playExample.className = "icon-button audio-button ml-2"
+            playExample.textContent = "🔊"
             playExample.disabled = !window.speechSynthesis
+            playExample.title = "Escuchar ejemplo"
             playExample.setAttribute("aria-label", `Escuchar ejemplo: ${vocabulary.example_en}`)
             playExample.addEventListener("click", () => playAudioEnhanced(vocabulary.example_en, "en"))
             example.append(exampleText, playExample)
@@ -175,7 +191,9 @@ function renderVocabularyList() {
         const edit = document.createElement("button")
         edit.type = "button"
         edit.className = "icon-button"
-        edit.textContent = "Editar"
+        edit.textContent = "✏️"
+        edit.title = "Editar vocabulario"
+        edit.setAttribute("aria-label", `Editar ${vocabulary.word}`)
         edit.addEventListener("click", () => {
             const form = byId("vocabulary-form")
             form.elements.id.value = vocabulary.id
@@ -191,7 +209,9 @@ function renderVocabularyList() {
         const remove = document.createElement("button")
         remove.type = "button"
         remove.className = "icon-button delete"
-        remove.textContent = "Eliminar"
+        remove.textContent = "🗑️"
+        remove.title = "Eliminar vocabulario"
+        remove.setAttribute("aria-label", `Eliminar ${vocabulary.word}`)
         remove.addEventListener("click", () => deleteVocabulary(vocabulary))
         actions.append(edit, remove)
         item.append(content, actions)
@@ -342,6 +362,7 @@ async function deleteSentence(sentence) {
         state.sentences = state.sentences.filter(item => item.id !== sentence.id)
         showNotice("Sentence deleted.")
         renderAll()
+        window.dispatchEvent(new CustomEvent("personal-sentences-changed"))
     } catch (error) {
         console.error("Unable to delete sentence", error)
         showNotice(storageErrorMessage(error, "No se pudo eliminar la frase."), true)
@@ -353,21 +374,6 @@ async function loadData() {
         state.sentences = await repository.list(state.user.id)
         byId("auth-panel").classList.add("hidden")
         byId("app-panel").classList.remove("hidden")
-        byId("account-area").replaceChildren()
-        const account = document.createElement("div")
-        account.className = "account"
-        const email = document.createElement("span")
-        email.textContent = state.user.email
-        const logout = document.createElement("button")
-        logout.type = "button"
-        logout.textContent = "Sign out"
-        logout.addEventListener("click", async () => {
-            const { error } = await supabase.auth.signOut()
-            if (error) showNotice(error.message, true)
-            else location.reload()
-        })
-        account.append(email, logout)
-        byId("account-area").append(account)
         renderAll()
     } catch (error) {
         console.error("Unable to load MySentences data", error)
@@ -396,7 +402,7 @@ function setupEvents() {
         const validation = validateSentence(sentenceText)
         const topicTags = [...form.querySelectorAll('[name="topicTags"]:checked')].map(input => input.value)
         if (!validation.valid) return showNotice(validation.message, true)
-        if (!topicTags.length) return showNotice("Choose at least one topic.", true)
+        if (!topicTags.length) return showNotice("Selecciona al menos un tema (por ejemplo, Trabajo, Entrevista o Vida diaria).", true)
         const sentence = {
             englishText: sentenceText,
             spanishTranslation: form.elements.spanishTranslation.value,
@@ -412,6 +418,7 @@ function setupEvents() {
             resetForm()
             showNotice("Sentence saved.")
             renderAll()
+            window.dispatchEvent(new CustomEvent("personal-sentences-changed"))
         } catch (error) {
             console.error("Unable to save sentence", error)
             showNotice(storageErrorMessage(error, "No se pudo guardar la frase."), true)

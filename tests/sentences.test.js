@@ -17,6 +17,7 @@ import { createPracticeAudioPlayer, PRACTICE_AUDIO_RATES } from "../js/practice-
 import {
     createAIExamplePrompt,
     createAIPracticeCategory,
+    createPersonalVocabularyPracticeCategory,
     createFavoritesPracticeCategory,
     createVerbPracticeCategory,
     splitTranslatedExample
@@ -32,6 +33,7 @@ test("rejects isolated words and accepts complete sentences or useful expression
     assert.equal(validateSentence("Could you help me, please?").valid, true)
     assert.equal(validateSentence("Thank you").valid, true)
     assert.equal(validateSentence("I agree.").valid, true)
+    assert.equal(validateSentence("I am hungry").valid, true)
 })
 
 test("a remembered review advances through configured intervals to mastered", () => {
@@ -144,6 +146,27 @@ test("personal vocabulary is saved in its own custom-items subcategory", async (
     assert.equal(calls[1][1].word, "figure out")
     assert.equal(calls[1][1].spanish, "averiguar")
     assert.equal(calls[1][1].subcategory, "Mi vocabulario")
+})
+
+test("personal vocabulary is exposed as its own selectable practice category", () => {
+    const category = createPersonalVocabularyPracticeCategory([{
+        id: "vocab-1",
+        word: "figure out",
+        pronunciation: "/ˈfɪɡər aʊt/",
+        spanish: "resolver",
+        example_en: "I figured out the answer.",
+        example_es: "Resolví la respuesta."
+    }])
+    assert.equal(category.id, "personal-vocabulary")
+    assert.equal(category.title, "Mi vocabulario")
+    assert.deepEqual(category.subcategories[0].items[0], [
+        "figure out",
+        "/ˈfɪɡər aʊt/",
+        "resolver",
+        "I figured out the answer.",
+        "Resolví la respuesta.",
+        "personal-vocabulary-vocab-1"
+    ])
 })
 
 test("sentence recommendation uses the existing AI provider to correct English and translate its meaning", async () => {

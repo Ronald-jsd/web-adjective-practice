@@ -18,7 +18,8 @@ import {
     VERB_PRACTICE_CATEGORY_ID,
     FAVORITE_ADJECTIVES_PRACTICE_CATEGORY_ID,
     FAVORITE_VERBS_PRACTICE_CATEGORY_ID,
-    FAVORITES_PRACTICE_CATEGORY_ID
+    FAVORITES_PRACTICE_CATEGORY_ID,
+    createPersonalVocabularyPracticeCategory
 } from "./ai-practice.js";
 import { getSelectedNotionPageIds, loadNotionPracticeCategories } from "./notion.js";
 
@@ -50,6 +51,10 @@ let practiceVerbsUserId = null;
 let practiceVerbCategoryCache = null;
 let practiceAIQueriesCache = null;
 let practiceAIQueriesUserId = null;
+let practiceSentencesCache = null;
+let practiceSentencesUserId = null;
+let practiceVocabularyCache = null;
+let practiceVocabularyUserId = null;
 let practiceNotionCache = null;
 let practiceNotionUserId = null;
 
@@ -601,6 +606,14 @@ function submitAnswer(event) {
 async function initializePractice(categories = [], options = {}) {
     if (initialized) stopAudioCourse();
     const userId = options.userId || null;
+    if (practiceSentencesUserId !== userId) {
+        practiceSentencesCache = null;
+        practiceSentencesUserId = userId;
+    }
+    if (practiceVocabularyUserId !== userId) {
+        practiceVocabularyCache = null;
+        practiceVocabularyUserId = userId;
+    }
     if (practiceNotionUserId !== userId) {
         practiceNotionCache = null;
         practiceNotionUserId = userId;
@@ -708,6 +721,82 @@ async function initializePractice(categories = [], options = {}) {
             console.error("No se pudieron preparar las tarjetas de consultas IA para practicar:", error);
             showToast(`No se pudieron preparar las tarjetas de tus consultas IA. ${error.message || ""}`, "warning");
         }
+    }
+    if (options.supabase && userId
+        && (practiceVocabularyCache === null || options.refreshPersonalVocabulary || practiceVocabularyUserId !== userId)) {
+        try {
+            const { data, error } = await options.supabase
+                .from("user_custom_items")
+                .select("id, word, pronunciation, spanish, example_en, example_es")
+                .eq("user_id", userId)
+                .eq("subcategory", "Mi vocabulario")
+                .order("created_at", { ascending: false });
+            if (error) throw error;
+            practiceVocabularyCache = data || [];
+            practiceVocabularyUserId = userId;
+        } catch (error) {
+            console.error("No se pudo cargar tu vocabulario personal para practicar:", error);
+            showToast(`No se pudo cargar tu vocabulario personal para practicar. ${error.message || ""}`, "warning");
+            practiceVocabularyCache = [];
+        }
+    }
+    if (userId && practiceVocabularyCache && practiceVocabularyUserId === userId) {
+        try {
+            const vocabularyCategory = createPersonalVocabularyPracticeCategory(practiceVocabularyCache);
+            if (vocabularyCategory) {
+                const vocabularyIds = new Set(practiceVocabularyCache.map(item => String(item.id)));
+                practiceCategories = practiceCategories.map(category => ({
+                    ...category,
+                    subcategories: (category.subcategories || []).map(subcategory => ({
+                        ...subcategory,
+                        items: (subcategory.items || []).filter(item =>
+                            !vocabularyIds.has(String(item[6] || "").replace(/^custom_/, ""))
+                        )
+                    }))
+                }));
+                practiceCategories = [...practiceCategories, vocabularyCategory];
+            }
+        } catch (error) {
+            console.error("No se pudo preparar tu vocabulario personal para practicar:", error);
+            showToast(`No se pudo preparar tu vocabulario personal para practicar. ${error.message || ""}`, "warning");
+        }
+    }
+    if (options.supabase && userId
+        && (practiceSentencesCache === null || options.refreshSentences || practiceSentencesUserId !== userId)) {
+        try {
+            const { data, error } = await options.supabase
+                .from("my_sentences")
+                .select("id, english_text, spanish_translation, created_at")
+                .eq("user_id", userId)
+                .order("created_at", { ascending: false });
+            if (error) throw error;
+            practiceSentencesCache = data || [];
+            practiceSentencesUserId = userId;
+        } catch (error) {
+            console.error("No se pudieron cargar tus frases guardadas para practicar:", error);
+            showToast(`No se pudieron cargar tus frases de Mi aprendizaje para practicar. ${error.message || ""}`, "warning");
+            practiceSentencesCache = [];
+        }
+    }
+    if (userId && practiceSentencesCache && practiceSentencesUserId === userId
+        && practiceSentencesCache.length) {
+        practiceCategories = [...practiceCategories, {
+            id: "personal-sentences",
+            title: "Mis frases",
+            icon: "💬",
+            subcategories: [{
+                id: "saved-sentences",
+                title: "Frases guardadas",
+                items: practiceSentencesCache.map(sentence => [
+                    sentence.english_text,
+                    "",
+                    sentence.spanish_translation || "Recuerda la frase que guardaste.",
+                    "",
+                    "",
+                    `sentence-${sentence.id}`
+                ])
+            }]
+        }];
     }
 
     practiceItems = getPracticeItems(practiceCategories);

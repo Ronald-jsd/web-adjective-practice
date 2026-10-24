@@ -30,11 +30,29 @@ window.addEventListener("personal-vocabulary-changed", async () => {
             userId: store.currentUser.id,
             refreshVerbs: false,
             refreshAIQueries: false,
+            refreshPersonalVocabulary: true,
             refreshNotion: false
         });
     } catch (error) {
         console.error("No se pudo actualizar la práctica con tu vocabulario:", error);
         showToast("Tu vocabulario se guardó, pero no se pudo actualizar la práctica. Recarga la página.", "warning");
+    }
+});
+
+window.addEventListener("personal-sentences-changed", async () => {
+    if (!store.currentUser) return;
+    try {
+        await initializePractice(store.categoriesData, {
+            supabase,
+            userId: store.currentUser.id,
+            refreshVerbs: false,
+            refreshAIQueries: false,
+            refreshSentences: true,
+            refreshNotion: false
+        });
+    } catch (error) {
+        console.error("No se pudieron actualizar tus frases en la práctica:", error);
+        showToast("La frase se guardó, pero no se pudo actualizar la práctica. Recarga la página.", "warning");
     }
 });
 

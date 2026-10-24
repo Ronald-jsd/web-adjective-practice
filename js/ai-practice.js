@@ -45,6 +45,35 @@ export function createAIPracticeCategory(queries) {
     };
 }
 
+export function createPersonalVocabularyPracticeCategory(vocabulary) {
+    const items = vocabulary
+        .filter(item => typeof item.word === "string" && item.word.trim() && typeof item.spanish === "string" && item.spanish.trim())
+        .map(item => [
+            item.word.trim(),
+            String(item.pronunciation || "").trim(),
+            item.spanish.trim(),
+            String(item.example_en || "").trim(),
+            String(item.example_es || "").trim(),
+            `personal-vocabulary-${item.id}`
+        ]);
+
+    if (!items.length) return null;
+
+    return {
+        id: "personal-vocabulary",
+        title: "Mi vocabulario",
+        subtitle: "Palabras y expresiones que guardaste en Mi aprendizaje",
+        icon: "📚",
+        color: "bg-emerald-100",
+        subcategories: [{
+            id: "personal-vocabulary-items",
+            title: "Mi vocabulario",
+            color: "bg-emerald-100",
+            items
+        }]
+    };
+}
+
 export function createAIExamplePrompt(word, example, exampleSpanish = "") {
     const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const wordPattern = new RegExp(`\\b${escapedWord}\\b`, "i");
