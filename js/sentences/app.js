@@ -1,13 +1,13 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from "../config.js"
+import { SUPABASE_URL, SUPABASE_ANON_KEY, store } from "../config.js"
+import { playAudioEnhanced } from "../audio.js"
 import { REASONS, TOPICS, suggestGrammarPattern, validateSentence } from "./model.js"
 import { isDue, scheduleReview } from "./scheduler.js"
-import { checkFillBlank, createFillBlank, isDifficult } from "./exercises.js"
 import { createSentenceRepository } from "./repository.js"
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 const repository = createSentenceRepository(supabase)
-const state = { user: null, sentences: [], attempts: [], review: null, exercise: null, exerciseResult: null, revealOnly: false }
+const state = { user: null, sentences: [], vocabulary: null, review: null }
 const byId = id => document.getElementById(id)
 
 function showNotice(message, isError = false) {
@@ -22,7 +22,8 @@ function showNotice(message, isError = false) {
 function storageErrorMessage(error, action) {
     const detail = error?.message || "Unknown Supabase error"
     if (error?.code === "PGRST205" || error?.code === "42P01" || /could not find the table|relation .* does not exist/i.test(detail)) {
-        return `No existe la tabla de MySentences en Supabase. Ejecuta supabase/schema.sql en el SQL Editor. Detalle: ${detail}`
+        const table = /my_sentences/i.test(detail) ? "my_sentences" : "requerida"
+        return `No existe la tabla ${table} en Supabase. Ejecuta supabase/schema.sql en el SQL Editor del proyecto conectado a la app. Detalle: ${detail}`
     }
     return `${action} Detalle de Supabase: ${detail}`
 }
@@ -68,13 +69,13 @@ function renderTopics() {
     REASONS.forEach(value => reason.add(new Option(value, value)))
 }
 
-function renderSentenceList(items = state.sentences, hostId = "sentence-list", allowEdit = true) {
-    const host = byId(hostId)
+function renderSentenceList(items = state.sentences) {
+    const host = byId("sentence-list")
     host.replaceChildren()
     if (!items.length) {
         const empty = document.createElement("div")
         empty.className = "empty"
-        empty.textContent = hostId === "difficult-list" ? "Aún no hay frases difíciles. Sigue practicando." : "Todavía no tienes frases guardadas. Añade una frase real de tu día."
+        empty.textContent = "Todavía no tienes frases guardadas. Añade una frase real de tu día."
         host.append(empty)
         return
     }
@@ -104,31 +105,96 @@ function renderSentenceList(items = state.sentences, hostId = "sentence-list", a
         }
         content.append(sentenceText, meta)
         item.append(content)
-        if (allowEdit) {
-            const actions = document.createElement("div")
-            actions.className = "item-actions"
-            const edit = document.createElement("button")
-            edit.type = "button"
-            edit.className = "icon-button"
-            edit.textContent = "Edit"
-            edit.setAttribute("aria-label", `Edit ${sentence.englishText}`)
-            edit.addEventListener("click", () => beginEdit(sentence))
-            const remove = document.createElement("button")
-            remove.type = "button"
-            remove.className = "icon-button delete"
-            remove.textContent = "Delete"
-            remove.setAttribute("aria-label", `Delete ${sentence.englishText}`)
-            remove.addEventListener("click", () => deleteSentence(sentence))
-            actions.append(edit, remove)
-            item.append(actions)
-        } else if (hostId === "difficult-list") {
-            const retry = document.createElement("button")
-            retry.type = "button"
-            retry.className = "button secondary"
-            retry.textContent = "Retry"
-            retry.addEventListener("click", () => startExercise(sentence.id))
-            item.append(retry)
+        const actions = document.createElement("div")
+        actions.className = "item-actions"
+        const edit = document.createElement("button")
+        edit.type = "button"
+        edit.className = "icon-button"
+        edit.textContent = "Edit"
+        edit.setAttribute("aria-label", `Edit ${sentence.englishText}`)
+        edit.addEventListener("click", () => beginEdit(sentence))
+        const remove = document.createElement("button")
+        remove.type = "button"
+        remove.className = "icon-button delete"
+        remove.textContent = "Delete"
+        remove.setAttribute("aria-label", `Delete ${sentence.englishText}`)
+        remove.addEventListener("click", () => deleteSentence(sentence))
+        actions.append(edit, remove)
+        item.append(actions)
+        host.append(item)
+    }
+}
+
+function renderVocabularyList() {
+    const host = byId("vocabulary-list")
+    host.replaceChildren()
+    const items = state.vocabulary || []
+    if (!items.length) {
+        const empty = document.createElement("div")
+        empty.className = "empty"
+        empty.textContent = "Todavía no guardas vocabulario personal. Añade una palabra o expresión para empezar."
+        host.append(empty)
+        return
+    }
+    for (const vocabulary of items) {
+        const item = document.createElement("article")
+        item.className = "sentence-item"
+        const content = document.createElement("div")
+        content.className = "sentence-content"
+        const word = document.createElement("p")
+        word.textContent = `${vocabulary.word}${vocabulary.pronunciation ? ` ${vocabulary.pronunciation}` : ""}`
+        const playWord = document.createElement("button")
+        playWord.type = "button"
+        playWord.className = "icon-button"
+        playWord.textContent = "🔊 Escuchar palabra"
+        playWord.disabled = !window.speechSynthesis
+        playWord.setAttribute("aria-label", `Escuchar ${vocabulary.word}`)
+        playWord.addEventListener("click", () => playAudioEnhanced(vocabulary.word, "en"))
+        word.append(" ", playWord)
+        const meaning = document.createElement("div")
+        meaning.className = "sentence-meta"
+        meaning.textContent = vocabulary.spanish || ""
+        content.append(word, meaning)
+        if (vocabulary.example_en) {
+            const example = document.createElement("p")
+            example.className = "mt-2 text-sm"
+            const exampleText = document.createElement("span")
+            exampleText.textContent = `${vocabulary.example_en}${vocabulary.example_es ? ` — ${vocabulary.example_es}` : ""}`
+            const playExample = document.createElement("button")
+            playExample.type = "button"
+            playExample.className = "icon-button ml-2"
+            playExample.textContent = "🔊 Escuchar ejemplo"
+            playExample.disabled = !window.speechSynthesis
+            playExample.setAttribute("aria-label", `Escuchar ejemplo: ${vocabulary.example_en}`)
+            playExample.addEventListener("click", () => playAudioEnhanced(vocabulary.example_en, "en"))
+            example.append(exampleText, playExample)
+            content.append(example)
         }
+        const actions = document.createElement("div")
+        actions.className = "item-actions"
+        const edit = document.createElement("button")
+        edit.type = "button"
+        edit.className = "icon-button"
+        edit.textContent = "Editar"
+        edit.addEventListener("click", () => {
+            const form = byId("vocabulary-form")
+            form.elements.id.value = vocabulary.id
+            form.elements.word.value = vocabulary.word || ""
+            form.elements.pronunciation.value = vocabulary.pronunciation || ""
+            form.elements.spanish.value = vocabulary.spanish || ""
+            form.elements.exampleEn.value = vocabulary.example_en || ""
+            form.elements.exampleEs.value = vocabulary.example_es || ""
+            form.querySelector('[type="submit"]').textContent = "Guardar cambios"
+            byId("cancel-vocabulary-edit").classList.remove("hidden")
+            form.elements.word.focus()
+        })
+        const remove = document.createElement("button")
+        remove.type = "button"
+        remove.className = "icon-button delete"
+        remove.textContent = "Eliminar"
+        remove.addEventListener("click", () => deleteVocabulary(vocabulary))
+        actions.append(edit, remove)
+        item.append(content, actions)
         host.append(item)
     }
 }
@@ -196,161 +262,10 @@ async function submitReview(sentence, remembered) {
     }
 }
 
-function renderPractice() {
-    const host = byId("practice-card")
-    host.replaceChildren()
-    if (!state.sentences.length) {
-        const empty = document.createElement("div")
-        empty.className = "empty"
-        empty.textContent = "Save a sentence first. Your exercises will be made from your own examples."
-        host.append(empty)
-        return
-    }
-    if (!state.exercise) {
-        startExercise()
-        return
-    }
-    const sentence = state.sentences.find(item => item.id === state.exercise.sentenceId)
-    if (!sentence) return
-    const kicker = document.createElement("div")
-    kicker.className = "exercise-kicker"
-    kicker.textContent = `${sentence.topicTags.join(" · ")}  /  Fill in the blank`
-    const prompt = document.createElement("div")
-    prompt.className = "exercise-prompt"
-    prompt.textContent = state.exercise.prompt
-    const translation = document.createElement("div")
-    translation.className = "exercise-translation"
-    translation.textContent = sentence.spanishTranslation
-    const row = document.createElement("form")
-    row.className = "answer-row"
-    const input = document.createElement("input")
-    input.className = "answer-input"
-    input.name = "answer"
-    input.autocomplete = "off"
-    input.placeholder = "Type the missing word"
-    input.setAttribute("aria-label", "Type the missing word in English")
-    input.disabled = Boolean(state.exerciseResult || state.revealOnly)
-    const submit = document.createElement("button")
-    submit.className = "button primary"
-    submit.type = "submit"
-    submit.textContent = "Check"
-    submit.disabled = input.disabled
-    row.append(input, submit)
-    row.addEventListener("submit", event => {
-        event.preventDefault()
-        submitExercise(sentence, input.value)
-    })
-    const actions = document.createElement("div")
-    actions.className = "exercise-actions"
-    const reveal = document.createElement("button")
-    reveal.type = "button"
-    reveal.className = "button secondary"
-    reveal.textContent = "Reveal answer"
-    reveal.disabled = Boolean(state.exerciseResult || state.revealOnly)
-    reveal.addEventListener("click", () => revealExercise(sentence))
-    const next = document.createElement("button")
-    next.type = "button"
-    next.className = "button secondary"
-    next.textContent = state.exerciseResult || state.revealOnly ? "Try another" : "Skip"
-    next.addEventListener("click", () => startExercise())
-    actions.append(reveal, next)
-    host.append(kicker, prompt, translation, row)
-    if (state.exerciseResult || state.revealOnly) {
-        const feedback = document.createElement("div")
-        feedback.className = `feedback ${state.exerciseResult?.correct ? "good" : "bad"}`
-        if (state.revealOnly) feedback.textContent = `Answer revealed — not counted as recall. Model answer: ${sentence.englishText}`
-        else feedback.textContent = state.exerciseResult.correct
-            ? `Correct! ${sentence.englishText}`
-            : `Model answer: ${sentence.englishText}. ${state.exerciseResult.explanation}${state.exerciseResult.userAnswer ? ` Your answer: “${state.exerciseResult.userAnswer}”.` : ""}`
-        host.append(feedback)
-    }
-    host.append(actions)
-}
-
-async function submitExercise(sentence, answer) {
-    if (!answer.trim()) {
-        showNotice("Write an answer before checking.", true)
-        return
-    }
-    const result = checkFillBlank(answer, state.exercise)
-    state.exerciseResult = { ...result, userAnswer: answer.trim() }
-    state.revealOnly = false
-    try {
-        await repository.recordExerciseAttempt(state.user.id, sentence.id, {
-            exerciseType: "fill_blank",
-            userAnswer: answer.trim(),
-            isCorrect: result.correct,
-            wasAnswerRevealed: false,
-            difficultyRating: result.correct ? 1 : 3
-        })
-        await loadAttempts()
-    } catch (error) {
-        console.error("Unable to save exercise attempt", error)
-        showNotice(storageErrorMessage(error, "La respuesta se comprobó, pero no se pudo guardar el resultado."), true)
-    }
-    renderPractice()
-}
-
-async function revealExercise(sentence) {
-    state.revealOnly = true
-    try {
-        await repository.recordExerciseAttempt(state.user.id, sentence.id, {
-            exerciseType: "fill_blank",
-            userAnswer: "",
-            isCorrect: false,
-            wasAnswerRevealed: true,
-            difficultyRating: null
-        })
-        await loadAttempts()
-    } catch (error) {
-        console.error("Unable to save revealed exercise", error)
-        showNotice(storageErrorMessage(error, "Se mostró la respuesta, pero no se pudo guardar el resultado."), true)
-    }
-    renderPractice()
-}
-
-function startExercise(sentenceId = null) {
-    const sentence = sentenceId
-        ? state.sentences.find(item => item.id === sentenceId)
-        : state.sentences[Math.floor(Math.random() * state.sentences.length)]
-    if (!sentence) return
-    state.exercise = { sentenceId: sentence.id, ...createFillBlank(sentence) }
-    state.exerciseResult = null
-    state.revealOnly = false
-    if (byId("practice-screen").classList.contains("active")) renderPractice()
-}
-
-function renderMistakes() {
-    renderSentenceList(state.sentences.filter(isDifficult), "difficult-list", false)
-    const host = byId("mistakes-list")
-    host.replaceChildren()
-    const errors = state.attempts.filter(attempt => !attempt.is_correct && !attempt.was_answer_revealed).slice(0, 5)
-    if (!errors.length) {
-        const empty = document.createElement("div")
-        empty.className = "empty"
-        empty.textContent = "Your practice errors will appear here so you can notice recurring patterns."
-        host.append(empty)
-        return
-    }
-    for (const attempt of errors) {
-        const sentence = state.sentences.find(item => item.id === attempt.sentence_id)
-        const item = document.createElement("div")
-        item.className = "mistake-item"
-        const answer = document.createElement("strong")
-        answer.textContent = attempt.was_answer_revealed ? "Answer revealed (not counted as recall)" : `Your answer: ${attempt.user_answer || "—"}`
-        const model = document.createElement("span")
-        model.textContent = sentence ? `Expected: ${sentence.englishText}` : "Sentence removed"
-        item.append(answer, model)
-        host.append(item)
-    }
-}
-
 function renderAll() {
     updateStats()
     renderSentenceList(filteredSentences())
     renderReview()
-    renderPractice()
-    renderMistakes()
 }
 
 function filteredSentences() {
@@ -381,12 +296,50 @@ function resetForm() {
     byId("cancel-edit").classList.add("hidden")
 }
 
+function resetVocabularyForm() {
+    const form = byId("vocabulary-form")
+    form.reset()
+    form.elements.id.value = ""
+    form.querySelector('[type="submit"]').textContent = "Guardar vocabulario"
+    byId("cancel-vocabulary-edit").classList.add("hidden")
+}
+
+async function loadVocabulary() {
+    if (state.vocabulary !== null) {
+        renderVocabularyList()
+        return
+    }
+    const host = byId("vocabulary-list")
+    host.textContent = "Cargando tu vocabulario..."
+    try {
+        state.vocabulary = await repository.listVocabulary(state.user.id)
+        renderVocabularyList()
+    } catch (error) {
+        console.error("Unable to load personal vocabulary", error)
+        host.textContent = storageErrorMessage(error, "No se pudo cargar tu vocabulario.")
+        showNotice(storageErrorMessage(error, "No se pudo cargar tu vocabulario."), true)
+    }
+}
+
+async function deleteVocabulary(vocabulary) {
+    if (!window.confirm(`¿Eliminar "${vocabulary.word}" de tu vocabulario?`)) return
+    try {
+        await repository.removeVocabulary(state.user.id, vocabulary.id)
+        state.vocabulary = state.vocabulary.filter(item => item.id !== vocabulary.id)
+        renderVocabularyList()
+        showNotice("Vocabulario eliminado.")
+        window.dispatchEvent(new CustomEvent("personal-vocabulary-changed"))
+    } catch (error) {
+        console.error("Unable to delete personal vocabulary", error)
+        showNotice(storageErrorMessage(error, "No se pudo eliminar el vocabulario."), true)
+    }
+}
+
 async function deleteSentence(sentence) {
     if (!window.confirm(`Delete “${sentence.englishText}”?`)) return
     try {
         await repository.remove(state.user.id, sentence.id)
         state.sentences = state.sentences.filter(item => item.id !== sentence.id)
-        if (state.exercise?.sentenceId === sentence.id) state.exercise = null
         showNotice("Sentence deleted.")
         renderAll()
     } catch (error) {
@@ -395,16 +348,9 @@ async function deleteSentence(sentence) {
     }
 }
 
-async function loadAttempts() {
-    state.attempts = await repository.getExerciseAttempts(state.user.id)
-}
-
 async function loadData() {
     try {
-        [state.sentences, state.attempts] = await Promise.all([
-            repository.list(state.user.id),
-            repository.getExerciseAttempts(state.user.id)
-        ])
+        state.sentences = await repository.list(state.user.id)
         byId("auth-panel").classList.add("hidden")
         byId("app-panel").classList.remove("hidden")
         byId("account-area").replaceChildren()
@@ -435,7 +381,7 @@ function switchScreen(name) {
     document.querySelectorAll(".tab").forEach(tab => tab.classList.toggle("active", tab.dataset.screen === name))
     document.querySelectorAll(".screen").forEach(screen => screen.classList.toggle("active", screen.id === `${name}-screen`))
     if (name === "review") renderReview()
-    if (name === "practice") renderPractice()
+    if (name === "vocabulary") loadVocabulary()
 }
 
 function setupEvents() {
@@ -471,6 +417,43 @@ function setupEvents() {
             showNotice(storageErrorMessage(error, "No se pudo guardar la frase."), true)
         }
     })
+    byId("vocabulary-form").addEventListener("submit", async event => {
+        event.preventDefault()
+        const form = event.currentTarget
+        const vocabulary = {
+            word: form.elements.word.value,
+            pronunciation: form.elements.pronunciation.value,
+            spanish: form.elements.spanish.value,
+            exampleEn: form.elements.exampleEn.value,
+            exampleEs: form.elements.exampleEs.value
+        }
+        if (!vocabulary.word.trim() || !vocabulary.spanish.trim()) {
+            return showNotice("Escribe la palabra y su significado antes de guardar.", true)
+        }
+        try {
+            const grammarCategory = store.categoriesData.find(category => category.id === "grammar")
+            const saved = await repository.saveVocabulary(
+                state.user.id,
+                vocabulary,
+                form.elements.id.value || null,
+                grammarCategory?.title || "Mis Expresiones"
+            )
+            if (!state.vocabulary) state.vocabulary = []
+            if (form.elements.id.value) {
+                state.vocabulary = state.vocabulary.map(item => item.id === saved.id ? saved : item)
+            } else {
+                state.vocabulary.unshift(saved)
+            }
+            resetVocabularyForm()
+            renderVocabularyList()
+            showNotice("Vocabulario guardado.")
+            window.dispatchEvent(new CustomEvent("personal-vocabulary-changed"))
+        } catch (error) {
+            console.error("Unable to save personal vocabulary", error)
+            showNotice(storageErrorMessage(error, "No se pudo guardar el vocabulario."), true)
+        }
+    })
+    byId("cancel-vocabulary-edit").addEventListener("click", resetVocabularyForm)
     byId("sentence-form").elements.englishText.addEventListener("blur", event => {
         const pattern = byId("sentence-form").elements.grammarPattern
         if (!pattern.value) pattern.value = suggestGrammarPattern(event.target.value)

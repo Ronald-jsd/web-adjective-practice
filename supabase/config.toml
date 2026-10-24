@@ -1,0 +1,2 @@
+[functions.notion-connect]
+verify_jwt = false

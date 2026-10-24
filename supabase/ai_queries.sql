@@ -4,6 +4,7 @@ create table if not exists public.user_ai_queries (
     question text not null check (char_length(trim(question)) > 0),
     summary text not null check (char_length(trim(summary)) > 0),
     provider text not null check (provider in ('gemini', 'groq')),
+    image_path text,
     cards jsonb not null check (
         case
             when jsonb_typeof(cards) = 'array'
@@ -27,6 +28,69 @@ alter table public.user_custom_items
     references public.user_ai_queries(id) on delete cascade;
 alter table public.user_custom_items
     add column if not exists ai_query_card_index integer;
+alter table public.user_ai_queries
+    add column if not exists image_path text;
+
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+values (
+    'ai-query-images',
+    'ai-query-images',
+    false,
+    5242880,
+    array['image/jpeg', 'image/png', 'image/webp', 'image/gif']::text[]
+)
+on conflict (id) do update
+set public = false,
+    file_size_limit = excluded.file_size_limit,
+    allowed_mime_types = excluded.allowed_mime_types;
+
+drop policy if exists "Users read their own AI card images" on storage.objects;
+drop policy if exists "Users read their own AI query images" on storage.objects;
+create policy "Users read their own AI query images"
+    on storage.objects
+    for select
+    to authenticated
+    using (
+        bucket_id = 'ai-query-images'
+        and (storage.foldername(name))[1] = auth.uid()::text
+    );
+
+drop policy if exists "Users upload their own AI card images" on storage.objects;
+drop policy if exists "Users upload their own AI query images" on storage.objects;
+create policy "Users upload their own AI query images"
+    on storage.objects
+    for insert
+    to authenticated
+    with check (
+        bucket_id = 'ai-query-images'
+        and (storage.foldername(name))[1] = auth.uid()::text
+    );
+
+drop policy if exists "Users update their own AI card images" on storage.objects;
+drop policy if exists "Users update their own AI query images" on storage.objects;
+create policy "Users update their own AI query images"
+    on storage.objects
+    for update
+    to authenticated
+    using (
+        bucket_id = 'ai-query-images'
+        and (storage.foldername(name))[1] = auth.uid()::text
+    )
+    with check (
+        bucket_id = 'ai-query-images'
+        and (storage.foldername(name))[1] = auth.uid()::text
+    );
+
+drop policy if exists "Users delete their own AI card images" on storage.objects;
+drop policy if exists "Users delete their own AI query images" on storage.objects;
+create policy "Users delete their own AI query images"
+    on storage.objects
+    for delete
+    to authenticated
+    using (
+        bucket_id = 'ai-query-images'
+        and (storage.foldername(name))[1] = auth.uid()::text
+    );
 
 create index if not exists user_ai_queries_user_created_idx
     on public.user_ai_queries (user_id, created_at desc);
@@ -296,3 +360,39 @@ $$;
 
 revoke all on function public.set_user_ai_query_cards(uuid, jsonb, text) from public;
 grant execute on function public.set_user_ai_query_cards(uuid, jsonb, text) to authenticated;
+
+create or replace function public.set_user_ai_query_image(
+    p_query_id uuid,
+    p_image_path text
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+    if auth.uid() is null then
+        raise exception 'Authentication is required to update a query image';
+    end if;
+
+    if p_image_path is not null
+       and p_image_path !~ (
+           '^' || auth.uid()::text || '/' || p_query_id::text ||
+           '/query-[a-f0-9-]+[.](jpg|png|webp|gif)$'
+       ) then
+        raise exception 'The image path is not valid for this query';
+    end if;
+
+    update public.user_ai_queries
+    set image_path = p_image_path
+    where id = p_query_id
+      and user_id = auth.uid();
+
+    if not found then
+        raise exception 'AI query not found';
+    end if;
+end;
+$$;
+
+revoke all on function public.set_user_ai_query_image(uuid, text) from public;
+grant execute on function public.set_user_ai_query_image(uuid, text) to authenticated;

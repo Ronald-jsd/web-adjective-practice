@@ -20,6 +20,7 @@ import {
     FAVORITE_VERBS_PRACTICE_CATEGORY_ID,
     FAVORITES_PRACTICE_CATEGORY_ID
 } from "./ai-practice.js";
+import { getSelectedNotionPageIds, loadNotionPracticeCategories } from "./notion.js";
 
 const PROGRESS_STORAGE_KEY = "vocabulary_practice_progress_v1";
 const CATEGORY_SELECTION_STORAGE_KEY = "practice_selected_categories_v1";
@@ -49,6 +50,8 @@ let practiceVerbsUserId = null;
 let practiceVerbCategoryCache = null;
 let practiceAIQueriesCache = null;
 let practiceAIQueriesUserId = null;
+let practiceNotionCache = null;
+let practiceNotionUserId = null;
 
 function getAudioSessionScope() {
     return `${audioCourseFilter}:${[...selectedCategories].sort().join(",")}`;
@@ -196,6 +199,10 @@ function updateReviewSummary() {
 
 function getSelectedItems() {
     return practiceItems.filter(item => selectedCategories.has(item.categoryId));
+}
+
+function isTemporaryNotionItem(itemId) {
+    return itemId.startsWith("notion-page-");
 }
 
 function normalizeAnswer(value) {
@@ -515,7 +522,7 @@ function recordAnswer(submittedAnswer, selectedButton = null) {
     }
     progressByItem[currentItem.id] = progress;
     saveProgress();
-    if (progressSync) {
+    if (progressSync && !isTemporaryNotionItem(currentItem.id)) {
         const itemId = currentItem.id;
         const savedProgress = { ...progress };
         progressWriteQueue = progressWriteQueue
@@ -593,10 +600,15 @@ function submitAnswer(event) {
 
 async function initializePractice(categories = [], options = {}) {
     if (initialized) stopAudioCourse();
+    const userId = options.userId || null;
+    if (practiceNotionUserId !== userId) {
+        practiceNotionCache = null;
+        practiceNotionUserId = userId;
+    }
+    if (!userId) practiceNotionCache = [];
     let practiceCategories = categories.filter(category =>
         ![AI_PRACTICE_CATEGORY_ID, VERB_PRACTICE_CATEGORY_ID].includes(String(category.id))
     );
-    const userId = options.userId || null;
     if (options.supabase && (practiceVerbsCache === null || options.refreshVerbs || practiceVerbsUserId !== userId)) {
         try {
             const verbs = [];
@@ -632,6 +644,26 @@ async function initializePractice(categories = [], options = {}) {
             console.error("No se pudieron preparar las categorías de verbos para practicar:", error);
             showToast(`No se pudieron preparar los verbos para practicar. ${error.message || ""}`, "warning");
         }
+    }
+    if (options.supabase && options.userId && options.refreshNotion) {
+        try {
+            const selectedPageIds = getSelectedNotionPageIds(userId);
+            practiceNotionCache = [];
+            practiceNotionCache = await loadNotionPracticeCategories(options.supabase, selectedPageIds);
+            practiceNotionUserId = userId;
+        } catch (error) {
+            console.error("No se pudo cargar el vocabulario de Notion para practicar:", error);
+            showToast(`No se pudo cargar Notion para practicar. Verifica la función Edge de Notion. ${error.message || ""}`, "warning");
+        }
+    }
+    if (practiceNotionCache) {
+        const selectedPageIds = new Set(getSelectedNotionPageIds(userId));
+        practiceCategories = [
+            ...practiceCategories,
+            ...practiceNotionCache.filter(category => selectedPageIds.has(
+                String(category.id).replace(/^notion-page-/, "")
+            ))
+        ];
     }
     try {
         const favoritesCategories = createFavoritesPracticeCategory(
@@ -684,7 +716,16 @@ async function initializePractice(categories = [], options = {}) {
         : null;
     if (progressSync && !options.skipProgressSync) {
         try {
-            progressByItem = await progressSync.loadAndMerge(progressByItem);
+            const localNotionProgress = Object.fromEntries(
+                Object.entries(progressByItem).filter(([itemId]) => isTemporaryNotionItem(itemId))
+            );
+            const persistentProgress = Object.fromEntries(
+                Object.entries(progressByItem).filter(([itemId]) => !isTemporaryNotionItem(itemId))
+            );
+            progressByItem = {
+                ...await progressSync.loadAndMerge(persistentProgress),
+                ...localNotionProgress
+            };
             saveProgress();
         } catch (error) {
             console.error("No se pudo sincronizar el progreso de práctica:", error);
@@ -768,6 +809,13 @@ async function initializePractice(categories = [], options = {}) {
 }
 
 export { initializePractice };
+
+export function setNotionPracticeCategories(categories) {
+    practiceNotionCache = categories;
+    practiceNotionUserId = store.currentUser?.id || null;
+    categories.forEach(category => selectedCategories.add(String(category.id)));
+    saveCategorySelection();
+}
 
 window.addEventListener("vocabulary-favorites-changed", () => {
     window.refreshPracticeFavorites?.();

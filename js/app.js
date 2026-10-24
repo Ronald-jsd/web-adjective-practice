@@ -3,17 +3,40 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY, store } from "./config.js";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-import { checkUser } from "./auth.js";
+import { checkUser, loadUserCustomItems } from "./auth.js";
 import { renderCategories, loadCategoriesFromSupabase } from "./data.js";
 import { performSearch, initSearchModeListeners } from "./search.js";
 import { closeCategoryView } from "./category-view.js";
 import { updateAIButton } from "./ai.js";
-import { initializePractice } from "./practice.js";
+import { initializePractice, setNotionPracticeCategories } from "./practice.js";
 import { initializeBrowserAI } from "./browser-ai.js";
+import { initializeNotionIntegration } from "./notion.js";
 import { toggleFavorite } from "./favorites.js";
+import { showToast } from "./cache.js";
 
 window.toggleVocabularyFavorite = (itemType, itemId) =>
     toggleFavorite(supabase, itemType, itemId);
+window.setNotionPracticeCategories = setNotionPracticeCategories;
+
+window.addEventListener("personal-vocabulary-changed", async () => {
+    if (!store.currentUser) return;
+    try {
+        await loadUserCustomItems();
+        const categories = await loadCategoriesFromSupabase(true);
+        store.categoriesData = categories;
+        renderCategories(categories);
+        await initializePractice(categories, {
+            supabase,
+            userId: store.currentUser.id,
+            refreshVerbs: false,
+            refreshAIQueries: false,
+            refreshNotion: false
+        });
+    } catch (error) {
+        console.error("No se pudo actualizar la práctica con tu vocabulario:", error);
+        showToast("Tu vocabulario se guardó, pero no se pudo actualizar la práctica. Recarga la página.", "warning");
+    }
+});
 
 function setupEventListeners() {
     const searchInput = document.getElementById("global-search");
@@ -79,6 +102,7 @@ window.loadVerbsFromSupabase = async function (forceRefresh) {
 async function initApp() {
     await checkUser();
     initializeBrowserAI();
+    initializeNotionIntegration(supabase);
     const data = await loadCategoriesFromSupabase();
     store.categoriesData = data;
     renderCategories(data);
@@ -88,7 +112,8 @@ async function initApp() {
             supabase,
             userId: store.currentUser?.id,
             refreshVerbs: options.refreshVerbs !== false,
-            refreshAIQueries: options.refreshAIQueries !== false
+            refreshAIQueries: options.refreshAIQueries !== false,
+            refreshNotion: options.refreshNotion === true
         });
     };
     window.refreshPracticeFavorites = async function () {
@@ -97,6 +122,7 @@ async function initApp() {
             userId: store.currentUser?.id,
             refreshVerbs: false,
             refreshAIQueries: false,
+            refreshNotion: false,
             skipProgressSync: true,
             favoritesChanged: true
         });

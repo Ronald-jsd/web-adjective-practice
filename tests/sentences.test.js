@@ -97,7 +97,8 @@ test("editing updates a sentence without resetting its review progress", async (
         select() { return this },
         eq(key, value) { calls.push(["eq", key, value]); return this },
         single() { return Promise.resolve({ data: databaseRow, error: null }) },
-        order() { return this }
+        order() { return this },
+        limit(value) { calls.push(["limit", value]); return this }
     }
     const supabase = { from: table => { calls.push(["from", table]); return query } }
     const repository = createSentenceRepository(supabase)
@@ -114,6 +115,35 @@ test("editing updates a sentence without resetting its review progress", async (
     assert.equal(calls[1][0], "update")
     assert.equal(calls[1][1].english_text, "I work close to the station.")
     assert.ok(calls.some(call => call[0] === "eq" && call[1] === "id" && call[2] === "sentence-1"))
+})
+
+test("personal vocabulary is saved in its own custom-items subcategory", async () => {
+    const calls = []
+    const savedRow = { id: "vocab-1", word: "figure out", spanish: "averiguar" }
+    const query = {
+        insert(values) { calls.push(["insert", values]); return this },
+        select(columns) { calls.push(["select", columns]); return this },
+        single() { return Promise.resolve({ data: savedRow, error: null }) }
+    }
+    const repository = createSentenceRepository({
+        from(table) {
+            calls.push(["from", table])
+            return query
+        }
+    })
+
+    await repository.saveVocabulary("user-1", {
+        word: " figure out ",
+        pronunciation: "",
+        spanish: " averiguar ",
+        exampleEn: "",
+        exampleEs: ""
+    })
+
+    assert.deepEqual(calls[0], ["from", "user_custom_items"])
+    assert.equal(calls[1][1].word, "figure out")
+    assert.equal(calls[1][1].spanish, "averiguar")
+    assert.equal(calls[1][1].subcategory, "Mi vocabulario")
 })
 
 test("sentence recommendation uses the existing AI provider to correct English and translate its meaning", async () => {

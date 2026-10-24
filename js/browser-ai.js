@@ -6,6 +6,22 @@ import { loadCategoriesFromSupabase, renderCategories } from './data.js'
 import { generateWithAI, hasApiKey } from './ai.js'
 import { initializePractice } from './practice.js'
 
+const AI_QUERY_IMAGE_BUCKET = 'ai-query-images'
+const MAX_AI_QUERY_IMAGE_SIZE = 5 * 1024 * 1024
+const AI_QUERY_IMAGE_TYPES = new Map([
+    ['image/jpeg', 'jpg'],
+    ['image/png', 'png'],
+    ['image/webp', 'webp'],
+    ['image/gif', 'gif']
+])
+const DEFAULT_QUERY_PAGE_SIZE = 12
+let savedQueries = []
+let querySearch = ''
+let queryPage = 0
+let queryPageSize = DEFAULT_QUERY_PAGE_SIZE
+let querySort = 'newest'
+let activeQueryId = null
+
 function updateAvailability() {
     const status = document.getElementById('browser-ai-availability')
     const submit = document.getElementById('browser-ai-submit')
@@ -20,31 +36,121 @@ function updateAvailability() {
     if (configure) configure.classList.toggle('hidden', hasProvider)
 }
 
-function createHistoryEntry(query, expanded = false) {
-    const details = document.createElement('details')
-    details.className = 'bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden'
-    details.open = expanded
-
-    const summary = document.createElement('summary')
-    summary.className = 'cursor-pointer px-5 py-4 font-semibold text-gray-900 hover:bg-purple-50'
-    const date = new Date(query.created_at)
-    summary.textContent = `${query.question} · ${date.toLocaleString()}`
-    details.appendChild(summary)
-
+function createQueryDetail(query) {
     const content = document.createElement('div')
-    content.className = 'px-5 pb-5'
+    content.className = 'space-y-4 p-5 md:p-7'
+
+    const heading = document.createElement('div')
+    heading.className = 'flex items-start justify-between gap-4'
+    const title = document.createElement('h3')
+    title.className = 'text-xl font-bold text-gray-900'
+    title.textContent = query.question
+    const closeButton = document.createElement('button')
+    closeButton.type = 'button'
+    closeButton.className = 'shrink-0 rounded-full border border-gray-200 px-3 py-1 text-gray-600 hover:bg-gray-100'
+    closeButton.textContent = 'Cerrar'
+    heading.append(title, closeButton)
+    content.appendChild(heading)
+
+    const date = document.createElement('p')
+    date.className = 'text-xs text-gray-500'
+    date.textContent = new Date(query.created_at).toLocaleString()
+    content.appendChild(date)
 
     const deleteButton = document.createElement('button')
     deleteButton.type = 'button'
-    deleteButton.className = 'mb-4 px-3 py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg text-sm font-medium'
+    deleteButton.className = 'px-3 py-2 bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 rounded-lg text-sm font-medium'
     deleteButton.textContent = '🗑️ Eliminar consulta y sus tarjetas'
     deleteButton.addEventListener('click', () => deleteQuery(query, deleteButton))
     content.appendChild(deleteButton)
 
     const answer = document.createElement('p')
-    answer.className = 'text-sm text-gray-700 mb-4 whitespace-pre-line'
+    answer.className = 'text-sm leading-7 text-gray-700 whitespace-pre-line'
     answer.textContent = query.summary
     content.appendChild(answer)
+
+    if (query.image_url) {
+        const imagePreview = document.createElement('button')
+        imagePreview.type = 'button'
+        imagePreview.className = 'ai-query-image-preview'
+        imagePreview.setAttribute('aria-label', 'Abrir imagen de la consulta en tamaño grande')
+        const image = document.createElement('img')
+        image.src = query.image_url
+        image.alt = `Imagen para la consulta: ${query.question}`
+        image.loading = 'lazy'
+        image.className = 'max-h-80 max-w-full rounded-lg object-contain'
+        imagePreview.appendChild(image)
+        imagePreview.addEventListener('click', () => openQueryImage(query))
+        const previewHint = document.createElement('span')
+        previewHint.className = 'ai-query-image-hint'
+        previewHint.textContent = 'Haz clic en la imagen para verla grande'
+        const preview = document.createElement('div')
+        preview.className = 'ai-query-image-container'
+        preview.append(imagePreview, previewHint)
+        content.appendChild(preview)
+    } else if (query.image_error) {
+        const imageError = document.createElement('p')
+        imageError.className = 'mb-3 text-sm text-red-700'
+        imageError.textContent = 'No se pudo cargar la imagen guardada para esta consulta.'
+        content.appendChild(imageError)
+    }
+
+    const imageActions = document.createElement('div')
+    imageActions.className = 'mb-4 flex flex-wrap items-center gap-2'
+    const imageLabel = document.createElement('label')
+    imageLabel.className = 'inline-flex cursor-pointer items-center gap-2 rounded-lg border border-purple-200 bg-white px-3 py-2 text-sm font-medium text-purple-800 hover:bg-purple-100'
+    imageLabel.textContent = query.image_path ? '🖼️ Cambiar imagen' : '🖼️ Elegir imagen'
+    const imageInput = document.createElement('input')
+    imageInput.type = 'file'
+    imageInput.accept = 'image/jpeg,image/png,image/webp,image/gif'
+    imageInput.className = 'sr-only'
+    imageInput.addEventListener('change', () => saveQueryImage(query, imageInput.files[0], imageInput, dropZone))
+    imageLabel.appendChild(imageInput)
+    imageActions.appendChild(imageLabel)
+
+    if (query.image_path) {
+        const removeImageButton = document.createElement('button')
+        removeImageButton.type = 'button'
+        removeImageButton.className = 'rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50'
+        removeImageButton.textContent = 'Quitar imagen'
+        removeImageButton.addEventListener('click', () => removeQueryImage(query, removeImageButton))
+        imageActions.appendChild(removeImageButton)
+    }
+    const imageHint = document.createElement('span')
+    imageHint.className = 'text-xs text-gray-500'
+    imageHint.textContent = 'Una imagen para toda la consulta · JPG, PNG, WebP o GIF · máximo 5 MB'
+    imageActions.appendChild(imageHint)
+    content.appendChild(imageActions)
+    const dropZone = document.createElement('div')
+    dropZone.className = 'ai-image-dropzone'
+    dropZone.tabIndex = 0
+    dropZone.setAttribute('role', 'region')
+    dropZone.setAttribute('aria-label', 'Suelta una imagen aquí o enfoca esta zona y pega una imagen')
+    dropZone.textContent = 'Arrastra una imagen aquí o enfoca esta zona y pega con Ctrl+V'
+    dropZone.addEventListener('dragover', event => {
+        event.preventDefault()
+        dropZone.classList.add('is-dragging')
+    })
+    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('is-dragging'))
+    dropZone.addEventListener('drop', event => {
+        event.preventDefault()
+        dropZone.classList.remove('is-dragging')
+        const file = [...(event.dataTransfer?.files || [])].find(item => item.type.startsWith('image/'))
+        if (file) saveQueryImage(query, file, imageInput, dropZone)
+        else showToast('Suelta un archivo de imagen válido.', 'warning')
+    })
+    dropZone.addEventListener('paste', event => {
+        const imageItem = [...(event.clipboardData?.items || [])]
+            .find(item => item.kind === 'file' && item.type.startsWith('image/'))
+        const file = imageItem?.getAsFile()
+        if (!file) {
+            showToast('El portapapeles no contiene una imagen. Copia una imagen antes de pegar.', 'warning')
+            return
+        }
+        event.preventDefault()
+        saveQueryImage(query, file, imageInput, dropZone)
+    })
+    content.appendChild(dropZone)
 
     if (!query.cards.length) {
         const emptyCards = document.createElement('p')
@@ -53,50 +159,55 @@ function createHistoryEntry(query, expanded = false) {
         content.appendChild(emptyCards)
     }
 
-    query.cards.forEach((card, index) => {
-        const section = document.createElement('section')
-        section.className = 'bg-purple-50 border border-purple-100 rounded-lg p-4 mb-3'
+    if (query.cards.length) {
+        const cardsGrid = document.createElement('div')
+        cardsGrid.className = 'grid gap-3 sm:grid-cols-2'
+        query.cards.forEach((card, index) => {
+            const section = document.createElement('section')
+            section.className = 'bg-purple-50 border border-purple-100 rounded-xl p-4'
 
-        const title = document.createElement('h4')
-        title.className = 'font-bold text-gray-900 mb-2'
-        title.textContent = `${index + 1}. ${card.word}${card.pronunciation ? ` ${card.pronunciation}` : ''}`
-        section.appendChild(title)
+            const title = document.createElement('h4')
+            title.className = 'font-bold text-gray-900 mb-2'
+            title.textContent = `${index + 1}. ${card.word}${card.pronunciation ? ` ${card.pronunciation}` : ''}`
+            section.appendChild(title)
 
-        const explanation = document.createElement('p')
-        explanation.className = 'text-sm text-gray-700 mb-2'
-        explanation.textContent = card.spanish
-        section.appendChild(explanation)
+            const explanation = document.createElement('p')
+            explanation.className = 'text-sm text-gray-700 mb-2'
+            explanation.textContent = card.spanish
+            section.appendChild(explanation)
 
-        const english = document.createElement('p')
-        english.className = 'text-sm font-semibold text-gray-900'
-        english.textContent = card.example_en
-        section.appendChild(english)
+            const english = document.createElement('p')
+            english.className = 'text-sm font-semibold text-gray-900'
+            english.textContent = card.example_en
+            section.appendChild(english)
 
-        const translation = document.createElement('p')
-        translation.className = 'text-sm text-gray-600'
-        translation.textContent = card.example_es
-        section.appendChild(translation)
+            const translation = document.createElement('p')
+            translation.className = 'text-sm text-gray-600'
+            translation.textContent = card.example_es
+            section.appendChild(translation)
 
-        const editButton = document.createElement('button')
-        editButton.type = 'button'
-        editButton.className = 'mt-3 px-3 py-2 bg-white hover:bg-purple-100 text-purple-800 border border-purple-200 rounded-lg text-sm font-medium'
-        editButton.textContent = 'Editar tarjeta'
-        editButton.addEventListener('click', () => {
-            section.replaceChildren(createCardEditForm(query, card, index))
+            const editButton = document.createElement('button')
+            editButton.type = 'button'
+            editButton.className = 'mt-3 px-3 py-2 bg-white hover:bg-purple-100 text-purple-800 border border-purple-200 rounded-lg text-sm font-medium'
+            editButton.textContent = 'Editar tarjeta'
+            editButton.addEventListener('click', () => {
+                section.replaceChildren(createCardEditForm(query, card, index))
+            })
+            section.appendChild(editButton)
+
+            const removeButton = document.createElement('button')
+            removeButton.type = 'button'
+            removeButton.className = 'mt-3 ml-2 px-3 py-2 bg-white hover:bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm font-medium'
+            removeButton.textContent = 'Eliminar tarjeta'
+            removeButton.addEventListener('click', () => {
+                if (!window.confirm(`¿Eliminar la tarjeta "${card.word}"?`)) return
+                saveQueryCards(query, query.cards.filter((_, cardIndex) => cardIndex !== index), 'delete')
+            })
+            section.appendChild(removeButton)
+            cardsGrid.appendChild(section)
         })
-        section.appendChild(editButton)
-
-        const removeButton = document.createElement('button')
-        removeButton.type = 'button'
-        removeButton.className = 'mt-3 ml-2 px-3 py-2 bg-white hover:bg-red-50 text-red-700 border border-red-200 rounded-lg text-sm font-medium'
-        removeButton.textContent = 'Eliminar tarjeta'
-        removeButton.addEventListener('click', () => {
-            if (!window.confirm(`¿Eliminar la tarjeta "${card.word}"?`)) return
-            saveQueryCards(query, query.cards.filter((_, cardIndex) => cardIndex !== index), 'delete')
-        })
-        section.appendChild(removeButton)
-        content.appendChild(section)
-    })
+        content.appendChild(cardsGrid)
+    }
 
     const addButton = document.createElement('button')
     addButton.type = 'button'
@@ -113,26 +224,148 @@ function createHistoryEntry(query, expanded = false) {
     })
     content.appendChild(addButton)
 
-    details.appendChild(content)
-    return details
+    closeButton.addEventListener('click', () => content.closest('dialog')?.close())
+    return content
 }
 
 function renderHistory(queries) {
     const history = document.getElementById('browser-ai-history')
     if (!history) return
+    savedQueries = queries
 
     history.replaceChildren()
-    if (!queries.length) {
+    const normalizedSearch = querySearch.trim().toLowerCase()
+    const filtered = queries.filter(query =>
+        `${query.question} ${query.summary} ${query.cards.map(card => Object.values(card).join(' ')).join(' ')}`
+            .toLowerCase()
+            .includes(normalizedSearch)
+    )
+    const sorted = [...filtered]
+    if (querySort === 'oldest') sorted.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
+    if (querySort === 'alphabetical') sorted.sort((a, b) => a.question.localeCompare(b.question, 'es', { sensitivity: 'base' }))
+    if (querySort === 'cards') sorted.sort((a, b) => b.cards.length - a.cards.length || new Date(b.created_at) - new Date(a.created_at))
+    if (querySort === 'newest') sorted.sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    const totalPages = queryPageSize === 0 ? 1 : Math.ceil(sorted.length / queryPageSize)
+    queryPage = Math.min(queryPage, Math.max(totalPages - 1, 0))
+    if (!filtered.length) {
         const empty = document.createElement('p')
         empty.className = 'text-sm text-gray-500'
-        empty.textContent = 'Aún no tienes consultas guardadas.'
+        empty.textContent = queries.length ? 'No hay consultas que coincidan con la búsqueda.' : 'Aún no tienes consultas guardadas.'
         history.appendChild(empty)
         return
     }
 
-    queries.forEach((query, index) => {
-        history.appendChild(createHistoryEntry(query, index === 0))
+    const grid = document.createElement('div')
+    grid.className = 'ai-query-grid'
+    const pageQueries = queryPageSize === 0
+        ? sorted
+        : sorted.slice(queryPage * queryPageSize, (queryPage + 1) * queryPageSize)
+    pageQueries.forEach(query => {
+        const tile = document.createElement('article')
+        tile.className = 'ai-query-tile'
+        if (query.image_url) {
+            const imageButton = document.createElement('button')
+            imageButton.type = 'button'
+            imageButton.className = 'ai-query-tile-image-button'
+            imageButton.setAttribute('aria-label', 'Abrir imagen de la consulta')
+            const image = document.createElement('img')
+            image.src = query.image_url
+            image.alt = ''
+            image.loading = 'lazy'
+            image.className = 'ai-query-tile-image'
+            imageButton.appendChild(image)
+            imageButton.addEventListener('click', () => openQueryImage(query))
+            tile.appendChild(imageButton)
+        } else {
+            const icon = document.createElement('span')
+            icon.className = 'ai-query-tile-icon'
+            icon.textContent = '✦'
+            tile.appendChild(icon)
+        }
+        const title = document.createElement('h4')
+        title.className = 'ai-query-tile-title'
+        title.textContent = query.question
+        const excerpt = document.createElement('p')
+        excerpt.className = 'ai-query-tile-excerpt'
+        excerpt.textContent = query.summary
+        const meta = document.createElement('span')
+        meta.className = 'ai-query-tile-meta'
+        meta.textContent = `${query.cards.length} ${query.cards.length === 1 ? 'tarjeta' : 'tarjetas'} · ${new Date(query.created_at).toLocaleDateString()}`
+        const open = document.createElement('button')
+        open.type = 'button'
+        open.className = 'ai-query-tile-open'
+        open.textContent = 'Abrir consulta →'
+        open.addEventListener('click', () => openQueryDetails(query))
+        tile.append(title, excerpt, meta, open)
+        grid.appendChild(tile)
     })
+    history.appendChild(grid)
+
+    if (queryPageSize > 0 && totalPages > 1) {
+        const pagination = document.createElement('nav')
+        pagination.className = 'mt-5 flex items-center justify-center gap-3'
+        pagination.setAttribute('aria-label', 'Paginación de consultas')
+        const previous = document.createElement('button')
+        previous.type = 'button'
+        previous.className = 'rounded-lg border border-gray-200 px-3 py-2 text-sm disabled:opacity-40'
+        previous.textContent = '← Anterior'
+        previous.disabled = queryPage === 0
+        previous.addEventListener('click', () => {
+            queryPage--
+            renderHistory(queries)
+        })
+        const count = document.createElement('span')
+        count.className = 'text-sm text-gray-500'
+        count.textContent = `${queryPage + 1} / ${totalPages}`
+        const next = document.createElement('button')
+        next.type = 'button'
+        next.className = 'rounded-lg border border-gray-200 px-3 py-2 text-sm disabled:opacity-40'
+        next.textContent = 'Siguiente →'
+        next.disabled = queryPage >= totalPages - 1
+        next.addEventListener('click', () => {
+            queryPage++
+            renderHistory(queries)
+        })
+        pagination.append(previous, count, next)
+        history.appendChild(pagination)
+    }
+}
+
+function openQueryImage(query) {
+    if (!query.image_url) return
+    const dialog = document.createElement('dialog')
+    dialog.className = 'ai-query-image-dialog'
+    const closeButton = document.createElement('button')
+    closeButton.type = 'button'
+    closeButton.className = 'ai-query-image-close'
+    closeButton.textContent = 'Cerrar'
+    closeButton.addEventListener('click', () => dialog.close())
+    const image = document.createElement('img')
+    image.src = query.image_url
+    image.alt = `Imagen para la consulta: ${query.question}`
+    dialog.append(closeButton, image)
+    dialog.addEventListener('click', event => {
+        if (event.target === dialog) dialog.close()
+    })
+    dialog.addEventListener('close', () => dialog.remove(), { once: true })
+    document.body.appendChild(dialog)
+    dialog.showModal()
+}
+
+function openQueryDetails(query) {
+    const dialog = document.createElement('dialog')
+    dialog.className = 'ai-query-dialog'
+    activeQueryId = query.id
+    dialog.appendChild(createQueryDetail(query))
+    dialog.addEventListener('click', event => {
+        if (event.target === dialog) dialog.close()
+    })
+    dialog.addEventListener('close', () => {
+        if (activeQueryId === query.id) activeQueryId = null
+        dialog.remove()
+    }, { once: true })
+    document.body.appendChild(dialog)
+    dialog.showModal()
 }
 
 function createCardEditForm(query, card, index) {
@@ -186,7 +419,7 @@ function createCardEditForm(query, card, index) {
         const updatedCard = Object.fromEntries(
             fields.map(([name]) => [name, String(new FormData(form).get(name) || '').trim()])
         )
-        if (Object.values(updatedCard).some(value => !value)) {
+        if (fields.some(([name]) => !updatedCard[name])) {
             showToast('Completa todos los campos de la tarjeta.', 'warning')
             return
         }
@@ -209,6 +442,104 @@ function createCardEditForm(query, card, index) {
     })
 
     return form
+}
+
+function validateQueryImage(file) {
+    if (!AI_QUERY_IMAGE_TYPES.has(file.type)) {
+        showToast('Elige una imagen JPG, PNG, WebP o GIF.', 'warning')
+        return false
+    }
+    if (file.size > MAX_AI_QUERY_IMAGE_SIZE) {
+        showToast('La imagen no puede superar los 5 MB.', 'warning')
+        return false
+    }
+    return true
+}
+
+async function uploadQueryImage(queryId, file) {
+    const extension = AI_QUERY_IMAGE_TYPES.get(file.type)
+    const path = `${store.currentUser.id}/${queryId}/query-${crypto.randomUUID()}.${extension}`
+    const { error } = await supabase.storage.from(AI_QUERY_IMAGE_BUCKET).upload(path, file, {
+        contentType: file.type,
+        upsert: false
+    })
+    if (error) throw error
+    return path
+}
+
+async function saveQueryImage(query, file, input, dropZone) {
+    if (dropZone.dataset.uploading === 'true') return
+    if (!file || !validateQueryImage(file)) {
+        if (input) input.value = ''
+        return
+    }
+    dropZone.dataset.uploading = 'true'
+    dropZone.setAttribute('aria-busy', 'true')
+    if (input) input.disabled = true
+    dropZone.classList.add('opacity-60')
+    let uploadedPath
+    try {
+        uploadedPath = await uploadQueryImage(query.id, file)
+        const { error } = await supabase.rpc('set_user_ai_query_image', {
+            p_query_id: query.id,
+            p_image_path: uploadedPath
+        })
+        if (error) throw error
+
+        if (query.image_path) {
+            const { error: cleanupError } = await supabase.storage.from(AI_QUERY_IMAGE_BUCKET).remove([query.image_path])
+            if (cleanupError) {
+                console.error('La imagen se cambió, pero no se pudo borrar la anterior:', cleanupError)
+                showToast('Imagen guardada. No se pudo eliminar la imagen anterior.', 'warning')
+            } else {
+                showToast('Imagen guardada para toda la consulta.', 'success')
+            }
+        } else {
+            showToast('Imagen guardada para toda la consulta.', 'success')
+        }
+        await loadQueryHistory()
+    } catch (error) {
+        console.error('No se pudo guardar la imagen de la consulta:', error)
+        showToast(`No se pudo guardar la imagen: ${error.message}`, 'error')
+        if (uploadedPath) {
+            const { error: cleanupError } = await supabase.storage.from(AI_QUERY_IMAGE_BUCKET).remove([uploadedPath])
+            if (cleanupError) {
+                console.error('No se pudo limpiar la imagen que no quedó asociada:', cleanupError)
+                showToast('La imagen no se asoció y tampoco se pudo borrar del almacenamiento.', 'warning')
+            }
+        }
+    } finally {
+        if (input) {
+            input.disabled = false
+            input.value = ''
+        }
+        delete dropZone.dataset.uploading
+        dropZone.removeAttribute('aria-busy')
+        dropZone.classList.remove('opacity-60', 'is-dragging')
+    }
+}
+
+async function removeQueryImage(query, button) {
+    button.disabled = true
+    try {
+        const { error } = await supabase.rpc('set_user_ai_query_image', {
+            p_query_id: query.id,
+            p_image_path: null
+        })
+        if (error) throw error
+        const { error: cleanupError } = await supabase.storage.from(AI_QUERY_IMAGE_BUCKET).remove([query.image_path])
+        if (cleanupError) {
+            console.error('La imagen se quitó de la consulta, pero no se pudo borrar del almacenamiento:', cleanupError)
+            showToast('La imagen se quitó de la consulta, pero no se pudo eliminar del almacenamiento.', 'warning')
+        } else {
+            showToast('Imagen quitada de la consulta.', 'success')
+        }
+        await loadQueryHistory()
+    } catch (error) {
+        console.error('No se pudo quitar la imagen de la consulta:', error)
+        button.disabled = false
+        showToast(`No se pudo quitar la imagen: ${error.message}`, 'error')
+    }
 }
 
 async function saveQueryCards(query, cards, operation = 'update') {
@@ -278,7 +609,17 @@ async function deleteQuery(query, button) {
 
         if (error) throw error
 
-        showToast('Consulta y tarjetas eliminadas.', 'success')
+        if (query.image_path) {
+            const { error: storageError } = await supabase.storage.from(AI_QUERY_IMAGE_BUCKET).remove([query.image_path])
+            if (storageError) {
+                console.error('Consulta eliminada, pero no se pudieron eliminar sus imágenes:', storageError)
+                showToast('La consulta se eliminó, pero no se pudieron eliminar sus imágenes.', 'warning')
+            } else {
+                showToast('Consulta y tarjetas eliminadas.', 'success')
+            }
+        } else {
+            showToast('Consulta y tarjetas eliminadas.', 'success')
+        }
         await refreshSavedAIItems()
         await loadQueryHistory()
     } catch (error) {
@@ -293,6 +634,8 @@ async function loadQueryHistory() {
     const history = document.getElementById('browser-ai-history')
     if (!history) return
     if (!store.currentUser) {
+        document.querySelector('.ai-query-dialog')?.close()
+        activeQueryId = null
         history.replaceChildren()
         const loginMessage = document.createElement('p')
         loginMessage.className = 'text-sm text-gray-500'
@@ -312,13 +655,32 @@ async function loadQueryHistory() {
     try {
         const { data, error } = await supabase
             .from('user_ai_queries')
-            .select('id, question, summary, provider, cards, created_at')
+            .select('id, question, summary, provider, cards, image_path, created_at')
             .eq('user_id', store.currentUser.id)
             .order('created_at', { ascending: false })
             .abortSignal(controller.signal)
 
         if (error) throw error
-        renderHistory(data || [])
+        const queries = await Promise.all((data || []).map(async query => {
+            let imageFields = {}
+            if (query.image_path) {
+                const { data: signedImage, error: imageError } = await supabase.storage
+                    .from(AI_QUERY_IMAGE_BUCKET)
+                    .createSignedUrl(query.image_path, 60 * 60)
+                if (imageError) {
+                    console.error('No se pudo crear un enlace temporal para la imagen de la consulta:', imageError)
+                    imageFields = { image_error: true }
+                } else {
+                    imageFields = { image_url: signedImage.signedUrl }
+                }
+            }
+            return { ...query, ...imageFields }
+        }))
+        renderHistory(queries)
+        const activeDialog = document.querySelector('.ai-query-dialog')
+        const activeQuery = queries.find(query => query.id === activeQueryId)
+        if (activeDialog && activeQuery) activeDialog.replaceChildren(createQueryDetail(activeQuery))
+        else if (activeDialog) activeDialog.close()
     } catch (error) {
         history.replaceChildren()
         const errorMessage = document.createElement('p')
@@ -401,10 +763,28 @@ function initializeBrowserAI() {
     const form = document.getElementById('browser-ai-form')
     const submit = document.getElementById('browser-ai-submit')
     const configure = document.getElementById('browser-ai-configure')
+    const search = document.getElementById('browser-ai-search')
+    const sort = document.getElementById('browser-ai-sort')
+    const pageSize = document.getElementById('browser-ai-page-size')
     if (!form || !submit) return
 
     updateAvailability()
     loadQueryHistory()
+    search?.addEventListener('input', () => {
+        querySearch = search.value
+        queryPage = 0
+        renderHistory(savedQueries)
+    })
+    sort?.addEventListener('change', () => {
+        querySort = sort.value
+        queryPage = 0
+        renderHistory(savedQueries)
+    })
+    pageSize?.addEventListener('change', () => {
+        queryPageSize = Number(pageSize.value)
+        queryPage = 0
+        renderHistory(savedQueries)
+    })
     configure?.addEventListener('click', () => {
         window.manageAIKeys()
         updateAvailability()

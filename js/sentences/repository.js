@@ -1,7 +1,6 @@
 import { normalizeSentence } from "./model.js"
 
 const SENTENCES_TABLE = "my_sentences"
-const ATTEMPTS_TABLE = "my_sentence_exercise_attempts"
 
 export function createSentenceRepository(supabase) {
     async function checked(query) {
@@ -13,9 +12,42 @@ export function createSentenceRepository(supabase) {
     return {
         async list(userId) {
             const rows = await checked(
-                supabase.from(SENTENCES_TABLE).select("*").eq("user_id", userId).order("created_at", { ascending: false })
+                supabase.from(SENTENCES_TABLE)
+                    .select("id,english_text,spanish_translation,topic_tags,reason_for_saving,grammar_pattern,review_box,next_review_at,total_attempts,total_failures,consecutive_successes,last_reviewed_at,created_at,updated_at")
+                    .eq("user_id", userId)
+                    .order("created_at", { ascending: false })
             )
             return rows.map(normalizeSentence)
+        },
+        async listVocabulary(userId) {
+            return checked(
+                supabase.from("user_custom_items")
+                    .select("id,word,pronunciation,spanish,example_en,example_es,category,subcategory,created_at")
+                    .eq("user_id", userId)
+                    .eq("subcategory", "Mi vocabulario")
+                    .order("created_at", { ascending: false })
+            )
+        },
+        async saveVocabulary(userId, vocabulary, id = null, category = "Mis Expresiones") {
+            const values = {
+                user_id: userId,
+                word: vocabulary.word.trim(),
+                pronunciation: vocabulary.pronunciation.trim(),
+                spanish: vocabulary.spanish.trim(),
+                example_en: vocabulary.exampleEn.trim(),
+                example_es: vocabulary.exampleEs.trim(),
+                category,
+                subcategory: "Mi vocabulario"
+            }
+            const query = id
+                ? supabase.from("user_custom_items").update(values).eq("id", id).eq("user_id", userId).select().single()
+                : supabase.from("user_custom_items").insert(values).select().single()
+            return checked(query)
+        },
+        async removeVocabulary(userId, id) {
+            await checked(
+                supabase.from("user_custom_items").delete().eq("id", id).eq("user_id", userId)
+            )
         },
         async save(userId, sentence, id = null) {
             const values = {
@@ -47,23 +79,6 @@ export function createSentenceRepository(supabase) {
                 supabase.from(SENTENCES_TABLE).update(values).eq("id", id).eq("user_id", userId).select().single()
             )
             return normalizeSentence(row)
-        },
-        async recordExerciseAttempt(userId, sentenceId, attempt) {
-            return checked(supabase.from(ATTEMPTS_TABLE).insert({
-                user_id: userId,
-                sentence_id: sentenceId,
-                exercise_type: attempt.exerciseType,
-                user_answer: attempt.userAnswer,
-                is_correct: attempt.isCorrect,
-                was_answer_revealed: attempt.wasAnswerRevealed,
-                difficulty_rating: attempt.difficultyRating
-            }).select().single())
-        },
-        async getExerciseAttempts(userId) {
-            return checked(
-                supabase.from(ATTEMPTS_TABLE).select("id,sentence_id,exercise_type,user_answer,is_correct,was_answer_revealed,difficulty_rating,attempted_at")
-                    .eq("user_id", userId).order("attempted_at", { ascending: false })
-            )
         }
     }
 }

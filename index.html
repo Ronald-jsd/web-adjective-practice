@@ -59,7 +59,7 @@
             <button class="nav-tab" data-section="browser-ai" onclick="switchSection('browser-ai', this)">
                 🤖 Consultar IA
             </button>
-            <button class="nav-tab" data-section="mysentences" onclick="switchSection('mysentences', this)">💬 MySentences</button>
+            <button class="nav-tab" data-section="mysentences" onclick="switchSection('mysentences', this)">💬 Mi aprendizaje</button>
         </div>
 
         <div id="adjectives-section" class="section active">
@@ -264,6 +264,22 @@
                 </div>
 
                 <section class="practice-controls" aria-label="Configuración de práctica">
+                    <details id="notion-integration-panel" class="mb-5 rounded-xl border border-indigo-200 bg-indigo-50 p-4">
+                        <summary class="cursor-pointer font-semibold text-indigo-950">📓 Practicar páginas de Notion</summary>
+                        <p class="mt-2 text-sm text-gray-700">Conecta Notion y elige páginas para practicar. El vocabulario se carga temporalmente en memoria; no se guarda en la base de datos. De los párrafos solo se usan pares claros “inglés — español”.</p>
+                        <p id="notion-workspace-name" class="mt-2 text-sm font-medium text-indigo-900" aria-live="polite"></p>
+                        <button id="notion-connect" type="button" class="mt-3 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700">Conectar Notion</button>
+                        <div id="notion-connected-controls" class="hidden">
+                            <div class="mt-3 flex flex-wrap gap-2">
+                                <button id="notion-load-pages" type="button" class="rounded-lg border border-indigo-300 bg-white px-3 py-2 text-sm font-medium text-indigo-900">Actualizar páginas</button>
+                                <button id="notion-save-selection" type="button" class="rounded-lg border border-indigo-300 bg-white px-3 py-2 text-sm font-medium text-indigo-900">Guardar selección</button>
+                                <button id="notion-sync-selected" type="button" class="rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white disabled:opacity-50">Cargar vocabulario temporal</button>
+                                <button id="notion-disconnect" type="button" class="rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-700">Desconectar</button>
+                            </div>
+                            <div id="notion-page-list" class="mt-3 grid gap-2"></div>
+                        </div>
+                        <p id="notion-integration-status" class="mt-3 text-sm text-gray-600" role="status" aria-live="polite">Requiere configurar OAuth de Notion en Supabase.</p>
+                    </details>
                     <div class="practice-control-heading">
                         <h3>Categorías</h3>
                         <span id="practice-category-count" class="practice-count"></span>
@@ -351,13 +367,13 @@
         </div>
 
         <div id="browser-ai-section" class="section">
-            <div class="max-w-3xl mx-auto py-8">
-                <div class="text-center mb-6">
+            <div class="max-w-7xl mx-auto px-4 py-8">
+                <div class="max-w-3xl mx-auto text-center mb-6">
                     <div class="text-4xl mb-3">🤖</div>
                     <h2 class="font-serif-oxford text-3xl font-bold text-gray-900">Consulta tu IA y crea tarjetas</h2>
                     <p class="text-gray-600 mt-2">Recibe una explicación en español con ejemplos traducidos y guarda cada uso como una tarjeta.</p>
                 </div>
-                <div class="bg-white border border-gray-200 rounded-2xl p-5 md:p-7 shadow-sm">
+                <div class="max-w-3xl mx-auto bg-white border border-gray-200 rounded-2xl p-5 md:p-7 shadow-sm">
                     <p id="browser-ai-availability" class="text-sm text-gray-600 mb-4" role="status" aria-live="polite">Comprobando el proveedor de IA configurado...</p>
                     <button id="browser-ai-configure" type="button" class="hidden mb-4 px-4 py-2 bg-purple-100 hover:bg-purple-200 text-purple-800 rounded-lg text-sm font-medium" onclick="window.manageAIKeys()">Configurar Gemini o Groq</button>
                     <form id="browser-ai-form" class="space-y-4">
@@ -371,9 +387,35 @@
                 <section class="mt-8" aria-labelledby="browser-ai-history-title">
                     <div class="mb-4">
                         <h3 id="browser-ai-history-title" class="text-xl font-bold text-gray-900">Mis consultas guardadas</h3>
-                        <p class="text-sm text-gray-500 mt-1">Abre una consulta para ver su explicación, editar sus tarjetas y conservar los cambios en tu cuenta.</p>
+                        <p class="text-sm text-gray-500 mt-1">Abre una consulta para ver su explicación, agregar una sola imagen para toda la consulta y editar sus tarjetas.</p>
                     </div>
-                    <div id="browser-ai-history" class="space-y-3" aria-live="polite">
+                    <div class="ai-query-controls mb-5">
+                        <label class="ai-query-search">
+                            <span class="sr-only">Buscar en mis consultas</span>
+                            <input id="browser-ai-search" type="search" placeholder="Buscar una consulta, palabra o explicación..."
+                                class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100">
+                        </label>
+                        <label class="ai-query-filter">
+                            <span>Ordenar</span>
+                            <select id="browser-ai-sort" class="rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm">
+                                <option value="newest">Más recientes</option>
+                                <option value="oldest">Más antiguas</option>
+                                <option value="alphabetical">Alfabético</option>
+                                <option value="cards">Más N° tarjetas</option>
+                            </select>
+                        </label>
+                        <label class="ai-query-filter">
+                            <span>Por página</span>
+                            <select id="browser-ai-page-size" class="rounded-xl border border-gray-200 bg-white px-3 py-3 text-sm">
+                                <option value="8">8</option>
+                                <option value="12" selected>12</option>
+                                <option value="16">16</option>
+                                <option value="24">24</option>
+                                <option value="0">Todas</option>
+                            </select>
+                        </label>
+                    </div>
+                    <div id="browser-ai-history" aria-live="polite">
                         <p class="text-sm text-gray-500">Cargando consultas guardadas...</p>
                     </div>
                 </section>
@@ -396,17 +438,17 @@
                 </section>
                 <section id="app-panel" class="hidden">
                     <div class="welcome">
-                        <div><p class="eyebrow">TU PRÁCTICA PERSONAL</p><h1>English, from your life.</h1><p class="muted">Guarda frases reales y recupéralas de memoria.</p></div>
+                        <div><p class="eyebrow">TU PRÁCTICA PERSONAL</p><h1>English, from your life.</h1><p class="muted">Guarda frases reales y vocabulario para repasarlos cuando quieras.</p></div>
                         <div class="stats" aria-live="polite">
                             <div class="stat"><strong id="due-count">0</strong><span>Para repasar hoy</span></div>
                             <div class="stat"><strong id="daily-count">0</strong><span>Hechas hoy</span></div>
                             <div class="stat"><strong id="accuracy">—</strong><span>Recuerdo total</span></div>
                         </div>
                     </div>
-                    <nav class="tabs" aria-label="Navegación de MySentences">
-                        <button class="tab active" data-screen="add">＋ Añadir</button>
+                    <nav class="tabs" aria-label="Navegación de Mi aprendizaje">
+                        <button class="tab active" data-screen="add">＋ Frases</button>
+                        <button class="tab" data-screen="vocabulary">📚 Vocabulario</button>
                         <button class="tab" data-screen="review">↻ Repasar <span id="review-tab-count" class="tab-count">0</span></button>
-                        <button class="tab" data-screen="practice">✎ Practicar</button>
                     </nav>
                     <div id="notice" class="notice hidden" role="status"></div>
                     <section id="add-screen" class="screen active">
@@ -431,14 +473,27 @@
                         <div class="section-heading list-heading"><div><p class="eyebrow">TU COLECCIÓN</p><h2>Mis frases</h2></div><input id="search-input" class="search" type="search" placeholder="Buscar en mis frases…" aria-label="Buscar frases"></div>
                         <div id="sentence-list" class="sentence-list"></div>
                     </section>
+                    <section id="vocabulary-screen" class="screen">
+                        <div class="section-heading"><div><p class="eyebrow">TU VOCABULARIO PERSONAL</p><h2>Palabras y expresiones</h2><p class="muted">Guarda vocabulario con su significado y ejemplo bilingüe. También aparece en Practicar, dentro de Mis Expresiones.</p></div></div>
+                        <form id="vocabulary-form" class="panel form-stack">
+                            <input type="hidden" name="id">
+                            <div class="form-grid">
+                                <label>Palabra o expresión <span class="required">Obligatorio</span><input name="word" type="text" required maxlength="300" placeholder="for example: figure out"></label>
+                                <label>Pronunciación <span class="optional">Opcional</span><input name="pronunciation" type="text" maxlength="100" placeholder="/ˈfɪɡər aʊt/"></label>
+                            </div>
+                            <label>Significado en español <span class="required">Obligatorio</span><textarea name="spanish" rows="2" required maxlength="2000" placeholder="averiguar, resolver"></textarea></label>
+                            <div class="form-grid">
+                                <label>Ejemplo en inglés <span class="optional">Opcional</span><textarea name="exampleEn" rows="2" maxlength="2000" placeholder="I can't figure out this problem."></textarea></label>
+                                <label>Traducción del ejemplo <span class="optional">Opcional</span><textarea name="exampleEs" rows="2" maxlength="2000" placeholder="No puedo resolver este problema."></textarea></label>
+                            </div>
+                            <div class="form-actions"><button class="button primary" type="submit">Guardar vocabulario</button><button class="button secondary hidden" id="cancel-vocabulary-edit" type="button">Cancelar edición</button></div>
+                        </form>
+                        <div class="section-heading list-heading"><div><p class="eyebrow">TU COLECCIÓN</p><h2>Mi vocabulario</h2></div></div>
+                        <div id="vocabulary-list" class="sentence-list"><div class="empty">Abre esta pestaña para cargar tu vocabulario.</div></div>
+                    </section>
                     <section id="review-screen" class="screen">
                         <div class="section-heading"><div><p class="eyebrow">REPETICIÓN ESPACIADA</p><h2>Recuerda antes de mirar</h2><p class="muted">Las frases olvidadas vuelven al primer repaso. Las dominadas regresan cada 30 días.</p></div></div>
                         <div id="review-card" class="exercise-card panel"></div>
-                    </section>
-                    <section id="practice-screen" class="screen">
-                        <div class="section-heading"><div><p class="eyebrow">PRODUCE EN INGLÉS</p><h2>Completa la frase</h2><p class="muted">Cada ejercicio sale de tus propias frases. La respuesta revelada no cuenta como recuerdo.</p></div></div>
-                        <div id="practice-card" class="exercise-card panel"></div>
-                        <section class="mistakes-area"><h3>Frases difíciles</h3><p class="muted">Reintenta las frases con más errores.</p><div id="difficult-list" class="sentence-list"></div><h3>Errores recientes</h3><div id="mistakes-list" class="mistakes-list"></div></section>
                     </section>
                 </section>
             </div>
