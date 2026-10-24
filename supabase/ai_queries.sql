@@ -8,7 +8,7 @@ create table if not exists public.user_ai_queries (
     cards jsonb not null check (
         case
             when jsonb_typeof(cards) = 'array'
-                then jsonb_array_length(cards) between 1 and 6
+                then jsonb_array_length(cards) between 1 and 20
             else false
         end
     ),
@@ -202,11 +202,11 @@ begin
     end if;
 
     if jsonb_typeof(p_cards) is distinct from 'array' then
-        raise exception 'AI queries must contain between 1 and 6 cards';
+        raise exception 'AI queries must contain between 1 and 20 cards';
     end if;
 
-    if jsonb_array_length(p_cards) not between 1 and 6 then
-        raise exception 'AI queries must contain between 1 and 6 cards';
+    if jsonb_array_length(p_cards) not between 1 and 20 then
+        raise exception 'AI queries must contain between 1 and 20 cards';
     end if;
 
     insert into public.user_ai_queries (user_id, question, summary, provider, cards)

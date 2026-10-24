@@ -25,7 +25,7 @@ my-sentences.html + sentences.css
 ## Setup
 
 1. Open the existing Supabase project and run `supabase/schema.sql` in the SQL Editor while signed in. The current project URL and publishable key are read from `js/config.js`; change those constants if using a different Supabase project. The publishable key is intended for browser use; never put a service-role key in frontend code.
-2. Also run `supabase/practice_progress.sql` and `supabase/ai_queries.sql` in the same SQL Editor. The AI script creates the saved-query functions and a private Storage bucket for one image per saved query. If MySentences reports that `my_sentences` does not exist, run `supabase/schema.sql` in the SQL Editor for the same Supabase project configured in `js/config.js`.
+2. Also run `supabase/practice_progress.sql` and `supabase/ai_queries.sql` in the same SQL Editor. The AI script creates the saved-query functions and a private Storage bucket for one image per saved query. Re-run `supabase/ai_queries.sql` after updating the app to allow up to 20 cards per query. If MySentences reports that `my_sentences` does not exist, run `supabase/schema.sql` in the SQL Editor for the same Supabase project configured in `js/config.js`.
 3. Serve the repository root over HTTP (ES modules do not work from `file://`). For example, run `npx serve .` and open `/index.html`, then select **💬 Mi aprendizaje**. `/my-sentences.html` redirects to that section of the same page.
 4. Create an account or sign in. Supabase Auth email confirmation behavior is controlled in the project's Auth settings. RLS ensures a learner can access only their own sentences and exercise attempts.
 5. Run `npm test` to run the service and repository unit tests.
@@ -61,7 +61,7 @@ La lectura reconoce tablas con encabezados de vocabulario como `VERBO`, `SUSTANT
 
 ## MVP behavior
 
-- Add/edit/delete/search sentences and save separate personal vocabulary entries with a meaning, pronunciation, and optional translated example. Each saved AI query can keep one private image in Supabase Storage; select, drag, or paste an image in the query details, then click its preview to open a larger view. The searchable AI-query history is displayed as a responsive grid of up to four cards per row, with sorting and a selectable page size. Sentence exercise history loads only the five most recent attempts.
+- Add/edit/delete/search sentences and save separate personal vocabulary entries with a meaning, pronunciation, and optional translated example. Each saved AI query can keep one private image in Supabase Storage; select, drag, or paste an image in the query details, then click its preview to open a larger view. The searchable AI-query history is displayed as a responsive grid of up to four cards per row, with sorting and a selectable page size. AI guides can generate up to 20 cards and are instructed to include every requested item in a list. Sentence exercise history loads only the five most recent attempts.
 - The form rejects isolated words (including `water`) and requests a meaningful expression or sentence.
 - A new sentence starts in Box 1 and is due the next day. A remembered review advances by box; any failure returns it to Box 1. A successful Box 3 review moves to mastered, which continues to recur every 30 days.
 - Sentence review reveals the model sentence before the learner self-reports remembered/forgotten. Saved personal vocabulary is available in the main **Practicar** section under **Mis Expresiones**.

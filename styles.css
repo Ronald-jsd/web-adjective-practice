@@ -344,24 +344,53 @@
     }
 
     .nav-tabs {
-        display: flex;
-        gap: 4px;
+        display: grid;
+        grid-template-columns: repeat(5, minmax(0, 1fr));
+        gap: 6px;
         background: #f1f5f9;
         padding: 4px;
         border-radius: 12px;
         margin-bottom: 16px;
+        min-width: 0;
     }
 
     .nav-tab {
-        padding: 8px 20px;
+        min-width: 0;
+        padding: 9px 8px;
         border-radius: 8px;
         font-weight: 600;
         font-size: 0.85rem;
+        line-height: 1.3;
         cursor: pointer;
         transition: all 0.2s;
         border: none;
         background: transparent;
         color: #64748b;
+        overflow-wrap: anywhere;
+    }
+
+    @media (max-width: 900px) {
+        .nav-tabs { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+        .nav-tab { font-size: 0.8rem; }
+    }
+
+    @media (max-width: 520px) {
+        #main-view { padding-right: 10px; padding-left: 10px; }
+        .nav-tabs {
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 5px;
+            padding: 5px;
+        }
+        .nav-tab {
+            display: flex;
+            min-height: 44px;
+            align-items: center;
+            justify-content: center;
+            padding: 8px 5px;
+            font-size: clamp(0.72rem, 3.5vw, 0.82rem);
+            text-align: center;
+        }
+        .nav-tab:last-child { grid-column: 1 / -1; }
     }
 
     .nav-tab:hover {
@@ -789,6 +818,18 @@
         gap: 16px;
     }
 
+    #browser-ai-section,
+    #browser-ai-section * {
+        box-sizing: border-box;
+        min-width: 0;
+    }
+
+    #browser-ai-section { overflow-wrap: anywhere; }
+
+    #browser-ai-section img {
+        max-width: 100%;
+    }
+
     .ai-query-controls {
         display: grid;
         grid-template-columns: minmax(240px, 1fr) auto auto;
@@ -928,6 +969,8 @@
         box-shadow: 0 24px 80px rgba(27, 16, 41, 0.3);
     }
 
+    .ai-query-dialog > div { width: 100%; }
+
     .ai-query-dialog::backdrop { background: rgba(28, 20, 36, 0.58); }
 
     .ai-query-image-dialog {
@@ -993,9 +1036,22 @@
     }
 
     @media (max-width: 520px) {
+        #browser-ai-section .max-w-7xl {
+            width: 100%;
+            padding-right: 12px;
+            padding-left: 12px;
+        }
+
+        #browser-ai-section h2 { font-size: clamp(1.65rem, 8vw, 2rem); }
+        #browser-ai-section .bg-white.border.rounded-2xl { padding: 16px; }
         .ai-query-grid { grid-template-columns: 1fr; }
         .ai-query-controls { grid-template-columns: 1fr; }
         .ai-query-search { grid-column: auto; }
         .ai-query-dialog { width: calc(100% - 16px); max-height: 94vh; }
         .ai-query-filter select { width: 100%; }
+        .ai-query-tile { min-height: 0; }
+        .ai-query-dialog .grid { grid-template-columns: minmax(0, 1fr); }
+        .ai-query-dialog button,
+        .ai-query-dialog label { max-width: 100%; white-space: normal; }
+        .ai-query-image-dialog { width: calc(100% - 16px); padding: 10px; }
     }

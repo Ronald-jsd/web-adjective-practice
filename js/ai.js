@@ -222,7 +222,7 @@ async function generateWithGroq(word, apiKey, guide = false) {
     }).join('\n')
 
     const guideInstructions = `Eres un profesor bilingüe de inglés y español. Responde la consulta del usuario como una guía breve y clara en español.
-Explica los usos distintos que sean relevantes. Crea entre 1 y 6 tarjetas, una por cada palabra, expresión o uso que enseñes. Cada tarjeta debe tener exactamente un ejemplo natural en inglés y su traducción natural al español.
+Explica los usos distintos que sean relevantes. Crea de 1 a 20 tarjetas. Si el usuario pide una lista o una cantidad concreta, incluye todos los elementos solicitados en tarjetas separadas; por ejemplo, 10 fortalezas y 10 debilidades requieren 20 tarjetas. No reduzcas la lista a seis. Cada tarjeta debe tener exactamente un ejemplo natural en inglés y su traducción natural al español.
 Responde SOLO con JSON válido, sin markdown, con esta forma:
 {
   "summary": "respuesta directa y explicación general en español",
@@ -236,7 +236,7 @@ Responde SOLO con JSON válido, sin markdown, con esta forma:
     }
   ]
 }
-Cada tarjeta debe representar un uso o expresión diferente, y su ejemplo debe ilustrar ese uso. No incluyas ejemplos adicionales fuera de las tarjetas.`
+Cada tarjeta debe representar un elemento, uso o expresión diferente, y su ejemplo debe ilustrarlo. No incluyas ejemplos adicionales fuera de las tarjetas.`
 
     const vocabularyInstructions = `Eres un experto en vocabulario inglés. Analiza la palabra o frase que te dará el usuario (si te da en español tú conviertelo a ingles) y proporciona:
 1. La categoría más apropiada de esta lista: ${categoriesList}
@@ -273,7 +273,7 @@ Responde SOLO en formato JSON válido, sin texto adicional, sin markdown:
                         { role: 'user', content: `Palabra/frase: "${word}"` }
                     ],
                     temperature: 0.7,
-                    max_tokens: guide ? 4096 : 1024,
+                    max_tokens: guide ? 8192 : 1024,
                     response_format: { type: 'json_object' }
                 })
             })
@@ -308,7 +308,7 @@ async function generateWithGemini(word, apiKey, guide = false) {
     }).join('\n')
 
     const guidePrompt = `Eres un profesor bilingüe de inglés y español. Responde la consulta del usuario como una guía breve y clara en español.
-Explica los usos distintos que sean relevantes. Crea entre 1 y 6 tarjetas, una por cada palabra, expresión o uso que enseñes. Cada tarjeta debe tener exactamente un ejemplo natural en inglés y su traducción natural al español.
+Explica los usos distintos que sean relevantes. Crea de 1 a 20 tarjetas. Si el usuario pide una lista o una cantidad concreta, incluye todos los elementos solicitados en tarjetas separadas; por ejemplo, 10 fortalezas y 10 debilidades requieren 20 tarjetas. No reduzcas la lista a seis. Cada tarjeta debe tener exactamente un ejemplo natural en inglés y su traducción natural al español.
 Consulta del usuario: "${word}"
 Responde SOLO con JSON válido, sin markdown, con esta forma:
 {
@@ -323,7 +323,7 @@ Responde SOLO con JSON válido, sin markdown, con esta forma:
     }
   ]
 }
-Cada tarjeta debe representar un uso o expresión diferente, y su ejemplo debe ilustrar ese uso. No incluyas ejemplos adicionales fuera de las tarjetas.`
+Cada tarjeta debe representar un elemento, uso o expresión diferente, y su ejemplo debe ilustrarlo. No incluyas ejemplos adicionales fuera de las tarjetas.`
 
     const vocabularyPrompt = `Eres un experto en vocabulario inglés. Analiza la palabra o frase "${word}" y proporciona:
 1. La categoría más apropiada de esta lista: ${categoriesList}
@@ -352,7 +352,7 @@ Responde SOLO en formato JSON válido, sin texto adicional:
             temperature: 0.7,
             topK: 40,
             topP: 0.95,
-            maxOutputTokens: guide ? 4096 : 2048,
+            maxOutputTokens: guide ? 8192 : 2048,
             responseMimeType: "application/json",
         }
     }

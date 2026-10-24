@@ -711,8 +711,8 @@ async function createAndSaveCard(question) {
     const guide = await generateWithAI(question, { guide: true })
     if (!guide) return false
     if (typeof guide.summary !== 'string' || !guide.summary.trim() ||
-        !Array.isArray(guide.cards) || guide.cards.length < 1 || guide.cards.length > 6) {
-        throw new Error('La respuesta de la IA no contiene una guía válida con entre 1 y 6 tarjetas.')
+        !Array.isArray(guide.cards) || guide.cards.length < 1 || guide.cards.length > 20) {
+        throw new Error('La respuesta de la IA no contiene una guía válida con entre 1 y 20 tarjetas.')
     }
 
     const fields = ['word', 'pronunciation', 'spanish', 'example_en', 'example_es']
@@ -735,8 +735,9 @@ async function createAndSaveCard(question) {
     })
 
     if (error) {
-        const migrationHint = error.message.includes('save_user_ai_query')
-            ? ' Ejecuta el archivo supabase/ai_queries.sql en Supabase.'
+        const migrationHint = error.message.includes('save_user_ai_query') ||
+            error.message.includes('between 1 and 6 cards')
+            ? ' La base de datos aún tiene el límite anterior: vuelve a ejecutar supabase/ai_queries.sql en el SQL Editor del mismo proyecto Supabase.'
             : ''
         throw new Error(`No se pudo guardar la consulta y sus tarjetas: ${error.message}.${migrationHint}`)
     }
