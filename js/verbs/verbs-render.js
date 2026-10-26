@@ -54,7 +54,8 @@ export const VERB_FIELDS = [
     { key: 'pronunciation_noun', label: 'Pron. Sust.' },
     { key: 'translation_noun', label: 'Trad. Sust.' },
     { key: 'example_noun', label: 'Ej. Sust.' },
-    { key: 'example_noun_translation', label: 'Trad. Ej. Sust.' }
+    { key: 'example_noun_translation', label: 'Trad. Ej. Sust.' },
+    { key: 'notes', label: 'Notas' }
 ]
 
 const SPANISH_FIELDS = new Set([

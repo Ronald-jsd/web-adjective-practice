@@ -6,6 +6,7 @@ create table if not exists public.my_sentences (
     topic_tags text[] not null check (cardinality(topic_tags) > 0),
     reason_for_saving text not null check (reason_for_saving in ('I couldn''t say it', 'I made a mistake', 'Useful expression')),
     grammar_pattern text,
+    notes text,
     review_box text not null default '1' check (review_box in ('1', '2', '3', 'mastered')),
     next_review_at timestamptz not null default (now() + interval '1 day'),
     total_attempts integer not null default 0 check (total_attempts >= 0),

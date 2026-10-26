@@ -22,6 +22,7 @@ import {
     createPersonalVocabularyPracticeCategory
 } from "./ai-practice.js";
 import { getSelectedNotionPageIds, loadNotionPracticeCategories } from "./notion.js";
+import { parsePracticeTable } from "./practice-import.js";
 
 const PROGRESS_STORAGE_KEY = "vocabulary_practice_progress_v1";
 const CATEGORY_SELECTION_STORAGE_KEY = "practice_selected_categories_v1";
@@ -31,6 +32,11 @@ const DAY_IN_MS = 24 * 60 * 60 * 1000;
 let practiceItems = [];
 let selectedCategories = new Set();
 let currentItem = null;
+let questionHistory = [];
+let questionHistoryIndex = -1;
+let importedPracticeItems = [];
+let practiceSourceCategories = [];
+let practiceSourceOptions = {};
 let selectedExerciseType = "mixed";
 let currentExerciseType = "listening";
 let correctAnswers = 0;
@@ -438,10 +444,13 @@ function onSelectionChanged() {
     stopAudioCourse(true);
     currentItem = null;
     isAnswered = false;
+    questionHistory = [];
+    questionHistoryIndex = -1;
     forgottenQueue = forgottenQueue.filter(id => getSelectedItems().some(item => item.id === id));
     clearFeedback();
     document.getElementById("practice-start")?.classList.remove("hidden");
     document.getElementById("practice-next")?.classList.add("hidden");
+    updatePreviousButton();
     renderQuestion();
 }
 
@@ -483,6 +492,9 @@ function nextQuestion() {
     currentItem = nextItem;
     currentExerciseType = chooseExerciseType();
     isAnswered = false;
+    questionHistory = questionHistory.slice(0, questionHistoryIndex + 1);
+    questionHistory.push({ item: currentItem, exerciseType: currentExerciseType, answered: false });
+    questionHistoryIndex = questionHistory.length - 1;
     clearFeedback();
     const answer = document.getElementById("practice-answer");
     if (answer) answer.value = "";
@@ -492,6 +504,30 @@ function nextQuestion() {
     else document.getElementById("practice-choice-options")?.replaceChildren();
     renderQuestion();
     if (currentExerciseType !== "choice") answer?.focus();
+    updatePreviousButton();
+}
+
+function updatePreviousButton() {
+    const button = document.getElementById("practice-prev");
+    if (button) button.classList.toggle("hidden", questionHistoryIndex <= 0);
+}
+
+function previousQuestion() {
+    if (questionHistoryIndex <= 0) return;
+    questionHistoryIndex -= 1;
+    const previous = questionHistory[questionHistoryIndex];
+    currentItem = previous.item;
+    currentExerciseType = previous.exerciseType;
+    isAnswered = previous.answered;
+    clearFeedback();
+    const answer = document.getElementById("practice-answer");
+    if (answer) answer.value = "";
+    document.getElementById("practice-next")?.classList.remove("hidden");
+    document.getElementById("practice-start")?.classList.add("hidden");
+    if (currentExerciseType === "choice") renderChoiceOptions();
+    else document.getElementById("practice-choice-options")?.replaceChildren();
+    renderQuestion();
+    updatePreviousButton();
 }
 
 function recordAnswer(submittedAnswer, selectedButton = null) {
@@ -499,6 +535,9 @@ function recordAnswer(submittedAnswer, selectedButton = null) {
 
     const isCorrect = normalizeAnswer(submittedAnswer) === normalizeAnswer(currentItem.word);
     isAnswered = true;
+    if (questionHistory[questionHistoryIndex]) {
+        questionHistory[questionHistoryIndex].answered = true;
+    }
     answeredQuestions += 1;
     if (isCorrect) correctAnswers += 1;
 
@@ -605,6 +644,8 @@ function submitAnswer(event) {
 
 async function initializePractice(categories = [], options = {}) {
     if (initialized) stopAudioCourse();
+    practiceSourceCategories = categories;
+    practiceSourceOptions = options;
     const userId = options.userId || null;
     if (practiceSentencesUserId !== userId) {
         practiceSentencesCache = null;
@@ -798,6 +839,21 @@ async function initializePractice(categories = [], options = {}) {
             }]
         }];
     }
+    if (importedPracticeItems.length) {
+        practiceCategories = [...practiceCategories, {
+            id: "pasted-practice-table",
+            title: "Tabla pegada",
+            icon: "📋",
+            subcategories: [{
+                id: "pasted-table-items",
+                title: "Material temporal",
+                items: importedPracticeItems.map((item, index) => [
+                    item.word, item.pronunciation, item.spanish, item.exampleEn, item.exampleEs,
+                    `pasted-table-${index}`
+                ])
+            }]
+        }];
+    }
 
     practiceItems = getPracticeItems(practiceCategories);
     progressSync = options.supabase && options.userId
@@ -887,6 +943,22 @@ async function initializePractice(categories = [], options = {}) {
         });
         document.getElementById("practice-start")?.addEventListener("click", nextQuestion);
         document.getElementById("practice-next")?.addEventListener("click", nextQuestion);
+        document.getElementById("practice-prev")?.addEventListener("click", previousQuestion);
+        document.getElementById("practice-table-import")?.addEventListener("click", async () => {
+            const input = document.getElementById("practice-table-input");
+            const status = document.getElementById("practice-table-status");
+            const parsed = parsePracticeTable(input?.value || "");
+            if (!parsed.length) {
+                if (status) status.textContent = "No encontré filas. Revisa que la primera fila tenga encabezados como Adjetivo, Significado y Ejemplo en inglés.";
+                return;
+            }
+            importedPracticeItems = parsed;
+            selectedCategories.add("pasted-practice-table");
+            questionHistory = [];
+            questionHistoryIndex = -1;
+            if (status) status.textContent = `${parsed.length} elementos listos en la categoría temporal “Tabla pegada”.`;
+            await initializePractice(practiceSourceCategories, practiceSourceOptions);
+        });
         document.getElementById("practice-listen")?.addEventListener("click", () => {
             if (currentItem) playAudioEnhanced(currentItem.word, "en");
         });
@@ -895,6 +967,7 @@ async function initializePractice(categories = [], options = {}) {
     }
 
     renderQuestion();
+    updatePreviousButton();
 }
 
 export { initializePractice };

@@ -89,7 +89,8 @@ window.editVerbCell = function (cell, field, verbId) {
             example_noun: 'example_noun',
             example_noun_translation: 'example_noun_translation',
             translationExampleNoun: 'translation_example_noun',
-            translation_example_noun: 'translation_example_noun'
+            translation_example_noun: 'translation_example_noun',
+            notes: 'notes'
         }
 
         const dbField = fieldMap[field] || field

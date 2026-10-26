@@ -751,7 +751,10 @@
     .practice-schedule-note { color: #647168; font-size: 0.78rem; }
     .practice-example { margin-top: 6px; color: #38473f; font-style: italic; }
     .practice-example-translation { color: #7a847d; font-size: 0.78rem; }
-    .practice-actions { display: flex; justify-content: center; margin-top: 20px; }
+    .practice-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 20px; }
+    .practice-import-panel { display: grid; gap: 10px; margin-top: 14px; padding: 12px; border: 1px solid #ded6e5; border-radius: 12px; background: #fff; }
+    .practice-import-panel summary { cursor: pointer; font-weight: 700; }
+    .practice-import-panel textarea { width: 100%; max-width: 100%; padding: 10px; border: 1px solid #d5d9d6; border-radius: 8px; font: inherit; }
 
     @media (max-width: 700px) {
         .practice-layout { grid-template-columns: 1fr; gap: 18px; padding-top: 12px; }

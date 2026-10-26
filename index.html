@@ -285,6 +285,13 @@
                         <span id="practice-category-count" class="practice-count"></span>
                     </div>
                     <div id="practice-category-list" class="practice-category-list"></div>
+                    <details class="practice-import-panel">
+                        <summary>Pegar tabla para practicar</summary>
+                        <p class="muted">Pega una tabla copiada de Docs, Sheets o Markdown. Se reconocen columnas con encabezados variables; el material solo se usa en esta sesión.</p>
+                        <textarea id="practice-table-input" rows="6" placeholder="Adjetivo&#9;Significado&#9;Ejemplo en inglés&#9;Traducción"></textarea>
+                        <button id="practice-table-import" type="button" class="button secondary">Importar a Practicar</button>
+                        <span id="practice-table-status" role="status" aria-live="polite"></span>
+                    </details>
 
                     <div class="practice-control-heading practice-mode-heading">
                         <h3>Modo</h3>
@@ -359,6 +366,7 @@
                     </form>
                     <div id="practice-feedback" class="practice-feedback" role="status"></div>
                     <div class="practice-actions">
+                        <button id="practice-prev" type="button" class="practice-next-button hidden">← Anterior</button>
                         <button id="practice-start" type="button" class="practice-next-button" disabled>Comenzar práctica</button>
                         <button id="practice-next" type="button" class="practice-next-button hidden">Siguiente palabra <span aria-hidden="true">→</span></button>
                     </div>
@@ -462,6 +470,7 @@
                                 <label class="translation-field">Traducción al español <span class="optional">Optional · Puedes escribirla o pedir una recomendación</span><span class="translation-row"><input name="spanishTranslation" type="text" placeholder="¿Podría darme una mesa para dos, por favor?"><button class="button secondary translate-button" id="translate-button" type="button">Mejorar + traducir con IA</button></span><small class="field-hint">Usa la IA configurada en la Guía Oxford para corregir la idea y proponer su traducción.</small><small id="translation-status" class="field-hint" aria-live="polite"></small></label>
                                 <label>Grammar pattern <span class="optional">Optional</span><input name="grammarPattern" type="text" list="grammar-suggestions" placeholder="Suggested when possible"><datalist id="grammar-suggestions"><option>Simple present</option><option>Simple past</option><option>Present perfect</option><option>Continuous tense</option><option>Modal verb</option><option>Conditional sentence</option><option>Complex sentence</option><option>Question form</option></datalist></label>
                             </div>
+                            <label>Notas <span class="optional">Opcional</span><textarea name="notes" rows="2" maxlength="2000" placeholder="Una aclaración o recordatorio personal"></textarea></label>
                             <div id="recommendation-panel" class="recommendation-panel hidden" aria-live="polite">
                                 <p class="eyebrow">SUGERENCIA DE LA IA</p>
                                 <p class="recommendation-english" id="recommendation-english"></p>
@@ -486,6 +495,7 @@
                                 <label>Ejemplo en inglés <span class="optional">Opcional</span><textarea name="exampleEn" rows="2" maxlength="2000" placeholder="I can't figure out this problem."></textarea></label>
                                 <label>Traducción del ejemplo <span class="optional">Opcional</span><textarea name="exampleEs" rows="2" maxlength="2000" placeholder="No puedo resolver este problema."></textarea></label>
                             </div>
+                            <label>Notas <span class="optional">Opcional</span><textarea name="notes" rows="2" maxlength="2000" placeholder="Una aclaración o recordatorio personal"></textarea></label>
                             <div class="form-actions"><button class="button primary" type="submit">Guardar vocabulario</button><button class="button secondary hidden" id="cancel-vocabulary-edit" type="button">Cancelar edición</button></div>
                         </form>
                         <div class="section-heading list-heading"><div><p class="eyebrow">TU COLECCIÓN</p><h2>Mi vocabulario</h2></div></div>

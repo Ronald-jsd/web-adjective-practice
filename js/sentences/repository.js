@@ -13,7 +13,7 @@ export function createSentenceRepository(supabase) {
         async list(userId) {
             const rows = await checked(
                 supabase.from(SENTENCES_TABLE)
-                    .select("id,english_text,spanish_translation,topic_tags,reason_for_saving,grammar_pattern,review_box,next_review_at,total_attempts,total_failures,consecutive_successes,last_reviewed_at,created_at,updated_at")
+                    .select("id,english_text,spanish_translation,topic_tags,reason_for_saving,grammar_pattern,notes,review_box,next_review_at,total_attempts,total_failures,consecutive_successes,last_reviewed_at,created_at,updated_at")
                     .eq("user_id", userId)
                     .order("created_at", { ascending: false })
             )
@@ -22,7 +22,7 @@ export function createSentenceRepository(supabase) {
         async listVocabulary(userId) {
             return checked(
                 supabase.from("user_custom_items")
-                    .select("id,word,pronunciation,spanish,example_en,example_es,category,subcategory,created_at")
+                    .select("id,word,pronunciation,spanish,example_en,example_es,notes,category,subcategory,created_at")
                     .eq("user_id", userId)
                     .eq("subcategory", "Mi vocabulario")
                     .order("created_at", { ascending: false })
@@ -36,6 +36,7 @@ export function createSentenceRepository(supabase) {
                 spanish: vocabulary.spanish.trim(),
                 example_en: vocabulary.exampleEn.trim(),
                 example_es: vocabulary.exampleEs.trim(),
+                notes: String(vocabulary.notes || "").trim() || null,
                 category,
                 subcategory: "Mi vocabulario"
             }
@@ -56,7 +57,8 @@ export function createSentenceRepository(supabase) {
                 spanish_translation: sentence.spanishTranslation.trim() || null,
                 topic_tags: sentence.topicTags,
                 reason_for_saving: sentence.reasonForSaving,
-                grammar_pattern: sentence.grammarPattern.trim() || null
+                grammar_pattern: sentence.grammarPattern.trim() || null,
+                notes: String(sentence.notes || "").trim() || null
             }
             const query = id
                 ? supabase.from(SENTENCES_TABLE).update(values).eq("id", id).eq("user_id", userId).select().single()

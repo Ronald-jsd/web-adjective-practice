@@ -108,6 +108,34 @@ function createQueryDetail(query) {
     imageLabel.appendChild(imageInput)
     imageActions.appendChild(imageLabel)
 
+    const pasteImageButton = document.createElement('button')
+    pasteImageButton.type = 'button'
+    pasteImageButton.className = 'rounded-lg border border-purple-200 bg-white px-3 py-2 text-sm font-medium text-purple-800 hover:bg-purple-100'
+    pasteImageButton.textContent = '📋 Pegar imagen'
+    pasteImageButton.addEventListener('click', async () => {
+        if (!navigator.clipboard?.read) {
+            dropZone.focus()
+            showToast('Este navegador no permite leer imágenes del portapapeles desde un botón. Mantén pulsada la zona de pegado y elige “Pegar”, o usa “Elegir imagen”.', 'warning')
+            return
+        }
+        try {
+            const clipboardItems = await navigator.clipboard.read()
+            for (const item of clipboardItems) {
+                const imageType = item.types.find(type => type.startsWith('image/'))
+                if (!imageType) continue
+                const blob = await item.getType(imageType)
+                const file = new File([blob], `consulta-${Date.now()}.${imageType.split('/')[1] || 'png'}`, { type: imageType })
+                await saveQueryImage(query, file, imageInput, dropZone)
+                return
+            }
+            showToast('El portapapeles no contiene una imagen.', 'warning')
+        } catch (error) {
+            console.error('No se pudo leer una imagen del portapapeles:', error)
+            showToast(`No se pudo leer el portapapeles. ${error.message || ''}`, 'warning')
+        }
+    })
+    imageActions.appendChild(pasteImageButton)
+
     if (query.image_path) {
         const removeImageButton = document.createElement('button')
         removeImageButton.type = 'button'
@@ -124,7 +152,9 @@ function createQueryDetail(query) {
     const dropZone = document.createElement('div')
     dropZone.className = 'ai-image-dropzone'
     dropZone.tabIndex = 0
-    dropZone.setAttribute('role', 'region')
+    dropZone.setAttribute('role', 'textbox')
+    dropZone.setAttribute('aria-multiline', 'true')
+    dropZone.contentEditable = 'true'
     dropZone.setAttribute('aria-label', 'Suelta una imagen aquí o enfoca esta zona y pega una imagen')
     dropZone.textContent = 'Arrastra una imagen aquí o enfoca esta zona y pega con Ctrl+V'
     dropZone.addEventListener('dragover', event => {
@@ -140,6 +170,7 @@ function createQueryDetail(query) {
         else showToast('Suelta un archivo de imagen válido.', 'warning')
     })
     dropZone.addEventListener('paste', event => {
+        event.preventDefault()
         const imageItem = [...(event.clipboardData?.items || [])]
             .find(item => item.kind === 'file' && item.type.startsWith('image/'))
         const file = imageItem?.getAsFile()
@@ -147,7 +178,6 @@ function createQueryDetail(query) {
             showToast('El portapapeles no contiene una imagen. Copia una imagen antes de pegar.', 'warning')
             return
         }
-        event.preventDefault()
         saveQueryImage(query, file, imageInput, dropZone)
     })
     content.appendChild(dropZone)

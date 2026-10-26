@@ -114,6 +114,12 @@ function renderSentenceList(items = state.sentences) {
             meta.append(translation)
         }
         content.append(sentenceHeading, meta)
+        if (sentence.notes) {
+            const notes = document.createElement("p")
+            notes.className = "sentence-meta"
+            notes.textContent = `Notas: ${sentence.notes}`
+            content.append(notes)
+        }
         item.append(content)
         const actions = document.createElement("div")
         actions.className = "item-actions"
@@ -186,6 +192,12 @@ function renderVocabularyList() {
             example.append(exampleText, playExample)
             content.append(example)
         }
+        if (vocabulary.notes) {
+            const notes = document.createElement("p")
+            notes.className = "sentence-meta"
+            notes.textContent = `Notas: ${vocabulary.notes}`
+            content.append(notes)
+        }
         const actions = document.createElement("div")
         actions.className = "item-actions"
         const edit = document.createElement("button")
@@ -202,6 +214,7 @@ function renderVocabularyList() {
             form.elements.spanish.value = vocabulary.spanish || ""
             form.elements.exampleEn.value = vocabulary.example_en || ""
             form.elements.exampleEs.value = vocabulary.example_es || ""
+            form.elements.notes.value = vocabulary.notes || ""
             form.querySelector('[type="submit"]').textContent = "Guardar cambios"
             byId("cancel-vocabulary-edit").classList.remove("hidden")
             form.elements.word.focus()
@@ -300,6 +313,7 @@ function beginEdit(sentence) {
     form.elements.spanishTranslation.value = sentence.spanishTranslation
     form.elements.reasonForSaving.value = sentence.reasonForSaving
     form.elements.grammarPattern.value = sentence.grammarPattern
+    form.elements.notes.value = sentence.notes || ""
     form.querySelectorAll('[name="topicTags"]').forEach(input => { input.checked = sentence.topicTags.includes(input.value) })
     byId("form-title").textContent = "Edit your sentence"
     form.querySelector('[type="submit"]').textContent = "Save changes"
@@ -408,7 +422,8 @@ function setupEvents() {
             spanishTranslation: form.elements.spanishTranslation.value,
             topicTags,
             reasonForSaving: form.elements.reasonForSaving.value,
-            grammarPattern: form.elements.grammarPattern.value || suggestGrammarPattern(sentenceText)
+            grammarPattern: form.elements.grammarPattern.value || suggestGrammarPattern(sentenceText),
+            notes: form.elements.notes.value
         }
         if (!sentence.reasonForSaving) return showNotice("Choose a reason for saving this sentence.", true)
         try {
@@ -432,7 +447,8 @@ function setupEvents() {
             pronunciation: form.elements.pronunciation.value,
             spanish: form.elements.spanish.value,
             exampleEn: form.elements.exampleEn.value,
-            exampleEs: form.elements.exampleEs.value
+            exampleEs: form.elements.exampleEs.value,
+            notes: form.elements.notes.value
         }
         if (!vocabulary.word.trim() || !vocabulary.spanish.trim()) {
             return showNotice("Escribe la palabra y su significado antes de guardar.", true)
