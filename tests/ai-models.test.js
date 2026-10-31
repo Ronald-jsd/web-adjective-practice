@@ -7,7 +7,12 @@ import {
 } from "../js/ai-models.js"
 
 test("AI model lists only include the current text generation models", () => {
-    assert.deepEqual(GEMINI_TEXT_MODELS, ["gemini-3.6-flash"])
+    assert.deepEqual(GEMINI_TEXT_MODELS, [
+        "gemini-3.8-flash",
+        "gemini-3.6-flash",
+        "gemini-3.5-flash",
+        "gemini-3.1-pro-preview"
+    ])
     assert.deepEqual(GROQ_TEXT_MODELS, [
         "openai/gpt-oss-20b",
         "openai/gpt-oss-120b",

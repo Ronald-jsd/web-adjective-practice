@@ -7,8 +7,19 @@ import {
 import { showToast } from './cache.js'
 import { loadUserCustomItems } from './auth.js'
 import { renderCategories } from './data.js'
-import { GEMINI_TEXT_MODELS, GROQ_TEXT_MODELS, parseAIJson } from './ai-models.js'
+import {
+    AI_MODEL_TIMEOUT_MS,
+    AI_TOTAL_BUDGET_MS,
+    GEMINI_TEXT_MODELS,
+    GROQ_TEXT_MODELS,
+    createAIRequestTimeout,
+    parseAIJson
+} from './ai-models.js'
 import { supabase } from './app.js'
+
+// La guía crea hasta 20 tarjetas, así que necesita más margen que una ficha.
+const GUIDE_MODEL_TIMEOUT_MS = 45000
+const GUIDE_TOTAL_BUDGET_MS = 120000
 
 
 function getApiKey(provider) {
@@ -215,7 +226,7 @@ function changePreferredProvider() {
 }
 
 // GENERACIÓN CON IA
-async function generateWithGroq(word, apiKey, guide = false) {
+async function generateWithGroq(word, apiKey, guide = false, deadline = Infinity) {
     const categoriesList = store.categoriesData.map(cat => {
         const subcats = cat.subcategories.map(sub => sub.title).join(', ')
         return `${cat.title}: [${subcats}]`
@@ -238,16 +249,19 @@ Responde SOLO con JSON válido, sin markdown, con esta forma:
 }
 Cada tarjeta debe representar un elemento, uso o expresión diferente, y su ejemplo debe ilustrarlo. No incluyas ejemplos adicionales fuera de las tarjetas.`
 
-    const vocabularyInstructions = `Eres un experto en vocabulario inglés. Analiza la palabra o frase que te dará el usuario (si te da en español tú conviertelo a ingles) y proporciona:
-1. La categoría más apropiada de esta lista: ${categoriesList}
-2. La subcategoría más específica dentro de esa categoría
-3. Pronunciación fonética en inglés (formato IPA)
-4. Traducción al español (asegúrate de que sea una traducción natural y de uso cotidiano, evitando traducciones literales que suenen forzadas)
-5. Un ejemplo de uso en inglés (oración completa)
-6. Traducción del ejemplo al español (traducido de forma contextual y fluida para que tenga sentido real en español)
+    const vocabularyInstructions = `Eres un experto en vocabulario inglés. La entrada del usuario puede estar en inglés o en español. Si está en español, tradúcela al equivalente inglés más natural y usa ese inglés como palabra principal; si ya está en inglés, consérvala tal cual, incluidos los phrasal verbs.
+Proporciona:
+1. "word": la palabra o expresión principal en inglés (traducida si la entrada era español)
+2. La categoría más apropiada de esta lista: ${categoriesList}
+3. La subcategoría más específica dentro de esa categoría
+4. Pronunciación fonética en inglés (formato IPA)
+5. Traducción al español (asegúrate de que sea una traducción natural y de uso cotidiano, evitando traducciones literales que suenen forzadas)
+6. Un ejemplo de uso en inglés (oración completa)
+7. Traducción del ejemplo al español (traducido de forma contextual y fluida para que tenga sentido real en español)
 
 Responde SOLO en formato JSON válido, sin texto adicional, sin markdown:
 {
+  "word": "palabra o expresión en inglés",
   "category": "nombre de la categoría",
   "subcategory": "nombre de la subcategoría",
   "pronunciation": "/pronunciación/",
@@ -258,10 +272,16 @@ Responde SOLO en formato JSON válido, sin texto adicional, sin markdown:
     const systemPrompt = guide ? guideInstructions : vocabularyInstructions
 
     for (const model of GROQ_TEXT_MODELS) {
+        const remaining = deadline - Date.now()
+        if (remaining <= 0) break
+        const request = createAIRequestTimeout(
+            Math.min(guide ? GUIDE_MODEL_TIMEOUT_MS : AI_MODEL_TIMEOUT_MS, remaining)
+        )
         try {
             console.log(`[Groq] Intentando con modelo: ${model}`)
             const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                 method: 'POST',
+                signal: request.signal,
                 headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${apiKey}`
@@ -293,15 +313,18 @@ Responde SOLO en formato JSON válido, sin texto adicional, sin markdown:
 
             const result = parseAIJson(text)
             if (!result || typeof result !== "object" || Array.isArray(result)) continue
-            return { word: word, ...result, modelUsed: `Groq: ${model}`, provider: 'groq' }
+            const englishWord = String(result.word || word).trim()
+            return { ...result, word: englishWord, modelUsed: `Groq: ${model}`, provider: 'groq' }
         } catch (error) {
-            console.warn(`[Groq] Error con ${model}:`, error.message)
+            console.warn(`[Groq] Error con ${model}:`, request.timedOut ? 'tiempo de espera agotado' : error.message)
+        } finally {
+            request.clear()
         }
     }
     return null
 }
 
-async function generateWithGemini(word, apiKey, guide = false) {
+async function generateWithGemini(word, apiKey, guide = false, deadline = Infinity) {
     const categoriesList = store.categoriesData.map(cat => {
         const subcats = cat.subcategories.map(sub => sub.title).join(', ')
         return `${cat.title}: [${subcats}]`
@@ -325,16 +348,20 @@ Responde SOLO con JSON válido, sin markdown, con esta forma:
 }
 Cada tarjeta debe representar un elemento, uso o expresión diferente, y su ejemplo debe ilustrarlo. No incluyas ejemplos adicionales fuera de las tarjetas.`
 
-    const vocabularyPrompt = `Eres un experto en vocabulario inglés. Analiza la palabra o frase "${word}" y proporciona:
-1. La categoría más apropiada de esta lista: ${categoriesList}
-2. La subcategoría más específica dentro de esa categoría
-3. Pronunciación fonética en inglés (formato IPA)
-4. Traducción al español
-5. Un ejemplo de uso en inglés (oración completa)
-6. Traducción del ejemplo al español
+    const vocabularyPrompt = `Eres un experto en vocabulario inglés. La entrada del usuario puede estar en inglés o en español. Si está en español, tradúcela al equivalente inglés más natural y usa ese inglés como palabra principal; si ya está en inglés, consérvala tal cual, incluidos los phrasal verbs.
+Entrada del usuario: "${word}"
+Proporciona:
+1. "word": la palabra o expresión principal en inglés (traducida si la entrada era español)
+2. La categoría más apropiada de esta lista: ${categoriesList}
+3. La subcategoría más específica dentro de esa categoría
+4. Pronunciación fonética en inglés (formato IPA)
+5. Traducción al español
+6. Un ejemplo de uso en inglés (oración completa)
+7. Traducción del ejemplo al español
 
 Responde SOLO en formato JSON válido, sin texto adicional:
 {
+  "word": "palabra o expresión en inglés",
   "category": "nombre de la categoría",
   "subcategory": "nombre de la subcategoría",
   "pronunciation": "/pronunciación/",
@@ -358,10 +385,16 @@ Responde SOLO en formato JSON válido, sin texto adicional:
     }
 
     for (const model of modelsToTry) {
+        const remaining = deadline - Date.now()
+        if (remaining <= 0) break
+        const request = createAIRequestTimeout(
+            Math.min(guide ? GUIDE_MODEL_TIMEOUT_MS : AI_MODEL_TIMEOUT_MS, remaining)
+        )
         try {
             console.log(`[Gemini] Intentando con modelo: ${model}`)
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
                 method: 'POST',
+                signal: request.signal,
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(requestBody)
             })
@@ -390,9 +423,12 @@ Responde SOLO en formato JSON válido, sin texto adicional:
 
             const result = parseAIJson(text)
             if (!result || typeof result !== "object" || Array.isArray(result)) continue
-            return { word: word, ...result, modelUsed: `Gemini: ${model}`, provider: 'gemini' }
+            const englishWord = String(result.word || word).trim()
+            return { ...result, word: englishWord, modelUsed: `Gemini: ${model}`, provider: 'gemini' }
         } catch (error) {
-            console.warn(`[Gemini] Error con ${model}:`, error.message)
+            console.warn(`[Gemini] Error con ${model}:`, request.timedOut ? 'tiempo de espera agotado' : error.message)
+        } finally {
+            request.clear()
         }
     }
     return null
@@ -432,14 +468,17 @@ async function generateWithAI(word, { guide = false } = {}) {
 
     console.log(` Orden de proveedores: ${providersToTry.join(' → ')}`)
 
+    const deadline = Date.now() + (guide ? GUIDE_TOTAL_BUDGET_MS : AI_TOTAL_BUDGET_MS)
+
     for (const provider of providersToTry) {
+        if (Date.now() >= deadline) break
         const apiKey = getApiKey(provider)
         const providerName = provider === 'groq' ? 'Groq ⚡' : 'Gemini 🤖'
         showToast(`Consultando con ${providerName}...`, 'info')
 
         let result = provider === 'groq'
-            ? await generateWithGroq(word, apiKey, guide)
-            : await generateWithGemini(word, apiKey, guide)
+            ? await generateWithGroq(word, apiKey, guide, deadline)
+            : await generateWithGemini(word, apiKey, guide, deadline)
 
         if (result && result.error === 'invalid_key') {
             removeApiKey(provider)
@@ -452,7 +491,7 @@ async function generateWithAI(word, { guide = false } = {}) {
         console.warn(`⚠️ ${providerName} falló, intentando con el siguiente...`)
     }
 
-    alert('❌ Ningún proveedor de IA funcionó.\n\nRevisa la consola (F12) para más detalles.')
+    alert('❌ Ningún proveedor de IA respondió a tiempo o devolvió un resultado válido.\n\nRevisa la consola (F12) para más detalles o inténtalo de nuevo en unos segundos.')
     return null
 }
 

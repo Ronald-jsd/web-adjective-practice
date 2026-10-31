@@ -258,6 +258,12 @@ function openCategoryView(data) {
                     ? `<button type="button" class="favorite-toggle" disabled title="Este término no tiene un ID estable" aria-label="Favorito no disponible">☆</button>`
                     : `<button type="button" class="favorite-toggle ${favorite ? 'is-favorite' : ''}" aria-pressed="${favorite}" title="${favorite ? 'Quitar de Favoritos' : 'Marcar como importante'}" aria-label="${favorite ? 'Quitar de Favoritos' : 'Marcar como importante'}" onclick="event.stopPropagation(); window.toggleVocabularyFavorite('adjective', ${favoriteId})">${favorite ? '★' : '☆'}</button>`;
 
+                const deleteCell = store.currentUser
+                    ? (isTemporalId
+                        ? `<td class="py-2 px-2 border-b text-center text-gray-300">—</td>`
+                        : `<td class="py-2 px-2 border-b text-center"><button type="button" class="px-2 py-1 text-red-700 hover:bg-red-50 rounded" title="Eliminar este término" aria-label="Eliminar ${escapedWord}" onclick="event.stopPropagation(); window.deleteAdjectiveRow(${itemObjStr})">🗑️</button></td>`)
+                    : '';
+
                 const dragHandleHtml = store.currentUser
                     ? `<td class="py-3 px-2 border-b w-12 text-center">
                             <span class="drag-handle inline-flex items-center justify-center cursor-grab active:cursor-grabbing text-gray-400 hover:text-amber-500 transition-all p-1 rounded hover:bg-gray-100">
@@ -283,6 +289,7 @@ function openCategoryView(data) {
                         <td class="py-3 px-4 border-b" ondblclick="window.editCell('spanish', '${escapedSpanish}', ${itemObjStr})">${wordEs}                        </td>
                         <td class="py-3 px-4 border-b" ondblclick="window.editCell('example_en', '${escapedExampleEn}', ${itemObjStr})">${exampleEn}</td>
                         <td class="py-3 px-4 border-b" ondblclick="window.editCell('example_es', '${escapedExampleEs}', ${itemObjStr})">${exampleEs}</td>
+                        ${deleteCell}
                     </tr>
                 `;
             }).join('');
@@ -290,6 +297,9 @@ function openCategoryView(data) {
 
         const dragHandleHeader = store.currentUser
             ? '<th class="py-3 px-2 text-xs font-bold w-12"></th>'
+            : "";
+        const deleteHeader = store.currentUser
+            ? '<th class="py-3 px-2 text-xs font-bold text-gray-600 uppercase tracking-wider text-center">Eliminar</th>'
             : "";
         const contentEl = document.getElementById("category-view-content");
         const subcatHeaderEl = document.getElementById("subcategory-header");
@@ -337,6 +347,7 @@ function openCategoryView(data) {
                                     <th class="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wider">Español 🔊</th>
                                     <th class="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wider">Example EN 🔊</th>
                                     <th class="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wider">Example ES 🔊</th>
+                                    ${deleteHeader}
                                 </tr>
                             </thead>
                             <tbody id="sortable-tbody">${buildRows(pageItems)}</tbody>

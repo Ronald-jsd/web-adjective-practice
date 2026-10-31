@@ -4,10 +4,13 @@ import { playAudioEnhanced } from "../audio.js"
 import { REASONS, TOPICS, suggestGrammarPattern, validateSentence } from "./model.js"
 import { isDue, scheduleReview } from "./scheduler.js"
 import { createSentenceRepository } from "./repository.js"
+import { createNotesView } from "./notes.js"
+import { filterVocabulary } from "./vocabulary-search.js"
 
 const repository = createSentenceRepository(supabase)
 const state = { user: null, sentences: [], vocabulary: null, review: null }
 const byId = id => document.getElementById(id)
+const VOCABULARY_AI_HINT = "Escribe la palabra en español y la IA completará el inglés, la pronunciación, el significado y los ejemplos. Puedes elegir si también completa las notas."
 
 function showNotice(message, isError = false) {
     const notice = byId("notice")
@@ -115,10 +118,16 @@ function renderSentenceList(items = state.sentences) {
         }
         content.append(sentenceHeading, meta)
         if (sentence.notes) {
-            const notes = document.createElement("p")
-            notes.className = "sentence-meta"
-            notes.textContent = `Notas: ${sentence.notes}`
-            content.append(notes)
+            const notesWrap = document.createElement("div")
+            notesWrap.className = "sentence-notes"
+            const notesLabel = document.createElement("div")
+            notesLabel.className = "sentence-notes-label"
+            notesLabel.textContent = "Notas"
+            const notes = createNotesView(sentence.notes)
+            if (notes) {
+                notesWrap.append(notesLabel, notes)
+                content.append(notesWrap)
+            }
         }
         item.append(content)
         const actions = document.createElement("div")
@@ -146,21 +155,38 @@ function renderSentenceList(items = state.sentences) {
 function renderVocabularyList() {
     const host = byId("vocabulary-list")
     host.replaceChildren()
-    const items = state.vocabulary || []
+    const allItems = state.vocabulary || []
+    const query = byId("vocabulary-search-input").value.trim()
+    const items = filteredVocabulary()
     if (!items.length) {
         const empty = document.createElement("div")
         empty.className = "empty"
-        empty.textContent = "Todavía no guardas vocabulario personal. Añade una palabra o expresión para empezar."
+        empty.textContent = allItems.length
+            ? `No hay vocabulario que coincida con «${query}».`
+            : "Todavía no guardas vocabulario personal. Añade una palabra o expresión para empezar."
         host.append(empty)
         return
     }
     for (const vocabulary of items) {
         const item = document.createElement("article")
-        item.className = "sentence-item"
+        item.className = "sentence-item vocab-item"
         const content = document.createElement("div")
         content.className = "sentence-content"
+
+        const head = document.createElement("div")
+        head.className = "vocab-entry-head"
+        const title = document.createElement("div")
+        title.className = "vocab-title"
         const word = document.createElement("p")
-        word.textContent = `${vocabulary.word}${vocabulary.pronunciation ? ` ${vocabulary.pronunciation}` : ""}`
+        word.className = "vocab-word"
+        word.textContent = vocabulary.word
+        title.append(word)
+        if (vocabulary.pronunciation) {
+            const pronunciation = document.createElement("span")
+            pronunciation.className = "vocab-pronunciation"
+            pronunciation.textContent = vocabulary.pronunciation
+            title.append(pronunciation)
+        }
         const playWord = document.createElement("button")
         playWord.type = "button"
         playWord.className = "icon-button audio-button"
@@ -169,34 +195,54 @@ function renderVocabularyList() {
         playWord.title = "Escuchar palabra"
         playWord.setAttribute("aria-label", `Escuchar ${vocabulary.word}`)
         playWord.addEventListener("click", () => playAudioEnhanced(vocabulary.word, "en"))
-        const wordHeading = document.createElement("div")
-        wordHeading.className = "sentence-item-heading"
-        wordHeading.append(word, playWord)
-        const meaning = document.createElement("div")
-        meaning.className = "sentence-meta"
-        meaning.textContent = vocabulary.spanish || ""
-        content.append(wordHeading, meaning)
+        head.append(title, playWord)
+        content.append(head)
+
+        if (vocabulary.spanish) {
+            const meaning = document.createElement("p")
+            meaning.className = "vocab-meaning"
+            meaning.textContent = vocabulary.spanish
+            content.append(meaning)
+        }
+
         if (vocabulary.example_en) {
-            const example = document.createElement("p")
-            example.className = "mt-2 text-sm"
-            const exampleText = document.createElement("span")
-            exampleText.textContent = `${vocabulary.example_en}${vocabulary.example_es ? ` — ${vocabulary.example_es}` : ""}`
+            const example = document.createElement("div")
+            example.className = "vocab-example"
+            const exampleBody = document.createElement("div")
+            exampleBody.className = "vocab-example-body"
+            const exampleEn = document.createElement("p")
+            exampleEn.className = "vocab-example-en"
+            exampleEn.textContent = vocabulary.example_en
+            exampleBody.append(exampleEn)
+            if (vocabulary.example_es) {
+                const exampleEs = document.createElement("p")
+                exampleEs.className = "vocab-example-es"
+                exampleEs.textContent = vocabulary.example_es
+                exampleBody.append(exampleEs)
+            }
             const playExample = document.createElement("button")
             playExample.type = "button"
-            playExample.className = "icon-button audio-button ml-2"
+            playExample.className = "icon-button audio-button"
             playExample.textContent = "🔊"
             playExample.disabled = !window.speechSynthesis
             playExample.title = "Escuchar ejemplo"
             playExample.setAttribute("aria-label", `Escuchar ejemplo: ${vocabulary.example_en}`)
             playExample.addEventListener("click", () => playAudioEnhanced(vocabulary.example_en, "en"))
-            example.append(exampleText, playExample)
+            example.append(exampleBody, playExample)
             content.append(example)
         }
+
         if (vocabulary.notes) {
-            const notes = document.createElement("p")
-            notes.className = "sentence-meta"
-            notes.textContent = `Notas: ${vocabulary.notes}`
-            content.append(notes)
+            const notesWrap = document.createElement("div")
+            notesWrap.className = "vocab-notes-wrap"
+            const notesLabel = document.createElement("div")
+            notesLabel.className = "vocab-notes-label"
+            notesLabel.textContent = "Usos y notas"
+            const notes = createNotesView(vocabulary.notes)
+            if (notes) {
+                notesWrap.append(notesLabel, notes)
+                content.append(notesWrap)
+            }
         }
         const actions = document.createElement("div")
         actions.className = "item-actions"
@@ -217,6 +263,7 @@ function renderVocabularyList() {
             form.elements.notes.value = vocabulary.notes || ""
             form.querySelector('[type="submit"]').textContent = "Guardar cambios"
             byId("cancel-vocabulary-edit").classList.remove("hidden")
+            byId("vocabulary-ai-status").textContent = VOCABULARY_AI_HINT
             form.elements.word.focus()
         })
         const remove = document.createElement("button")
@@ -306,6 +353,10 @@ function filteredSentences() {
     return state.sentences.filter(sentence => `${sentence.englishText} ${sentence.spanishTranslation} ${sentence.topicTags.join(" ")}`.toLowerCase().includes(query))
 }
 
+function filteredVocabulary() {
+    return filterVocabulary(state.vocabulary || [], byId("vocabulary-search-input").value)
+}
+
 function beginEdit(sentence) {
     const form = byId("sentence-form")
     form.elements.id.value = sentence.id
@@ -336,6 +387,7 @@ function resetVocabularyForm() {
     form.elements.id.value = ""
     form.querySelector('[type="submit"]').textContent = "Guardar vocabulario"
     byId("cancel-vocabulary-edit").classList.add("hidden")
+    byId("vocabulary-ai-status").textContent = VOCABULARY_AI_HINT
 }
 
 async function loadVocabulary() {
@@ -409,6 +461,7 @@ function setupEvents() {
     document.querySelectorAll(".tab").forEach(tab => tab.addEventListener("click", () => switchScreen(tab.dataset.screen)))
     byId("cancel-edit").addEventListener("click", resetForm)
     byId("search-input").addEventListener("input", () => renderSentenceList(filteredSentences()))
+    byId("vocabulary-search-input").addEventListener("input", renderVocabularyList)
     byId("sentence-form").addEventListener("submit", async event => {
         event.preventDefault()
         const form = event.currentTarget
@@ -474,6 +527,43 @@ function setupEvents() {
         } catch (error) {
             console.error("Unable to save personal vocabulary", error)
             showNotice(storageErrorMessage(error, "No se pudo guardar el vocabulario."), true)
+        }
+    })
+    byId("vocabulary-ai-button").addEventListener("click", async event => {
+        const button = event.currentTarget
+        const form = byId("vocabulary-form")
+        const status = byId("vocabulary-ai-status")
+        const term = form.elements.word.value.trim()
+        if (!term) {
+            status.textContent = "Escribe primero una palabra o expresión en español."
+            form.elements.word.focus()
+            return
+        }
+
+        const includeNotes = byId("vocabulary-ai-include-notes").checked
+        button.disabled = true
+        button.textContent = "Completando…"
+        status.textContent = includeNotes
+            ? "La IA está preparando la ficha con notas y usos."
+            : "La IA está preparando la ficha sin notas."
+        try {
+            const { generateVocabularyEntry } = await import("../ai-vocabulary.js")
+            const entry = await generateVocabularyEntry(term, { includeNotes })
+            form.elements.word.value = entry.word
+            form.elements.pronunciation.value = entry.pronunciation || ""
+            form.elements.spanish.value = entry.spanish
+            form.elements.exampleEn.value = entry.example_en
+            form.elements.exampleEs.value = entry.example_es
+            if (includeNotes) form.elements.notes.value = entry.notes || ""
+            status.textContent = includeNotes
+                ? "Ficha completada con notas y usos. Revísala y guárdala."
+                : "Ficha completada sin notas. Se conservaron tus notas actuales."
+        } catch (error) {
+            console.error("Unable to generate vocabulary with AI", error)
+            status.textContent = error.message || "No se pudo completar la ficha."
+        } finally {
+            button.disabled = false
+            button.textContent = "✨ Completar con IA"
         }
     })
     byId("cancel-vocabulary-edit").addEventListener("click", resetVocabularyForm)

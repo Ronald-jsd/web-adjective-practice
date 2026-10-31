@@ -181,7 +181,59 @@ async function saveStatus(itemIdNumber, status, originalItemId) {
     return true;
 }
 
-export { editCell, getStatusBadge, updateWordStatus }
+async function deleteAdjectiveRow(item) {
+    if (store.isEditing) return
+    if (!store.currentUser) {
+        alert('🔐 Inicia sesión para eliminar')
+        return
+    }
+    if (!item || item.id === null || item.id === undefined || item.id === '') {
+        showToast('Este término no tiene un ID válido para eliminar.', 'error')
+        return
+    }
+
+    const word = String(item.word || '').trim() || 'este término'
+    const isCustom = !!item.isCustom
+    const message = isCustom
+        ? `¿Eliminar "${word}" de tu vocabulario personal? Esta acción no se puede deshacer.`
+        : `¿Eliminar "${word}" de la guía compartida? Se quitará para todos los usuarios y no se puede deshacer.`
+    if (!window.confirm(message)) return
+
+    try {
+        let query = supabase.from(isCustom ? 'user_custom_items' : 'items').delete().eq('id', item.id)
+        if (isCustom) query = query.eq('user_id', store.currentUser.id)
+        const { data, error } = await query.select('id')
+        if (error) throw error
+        if (!data?.length) {
+            throw new Error('No se eliminó ninguna fila. Puede que no tengas permiso para eliminar este término.')
+        }
+
+        showToast(`Se eliminó "${word}".`, 'success')
+        await loadUserCustomItems()
+        const newData = await loadCategoriesFromSupabase(true)
+        store.categoriesData = newData
+        if (store.currentCategoryData) {
+            const updatedCategory = newData.find(c => c.id === store.currentCategoryData.id)
+            if (updatedCategory) {
+                store.currentCategoryData = updatedCategory
+                const { openCategoryView } = await import('./category-view.js')
+                openCategoryView(updatedCategory)
+            }
+        }
+        window.refreshSearchResults?.()
+        try {
+            await window.refreshPracticeCategories?.()
+        } catch (refreshError) {
+            console.warn('El término se eliminó, pero no se pudo refrescar la práctica:', refreshError)
+        }
+    } catch (error) {
+        console.error('No se pudo eliminar el término:', error)
+        showToast(`No se pudo eliminar: ${error.message}`, 'error')
+    }
+}
+
+export { editCell, deleteAdjectiveRow, getStatusBadge, updateWordStatus }
 
 window.editCell = editCell
+window.deleteAdjectiveRow = deleteAdjectiveRow
 window.updateWordStatus = updateWordStatus

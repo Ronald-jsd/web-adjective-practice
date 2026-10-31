@@ -3,7 +3,14 @@ import {
     GEMINI_KEY_STORAGE,
     GROQ_KEY_STORAGE
 } from "./config.js"
-import { GEMINI_TEXT_MODELS, GROQ_TEXT_MODELS, parseAIJson } from "./ai-models.js"
+import {
+    AI_MODEL_TIMEOUT_MS,
+    AI_TOTAL_BUDGET_MS,
+    GEMINI_TEXT_MODELS,
+    GROQ_TEXT_MODELS,
+    createAIRequestTimeout,
+    parseAIJson
+} from "./ai-models.js"
 
 export async function recommendEnglishSentence(input) {
     const text = String(input || "").trim()
@@ -24,14 +31,19 @@ export async function recommendEnglishSentence(input) {
             ? ["gemini", "groq"]
             : ["groq", "gemini"]
     const failures = []
+    const deadline = Date.now() + AI_TOTAL_BUDGET_MS
 
     for (const provider of providers) {
+        if (Date.now() >= deadline) {
+            failures.push("tiempo de espera agotado")
+            break
+        }
         const apiKey = keys[provider]
         if (!apiKey) continue
         try {
             const recommendation = provider === "groq"
-                ? await recommendWithGroq(text, apiKey)
-                : await recommendWithGemini(text, apiKey)
+                ? await recommendWithGroq(text, apiKey, deadline)
+                : await recommendWithGemini(text, apiKey, deadline)
             if (recommendation) return recommendation
             failures.push(`${provider}: la respuesta estaba vacía o no tenía el formato esperado`)
         } catch (error) {
@@ -51,58 +63,78 @@ export async function recommendEnglishSentence(input) {
 const RECOMMENDATION_INSTRUCTIONS = `El usuario puede escribir una idea o frase tentativa en español o inglés, incluso con errores gramaticales o de escritura. Interpreta la intención y devuelve una frase en inglés natural, correcta y cotidiana (nivel A2-B1), conservando lo que quiso decir. Después traduce TU frase inglesa recomendada a un español natural. No añadas detalles que el usuario no haya indicado. Devuelve únicamente un objeto JSON con estas dos propiedades de texto:
 {"english":"frase recomendada en inglés","spanish":"traducción natural al español"}`
 
-async function recommendWithGroq(input, apiKey) {
+async function recommendWithGroq(input, apiKey, deadline = Infinity) {
     for (const model of GROQ_TEXT_MODELS) {
-        const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${apiKey}`
-            },
-            body: JSON.stringify({
-                model,
-                messages: [
-                    { role: "system", content: RECOMMENDATION_INSTRUCTIONS },
-                    { role: "user", content: input }
-                ],
-                temperature: 0.2,
-                max_tokens: 400,
-                response_format: { type: "json_object" }
+        const remaining = deadline - Date.now()
+        if (remaining <= 0) break
+        const request = createAIRequestTimeout(Math.min(AI_MODEL_TIMEOUT_MS, remaining))
+        try {
+            const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+                method: "POST",
+                signal: request.signal,
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${apiKey}`
+                },
+                body: JSON.stringify({
+                    model,
+                    messages: [
+                        { role: "system", content: RECOMMENDATION_INSTRUCTIONS },
+                        { role: "user", content: input }
+                    ],
+                    temperature: 0.2,
+                    max_tokens: 400,
+                    response_format: { type: "json_object" }
+                })
             })
-        })
-        if (response.status === 401) throw invalidKeyError()
-        if (!response.ok) continue
-        const data = await response.json()
-        const recommendation = parseRecommendation(data.choices?.[0]?.message?.content)
-        if (recommendation) return recommendation
+            if (response.status === 401) throw invalidKeyError()
+            if (!response.ok) continue
+            const data = await response.json()
+            const recommendation = parseRecommendation(data.choices?.[0]?.message?.content)
+            if (recommendation) return recommendation
+        } catch (error) {
+            if (!request.timedOut) throw error
+        } finally {
+            request.clear()
+        }
     }
-    throw new Error("Groq no respondió correctamente.")
+    throw new Error("Groq no respondió a tiempo o no devolvió una recomendación válida.")
 }
 
-async function recommendWithGemini(input, apiKey) {
+async function recommendWithGemini(input, apiKey, deadline = Infinity) {
     for (const model of GEMINI_TEXT_MODELS) {
-        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                contents: [{
-                    parts: [{
-                        text: `${RECOMMENDATION_INSTRUCTIONS}\n\nIdea o frase del usuario:\n${input}`
-                    }]
-                }],
-                generationConfig: { temperature: 0.2, maxOutputTokens: 400, responseMimeType: "application/json" }
+        const remaining = deadline - Date.now()
+        if (remaining <= 0) break
+        const request = createAIRequestTimeout(Math.min(AI_MODEL_TIMEOUT_MS, remaining))
+        try {
+            const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${encodeURIComponent(apiKey)}`, {
+                method: "POST",
+                signal: request.signal,
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    contents: [{
+                        parts: [{
+                            text: `${RECOMMENDATION_INSTRUCTIONS}\n\nIdea o frase del usuario:\n${input}`
+                        }]
+                    }],
+                    generationConfig: { temperature: 0.2, maxOutputTokens: 400, responseMimeType: "application/json" }
+                })
             })
-        })
-        if (response.status === 400 || response.status === 403) {
-            const details = await response.json().catch(() => ({}))
-            if (/api key|invalid|unauthorized/i.test(details.error?.message || "")) throw invalidKeyError()
+            if (response.status === 400 || response.status === 403) {
+                const details = await response.json().catch(() => ({}))
+                if (/api key|invalid|unauthorized/i.test(details.error?.message || "")) throw invalidKeyError()
+            }
+            if (!response.ok) continue
+            const data = await response.json()
+            const recommendation = parseRecommendation(data.candidates?.[0]?.content?.parts?.map(part => part.text || "").join(""))
+            if (recommendation) return recommendation
+        } catch (error) {
+            if (!request.timedOut) throw error
+        } finally {
+            request.clear()
         }
-        if (!response.ok) continue
-        const data = await response.json()
-        const recommendation = parseRecommendation(data.candidates?.[0]?.content?.parts?.map(part => part.text || "").join(""))
-        if (recommendation) return recommendation
     }
-    throw new Error("Gemini no respondió correctamente.")
+    throw new Error("Gemini no respondió a tiempo o no devolvió una recomendación válida.")
 }
 
 function parseRecommendation(content) {

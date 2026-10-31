@@ -8,10 +8,9 @@ import { showToast } from '../cache.js'
 import { loadUserCustomItems } from '../auth.js'
 import { renderCategories } from '../data.js'
 import { supabase } from '../app.js'
-import { GEMINI_TEXT_MODELS, GROQ_TEXT_MODELS, parseAIJson } from '../ai-models.js'
+import { GEMINI_TEXT_MODELS, GROQ_TEXT_MODELS, AI_MODEL_TIMEOUT_MS, parseAIJson } from '../ai-models.js'
 
 let tempAIData = null
-const AI_MODEL_TIMEOUT_MS = 12000
 
 function getApiKey(provider) {
     const key = provider === 'groq' ? GROQ_KEY_STORAGE : GEMINI_KEY_STORAGE
@@ -272,7 +271,7 @@ Recuerda: ¡RESPONDE SOLO EN FORMATO JSON!`
         const timeoutId = window.setTimeout(() => controller.abort(), AI_MODEL_TIMEOUT_MS)
         try {
             console.log(`[Groq-Verb] Intentando con modelo: ${model}`)
-            showToast(`Probando Groq · ${model} (máx. 12 s)...`, 'info')
+            showToast(`Probando Groq · ${model} (máx. ${AI_MODEL_TIMEOUT_MS / 1000} s)...`, 'info')
             const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
                 method: 'POST',
                 signal: controller.signal,
@@ -347,7 +346,7 @@ Recuerda: ¡RESPONDE SOLO EN FORMATO JSON!`
             return { ...defaultFields, ...result, modelUsed: `Groq: ${model}`, provider: 'groq' }
         } catch (error) {
             const reason = controller.signal.aborted
-                ? `superó el límite de 12 segundos; probando el siguiente modelo`
+                ? `superó el límite de ${AI_MODEL_TIMEOUT_MS / 1000} segundos; probando el siguiente modelo`
                 : error.message
             console.warn(`[Groq-Verb] Error con ${model}:`, reason)
             if (controller.signal.aborted) {
@@ -431,7 +430,7 @@ Recuerda: ¡RESPONDE SOLO EN FORMATO JSON!`
         const timeoutId = window.setTimeout(() => controller.abort(), AI_MODEL_TIMEOUT_MS)
         try {
             console.log(`[Gemini-Verb] Intentando con modelo: ${model}`)
-            showToast(`Probando Gemini · ${model} (máx. 12 s)...`, 'info')
+            showToast(`Probando Gemini · ${model} (máx. ${AI_MODEL_TIMEOUT_MS / 1000} s)...`, 'info')
             const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`, {
                 method: 'POST',
                 signal: controller.signal,
@@ -504,7 +503,7 @@ Recuerda: ¡RESPONDE SOLO EN FORMATO JSON!`
             return { ...defaultFields, ...result, modelUsed: `Gemini: ${model}`, provider: 'gemini' }
         } catch (error) {
             const reason = controller.signal.aborted
-                ? `superó el límite de 12 segundos; probando el siguiente modelo`
+                ? `superó el límite de ${AI_MODEL_TIMEOUT_MS / 1000} segundos; probando el siguiente modelo`
                 : error.message
             console.warn(`[Gemini-Verb] Error con ${model}:`, reason)
             if (controller.signal.aborted) {

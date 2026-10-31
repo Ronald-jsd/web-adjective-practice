@@ -11,6 +11,23 @@ export const GEMINI_TEXT_MODELS = [
     "gemini-3.1-pro-preview" // Línea PRO: Flagship de alta inteligencia, ideal si los ligeros fallan
 ];
 
+export const AI_MODEL_TIMEOUT_MS = 20000;
+export const AI_TOTAL_BUDGET_MS = 90000;
+
+export function createAIRequestTimeout(ms = AI_MODEL_TIMEOUT_MS) {
+    const controller = new AbortController();
+    const id = setTimeout(() => controller.abort(), ms);
+    return {
+        signal: controller.signal,
+        get timedOut() {
+            return controller.signal.aborted;
+        },
+        clear() {
+            clearTimeout(id);
+        }
+    };
+}
+
 export function parseAIJson(content) {
     if (typeof content !== "string" || !content.trim()) return null;
     const cleaned = content

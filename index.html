@@ -135,7 +135,7 @@
                         </div>
                     </div>
                     <div class="overflow-x-auto">
-                        <table class="w-full text-left border-collapse min-w-[800px]">
+                        <table class="w-full text-left border-collapse min-w-[900px]">
                             <thead>
                                 <tr class="bg-gray-50 border-b border-gray-200">
                                     <th class="py-3 px-3 text-xs font-bold text-gray-500 uppercase text-center">
@@ -161,6 +161,9 @@
                                     </th>
                                     <th class="py-3 px-4 text-xs font-bold text-gray-500 uppercase">
                                         Example ES
+                                    </th>
+                                    <th class="py-3 px-4 text-xs font-bold text-gray-500 uppercase text-center">
+                                        Eliminar
                                     </th>
                                 </tr>
                             </thead>
@@ -470,7 +473,7 @@
                                 <label class="translation-field">Traducción al español <span class="optional">Optional · Puedes escribirla o pedir una recomendación</span><span class="translation-row"><input name="spanishTranslation" type="text" placeholder="¿Podría darme una mesa para dos, por favor?"><button class="button secondary translate-button" id="translate-button" type="button">Mejorar + traducir con IA</button></span><small class="field-hint">Usa la IA configurada en la Guía Oxford para corregir la idea y proponer su traducción.</small><small id="translation-status" class="field-hint" aria-live="polite"></small></label>
                                 <label>Grammar pattern <span class="optional">Optional</span><input name="grammarPattern" type="text" list="grammar-suggestions" placeholder="Suggested when possible"><datalist id="grammar-suggestions"><option>Simple present</option><option>Simple past</option><option>Present perfect</option><option>Continuous tense</option><option>Modal verb</option><option>Conditional sentence</option><option>Complex sentence</option><option>Question form</option></datalist></label>
                             </div>
-                            <label>Notas <span class="optional">Opcional</span><textarea name="notes" rows="2" maxlength="2000" placeholder="Una aclaración o recordatorio personal"></textarea></label>
+                            <label>Notas <span class="optional">Opcional</span><textarea name="notes" rows="4" maxlength="2000" placeholder="Usos:&#10;- ...&#10;- ...&#10;Cuándo usarla:&#10;- ..."></textarea><small class="field-hint">Puedes escribir texto libre o secciones como «Usos:», «Cuándo usarla:» y «Errores comunes:». Se mostrarán ordenadas al guardar.</small></label>
                             <div id="recommendation-panel" class="recommendation-panel hidden" aria-live="polite">
                                 <p class="eyebrow">SUGERENCIA DE LA IA</p>
                                 <p class="recommendation-english" id="recommendation-english"></p>
@@ -487,7 +490,13 @@
                         <form id="vocabulary-form" class="panel form-stack">
                             <input type="hidden" name="id">
                             <div class="form-grid">
-                                <label>Palabra o expresión <span class="required">Obligatorio</span><input name="word" type="text" required maxlength="300" placeholder="for example: figure out"></label>
+                                <label>Palabra o expresión <span class="required">Obligatorio</span>
+                                    <span class="translation-row">
+                                        <input name="word" type="text" required maxlength="300" placeholder="Escribe en español: averiguar">
+                                        <button class="button secondary translate-button" id="vocabulary-ai-button" type="button">✨ Completar con IA</button>
+                                    </span>
+                                    <small id="vocabulary-ai-status" class="field-hint" aria-live="polite">Escribe la palabra en español y la IA completará el inglés, la pronunciación, el significado, los ejemplos y los usos.</small>
+                                </label>
                                 <label>Pronunciación <span class="optional">Opcional</span><input name="pronunciation" type="text" maxlength="100" placeholder="/ˈfɪɡər aʊt/"></label>
                             </div>
                             <label>Significado en español <span class="required">Obligatorio</span><textarea name="spanish" rows="2" required maxlength="2000" placeholder="averiguar, resolver"></textarea></label>
@@ -495,10 +504,14 @@
                                 <label>Ejemplo en inglés <span class="optional">Opcional</span><textarea name="exampleEn" rows="2" maxlength="2000" placeholder="I can't figure out this problem."></textarea></label>
                                 <label>Traducción del ejemplo <span class="optional">Opcional</span><textarea name="exampleEs" rows="2" maxlength="2000" placeholder="No puedo resolver este problema."></textarea></label>
                             </div>
-                            <label>Notas <span class="optional">Opcional</span><textarea name="notes" rows="2" maxlength="2000" placeholder="Una aclaración o recordatorio personal"></textarea></label>
+                            <label>Notas y usos <span class="optional">Opcional</span><textarea name="notes" rows="4" maxlength="2000" placeholder="Usos:&#10;- ...&#10;- ...&#10;Cuándo usarla:&#10;- ..."></textarea></label>
+                            <label class="vocabulary-ai-option">
+                                <input type="checkbox" id="vocabulary-ai-include-notes" checked>
+                                <span>Al completar con IA, incluir también «Notas y usos»</span>
+                            </label>
                             <div class="form-actions"><button class="button primary" type="submit">Guardar vocabulario</button><button class="button secondary hidden" id="cancel-vocabulary-edit" type="button">Cancelar edición</button></div>
                         </form>
-                        <div class="section-heading list-heading"><div><p class="eyebrow">TU COLECCIÓN</p><h2>Mi vocabulario</h2></div></div>
+                        <div class="section-heading list-heading"><div><p class="eyebrow">TU COLECCIÓN</p><h2>Mi vocabulario</h2></div><input id="vocabulary-search-input" class="search" type="search" placeholder="Buscar en mi vocabulario…" aria-label="Buscar vocabulario"></div>
                         <div id="vocabulary-list" class="sentence-list"><div class="empty">Abre esta pestaña para cargar tu vocabulario.</div></div>
                     </section>
                     <section id="review-screen" class="screen">

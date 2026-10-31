@@ -155,7 +155,7 @@ function renderSearchResults() {
         if (pageResults.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="8" class="py-8 text-center text-gray-500">
+                    <td colspan="9" class="py-8 text-center text-gray-500">
                         No se encontraron resultados para "<strong>${store.lastSearchQuery}</strong>"
                         <br>
                         <span class="text-xs text-gray-400">Modo: ${searchMode === 'exact' ? 'Palabra exacta' : 'Contiene'}</span>
@@ -193,6 +193,11 @@ function renderSearchResults() {
                 const escapedExampleEs = (r.example_es || '').replace(/'/g, "\\'")
                 const favoriteId = JSON.stringify(String(r.id)).replace(/"/g, '&quot;')
 
+                const deleteCell = `
+                    <td class="py-2.5 px-3 text-center">
+                        <button type="button" class="px-2 py-1 text-red-700 hover:bg-red-50 rounded" title="Eliminar este término" aria-label="Eliminar ${escapedWord}" onclick="event.stopPropagation(); window.deleteAdjectiveRow(${itemObjStr})">🗑️</button>
+                    </td>`
+
                 return `
                     <tr class="hover:bg-gray-50 ${r.isCustom ? 'bg-purple-50/50' : ''}">
                         <td class="py-2 px-3 text-center">
@@ -218,6 +223,7 @@ function renderSearchResults() {
                         <td class="py-2.5 px-3 text-sm text-gray-600" ondblclick="window.editCell('example_es', '${escapedExampleEs}', ${itemObjStr})">
                             ${exampleEsWithAudio}
                         </td>
+                        ${deleteCell}
                     </tr>
                 `
             }).join('')
@@ -391,6 +397,15 @@ function showAISuggestion() {
         aiSuggestionDiv.classList.add('hidden')
         const existingPreview = document.getElementById('ai-preview')
         if (existingPreview) existingPreview.remove()
+    }
+}
+
+// Permite que otras secciones (por ejemplo, al eliminar un término)
+// vuelvan a ejecutar la búsqueda actual sin recargar la página.
+window.refreshSearchResults = function () {
+    const searchDiv = document.getElementById('search-results')
+    if (store.lastSearchQuery?.trim() && searchDiv && !searchDiv.classList.contains('hidden')) {
+        performSearch(store.lastSearchQuery)
     }
 }
 
