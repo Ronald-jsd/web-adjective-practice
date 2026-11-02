@@ -1,9 +1,23 @@
 import { supabase } from './app.js'
 import { saveToCache, loadFromCache, showToast } from './cache.js'
 import { store } from './config.js'
+import { showLoading, hideLoading } from './ui-status.js'
+import { cacheSnapshot, readSnapshot, readCachedRows, TABLES } from './offline/cache.js'
 
-async function loadCategoriesFromSupabase(forceRefresh = false) {
+async function readLocalCategories() {
+    return loadFromCache() || await readSnapshot('categories') || null
+}
+
+async function loadCategoriesFromSupabase(forceRefresh = false, options = {}) {
     console.log('Cargando datos...')
+
+    if (options.preferSnapshot) {
+        const snapshot = await readSnapshot('categories')
+        if (snapshot) {
+            console.log('Usando copia local actualizada')
+            return snapshot
+        }
+    }
 
     if (!forceRefresh) {
         const cachedData = loadFromCache()
@@ -13,6 +27,8 @@ async function loadCategoriesFromSupabase(forceRefresh = false) {
         }
     }
 
+    showLoading('loading-indicator', 'Cargando datos...')
+
     try {
         const { data: categories, error } = await supabase
             .from('categories')
@@ -21,7 +37,7 @@ async function loadCategoriesFromSupabase(forceRefresh = false) {
 
         if (error) {
             console.error('❌ Error:', error)
-            const cachedData = loadFromCache()
+            const cachedData = await readLocalCategories()
             if (cachedData) return cachedData
             return []
         }
@@ -58,14 +74,20 @@ async function loadCategoriesFromSupabase(forceRefresh = false) {
             console.log('👤 Cargando items para usuario:', store.currentUser.id)
 
             try {
-                const { data: customItems, error: customError } = await supabase
+                const { data: networkCustomItems, error: customError } = await supabase
                     .from('user_custom_items')
                     .select('*')
                     .eq('user_id', store.currentUser.id)
                     .order('sort_order', { ascending: true })
 
+                let customItems = networkCustomItems
+
                 if (customError) {
                     console.error('❌ Error:', customError)
+                    customItems = await readCachedRows(
+                        TABLES.customItems,
+                        row => row.user_id === store.currentUser.id
+                    )
                 }
 
                 console.log(`📦 Items personalizados encontrados: ${customItems?.length || 0}`)
@@ -115,17 +137,31 @@ async function loadCategoriesFromSupabase(forceRefresh = false) {
         }
 
         saveToCache(transformedData)
+        await cacheSnapshot('categories', transformedData)
         return transformedData
 
     } catch (err) {
         console.error('❌ Error general:', err)
-        const cachedData = loadFromCache()
+        const cachedData = await readLocalCategories()
         if (cachedData) {
             showToast('Usando datos locales (sin conexión)', 'info')
             return cachedData
         }
         return []
+    } finally {
+        hideLoading('loading-indicator')
     }
+}
+
+/* Aplica un cambio local a la copia de categorías y la guarda.
+ * Se usa después de editar, borrar o reordenar sin esperar a la nube. */
+async function updateCachedCategories(mutator) {
+    const snapshot = (await readSnapshot('categories')) || loadFromCache() || store.categoriesData
+    if (!snapshot) return null
+    mutator(snapshot)
+    await cacheSnapshot('categories', snapshot)
+    saveToCache(snapshot)
+    return snapshot
 }
 
 function renderCategories(data) {
@@ -183,4 +219,4 @@ function renderCategories(data) {
     if (loading) loading.classList.add('hidden')
 }
 
-export { loadCategoriesFromSupabase, renderCategories }
+export { loadCategoriesFromSupabase, renderCategories, updateCachedCategories }

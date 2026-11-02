@@ -23,6 +23,7 @@ import {
 } from "./ai-practice.js";
 import { getSelectedNotionPageIds, loadNotionPracticeCategories } from "./notion.js";
 import { parsePracticeTable } from "./practice-import.js";
+import { showLoading, hideLoading } from "./ui-status.js";
 
 const PROGRESS_STORAGE_KEY = "vocabulary_practice_progress_v1";
 const CATEGORY_SELECTION_STORAGE_KEY = "practice_selected_categories_v1";
@@ -643,6 +644,8 @@ function submitAnswer(event) {
 }
 
 async function initializePractice(categories = [], options = {}) {
+    showLoading("practice-loading-indicator", "Cargando categorías y progreso de práctica…");
+    try {
     if (initialized) stopAudioCourse();
     practiceSourceCategories = categories;
     practiceSourceOptions = options;
@@ -968,6 +971,9 @@ async function initializePractice(categories = [], options = {}) {
 
     renderQuestion();
     updatePreviousButton();
+    } finally {
+        hideLoading("practice-loading-indicator");
+    }
 }
 
 export { initializePractice };

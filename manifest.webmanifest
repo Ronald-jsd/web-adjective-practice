@@ -1,0 +1,56 @@
+{
+  "id": "./",
+  "name": "Visual Guide — Adjectives & Verbs",
+  "short_name": "Visual Guide",
+  "description": "Guía visual de adjetivos y verbos en inglés, práctica de vocabulario y Mi aprendizaje.",
+  "lang": "es",
+  "dir": "ltr",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#f8fafc",
+  "theme_color": "#1d4ed8",
+  "categories": ["education", "productivity"],
+  "icons": [
+    {
+      "src": "icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Adjetivos",
+      "short_name": "Adjetivos",
+      "url": "./index.html?section=adjectives",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Practicar",
+      "short_name": "Practicar",
+      "url": "./index.html?section=practice",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Mi aprendizaje",
+      "short_name": "Mi aprendizaje",
+      "url": "./index.html?section=mysentences",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

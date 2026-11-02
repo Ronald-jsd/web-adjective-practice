@@ -32,6 +32,26 @@ my-sentences.html + sentences.css
 
 To load the example sentence, replace `REPLACE_WITH_YOUR_LOGIN_EMAIL` in `supabase/seed.sql` with your account email and run that script in the same project's SQL Editor.
 
+## Instalar como app (PWA)
+
+La app incluye `manifest.webmanifest`, `sw.js` e iconos en `icons/`. El service worker guarda el shell completo (HTML, CSS, módulos JS, Tailwind, fuentes y Supabase JS) para que la app abra sin conexión.
+
+1. Sirve la app por **HTTPS** o desde `localhost`. El service worker no funciona con `file://` ni con HTTP sin TLS.
+2. **Android / Chrome / Edge**: abre la app y usa el botón **Instalar app** o el menú del navegador → *Instalar aplicación*.
+3. **iPhone / iPad**: abre la app en **Safari** → *Compartir* → **Añadir a pantalla de inicio**.
+4. La primera visita necesita internet para descargar y guardar los archivos. Después, la app abre sin conexión.
+
+Los datos privados de Supabase, las llamadas a la IA y las funciones de Notion **nunca** se cachean. Al desplegar cambios, sube `VERSION` en `sw.js` para forzar la actualización en los dispositivos.
+
+### Próxima fase: datos offline y sincronización
+
+Ahora mismo la app abre sin conexión y muestra los datos ya guardados (por ejemplo, las categorías desde la caché local), pero **las escrituras todavía necesitan red**. La siguiente fase añade:
+
+- IndexedDB como almacén local de frases, vocabulario, favoritos, progreso y datos de práctica.
+- Una cola de salida (*outbox*) con UUID de cliente para guardar cambios sin conexión.
+- Subida automática al recuperar conexión, al volver a la app y periódicamente, con reintentos y *upsert* para evitar duplicados.
+- Indicador visible de cambios pendientes y estado de sincronización.
+
 ## Práctica temporal desde Notion
 
 La integración usa OAuth y una función Edge de Supabase como intermediaria. El token de Notion se guarda solo en `notion_connections`, tabla sin acceso para `anon` ni `authenticated`; nunca se devuelve al navegador. Las páginas elegidas se recuerdan en el almacenamiento local del navegador y el vocabulario se obtiene de Notion al cargarlo para practicar. Las tarjetas no se insertan en Supabase y solo permanecen en memoria mientras la app está abierta. El progreso específico de estas tarjetas se conserva únicamente en el almacenamiento local del navegador, no en la tabla de progreso de Supabase.

@@ -5,6 +5,7 @@ import { loadUserCustomItems } from './auth.js'
 import { loadCategoriesFromSupabase, renderCategories } from './data.js'
 import { generateWithAI, hasApiKey } from './ai.js'
 import { initializePractice } from './practice.js'
+import { showLoading } from './ui-status.js'
 
 const AI_QUERY_IMAGE_BUCKET = 'ai-query-images'
 const MAX_AI_QUERY_IMAGE_SIZE = 5 * 1024 * 1024
@@ -752,8 +753,8 @@ async function loadQueryHistory() {
 
     history.replaceChildren()
     const loading = document.createElement('p')
-    loading.className = 'text-sm text-gray-500'
-    loading.textContent = 'Cargando consultas guardadas...'
+    loading.className = 'ui-loading'
+    showLoading(loading, 'Cargando consultas guardadas…')
     history.appendChild(loading)
 
     const controller = new AbortController()

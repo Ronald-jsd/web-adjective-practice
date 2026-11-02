@@ -125,10 +125,12 @@ function renderSearchResults() {
     const searchDiv = document.getElementById('search-results')
     const categoryView = document.getElementById('category-view')
     const tbody = document.getElementById('search-results-tbody')
+    const loading = document.getElementById('loading-indicator')
 
     if (!grid || !searchDiv) return
 
     grid.classList.add('hidden')
+    if (loading) loading.classList.add('hidden')
     if (categoryView) categoryView.classList.add('hidden')
     searchDiv.classList.remove('hidden')
 

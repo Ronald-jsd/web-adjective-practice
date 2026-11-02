@@ -16,6 +16,7 @@ import {
     parseAIJson
 } from './ai-models.js'
 import { supabase } from './app.js'
+import { beginAIRequest } from './ui-status.js'
 
 // La guía crea hasta 20 tarjetas, así que necesita más margen que una ficha.
 const GUIDE_MODEL_TIMEOUT_MS = 45000
@@ -469,26 +470,36 @@ async function generateWithAI(word, { guide = false } = {}) {
     console.log(` Orden de proveedores: ${providersToTry.join(' → ')}`)
 
     const deadline = Date.now() + (guide ? GUIDE_TOTAL_BUDGET_MS : AI_TOTAL_BUDGET_MS)
+    const aiStatus = beginAIRequest(
+        guide
+            ? 'Solicitando a la IA… preparando tu guía y tarjetas.'
+            : 'Solicitando a la IA… buscando la información de la palabra.'
+    )
 
-    for (const provider of providersToTry) {
-        if (Date.now() >= deadline) break
-        const apiKey = getApiKey(provider)
-        const providerName = provider === 'groq' ? 'Groq ⚡' : 'Gemini 🤖'
-        showToast(`Consultando con ${providerName}...`, 'info')
+    try {
+        for (const provider of providersToTry) {
+            if (Date.now() >= deadline) break
+            const apiKey = getApiKey(provider)
+            const providerName = provider === 'groq' ? 'Groq ⚡' : 'Gemini 🤖'
+            aiStatus.update(`Solicitando a la IA… consultando ${providerName}.`)
+            showToast(`Consultando con ${providerName}...`, 'info')
 
-        let result = provider === 'groq'
-            ? await generateWithGroq(word, apiKey, guide, deadline)
-            : await generateWithGemini(word, apiKey, guide, deadline)
+            let result = provider === 'groq'
+                ? await generateWithGroq(word, apiKey, guide, deadline)
+                : await generateWithGemini(word, apiKey, guide, deadline)
 
-        if (result && result.error === 'invalid_key') {
-            removeApiKey(provider)
-            updateAIButton()
-            alert(`❌ La API Key de ${providerName} es inválida y fue eliminada.\n\nConfigura una nueva.`)
-            continue
+            if (result && result.error === 'invalid_key') {
+                removeApiKey(provider)
+                updateAIButton()
+                alert(`❌ La API Key de ${providerName} es inválida y fue eliminada.\n\nConfigura una nueva.`)
+                continue
+            }
+
+            if (result && !result.error) return result
+            console.warn(`⚠️ ${providerName} falló, intentando con el siguiente...`)
         }
-
-        if (result && !result.error) return result
-        console.warn(`⚠️ ${providerName} falló, intentando con el siguiente...`)
+    } finally {
+        aiStatus.end()
     }
 
     alert('❌ Ningún proveedor de IA respondió a tiempo o devolvió un resultado válido.\n\nRevisa la consola (F12) para más detalles o inténtalo de nuevo en unos segundos.')

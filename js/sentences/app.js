@@ -6,6 +6,7 @@ import { isDue, scheduleReview } from "./scheduler.js"
 import { createSentenceRepository } from "./repository.js"
 import { createNotesView } from "./notes.js"
 import { filterVocabulary } from "./vocabulary-search.js"
+import { showLoading, hideLoading } from "../ui-status.js"
 
 const repository = createSentenceRepository(supabase)
 const state = { user: null, sentences: [], vocabulary: null, review: null }
@@ -396,7 +397,7 @@ async function loadVocabulary() {
         return
     }
     const host = byId("vocabulary-list")
-    host.textContent = "Cargando tu vocabulario..."
+    showLoading(host, "Cargando tu vocabulario…")
     try {
         state.vocabulary = await repository.listVocabulary(state.user.id)
         renderVocabularyList()
@@ -436,6 +437,7 @@ async function deleteSentence(sentence) {
 }
 
 async function loadData() {
+    showLoading("sentences-loading-indicator", "Cargando tus frases…")
     try {
         state.sentences = await repository.list(state.user.id)
         byId("auth-panel").classList.add("hidden")
@@ -446,6 +448,8 @@ async function loadData() {
         byId("auth-panel").classList.add("hidden")
         byId("app-panel").classList.remove("hidden")
         showNotice(storageErrorMessage(error, "No se pudieron cargar las frases. Revisa que tu sesión y permisos de Supabase sean válidos."), true)
+    } finally {
+        hideLoading("sentences-loading-indicator")
     }
 }
 
@@ -633,12 +637,29 @@ export async function initializeSentencesApp() {
     if (initialized) return
     initialized = true
     setupEvents()
-    const { data, error } = await supabase.auth.getUser()
-    if (error && error.name !== "AuthSessionMissingError") console.warn("Unable to read current auth session", error)
-    state.user = data?.user || null
-    if (state.user) await loadData()
-    else {
-        byId("auth-panel").classList.remove("hidden")
-        byId("app-panel").classList.add("hidden")
+    showLoading("sentences-loading-indicator", "Cargando tu aprendizaje…")
+    try {
+        let user = null
+        try {
+            const { data } = await supabase.auth.getSession()
+            user = data?.session?.user || null
+        } catch (error) {
+            console.warn("No se pudo leer la sesión local de Mi aprendizaje", error)
+        }
+
+        if (!user && navigator.onLine) {
+            const { data, error } = await supabase.auth.getUser()
+            if (error && error.name !== "AuthSessionMissingError") console.warn("Unable to read current auth session", error)
+            user = data?.user || null
+        }
+
+        state.user = user
+        if (state.user) await loadData()
+        else {
+            byId("auth-panel").classList.remove("hidden")
+            byId("app-panel").classList.add("hidden")
+        }
+    } finally {
+        hideLoading("sentences-loading-indicator")
     }
 }

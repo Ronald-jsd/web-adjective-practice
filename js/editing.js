@@ -1,8 +1,17 @@
-import { supabase } from './app.js'
 import { store } from './config.js'
 import { showToast } from './cache.js'
 import { loadUserCustomItems } from './auth.js'
-import { loadCategoriesFromSupabase } from './data.js'
+import { loadCategoriesFromSupabase, updateCachedCategories } from './data.js'
+import { cacheRow, removeCachedRow, readCachedRow, TABLES } from './offline/cache.js'
+import { queueChange, isOnline } from './offline/sync.js'
+
+const ITEM_FIELD_INDEX = {
+    word: 0,
+    pronunciation: 1,
+    spanish: 2,
+    example_en: 3,
+    example_es: 4
+}
 
 function getStatusBadge(status) {
     switch (status) {
@@ -11,6 +20,44 @@ function getStatusBadge(status) {
         case 3: return '<span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-200 text-blue-800">⚠️ Poco importante</span>'
         default: return ''
     }
+}
+
+function updateItemInSnapshot(snapshot, idKey, field, value) {
+    const index = ITEM_FIELD_INDEX[field]
+    if (index === undefined) return
+
+    for (const category of snapshot) {
+        for (const subcategory of category.subcategories || []) {
+            for (const row of subcategory.items || []) {
+                if (String(row[5]) === String(idKey)) {
+                    row[index] = value
+                }
+            }
+        }
+    }
+}
+
+function removeItemFromSnapshot(snapshot, idKey) {
+    for (const category of snapshot) {
+        for (const subcategory of category.subcategories || []) {
+            subcategory.items = (subcategory.items || []).filter(row => String(row[5]) !== String(idKey))
+        }
+    }
+}
+
+async function refreshCategoryViewFromLocalCopy() {
+    const newData = await loadCategoriesFromSupabase(true, { preferSnapshot: true })
+    store.categoriesData = newData
+
+    if (!store.currentCategoryData) return newData
+
+    const updatedCategory = newData.find(category => String(category.id) === String(store.currentCategoryData.id))
+    if (updatedCategory) {
+        store.currentCategoryData = updatedCategory
+        const { openCategoryView } = await import('./category-view.js')
+        openCategoryView(updatedCategory)
+    }
+    return newData
 }
 
 async function editCell(field, currentValue, item) {
@@ -34,43 +81,57 @@ async function editCell(field, currentValue, item) {
         return
     }
 
-    if (item && item.isCustom) {
-        const updateData = {}; updateData[field] = newValue
-        const { error } = await supabase.from('user_custom_items').update(updateData).eq('id', item.id).eq('user_id', store.currentUser.id)
-        if (error) alert('❌ Error: ' + error.message)
-        else {
-            showToast('Editado correctamente', 'success')
-            await loadUserCustomItems()
-            if (store.currentCategoryData) {
-                const newData = await loadCategoriesFromSupabase(true)
-                store.categoriesData = newData
-                const updatedCategory = newData.find(c => c.id === store.currentCategoryData.id)
-                if (updatedCategory) {
-                    store.currentCategoryData = updatedCategory
-                    const { openCategoryView } = await import('./category-view.js')
-                    openCategoryView(updatedCategory)
-                }
-            }
+    try {
+        const updateData = {}
+        updateData[field] = newValue
+
+        if (item && item.isCustom) {
+            const userId = store.currentUser.id
+            const cached = await readCachedRow(TABLES.customItems, item.id)
+            await cacheRow(TABLES.customItems, item.id, {
+                ...(cached || {}),
+                ...updateData,
+                id: item.id,
+                user_id: userId
+            })
+            await queueChange({
+                table: TABLES.customItems,
+                action: 'update',
+                payload: updateData,
+                match: { id: item.id, user_id: userId },
+                description: 'Editar vocabulario'
+            })
+        } else {
+            await queueChange({
+                table: 'items',
+                action: 'update',
+                payload: updateData,
+                match: { id: item.id },
+                description: 'Editar palabra'
+            })
         }
-    } else {
-        const updateData = {}; updateData[field] = newValue
-        const { error } = await supabase.from('items').update(updateData).eq('id', item.id)
-        if (error) alert('❌ Error al editar: ' + error.message)
-        else {
-            showToast('Palabra editada correctamente', 'success')
-            const newData = await loadCategoriesFromSupabase(true)
-            store.categoriesData = newData
-            if (store.currentCategoryData) {
-                const updatedCategory = newData.find(c => c.id === store.currentCategoryData.id)
-                if (updatedCategory) {
-                    store.currentCategoryData = updatedCategory
-                    const { openCategoryView } = await import('./category-view.js')
-                    openCategoryView(updatedCategory)
-                }
-            }
+
+        await updateCachedCategories(snapshot =>
+            updateItemInSnapshot(snapshot, item.isCustom ? `custom_${item.id}` : item.id, field, newValue)
+        )
+
+        showToast(
+            isOnline()
+                ? (item.isCustom ? 'Editado correctamente' : 'Palabra editada correctamente')
+                : 'Guardado en el dispositivo; se sincronizará al volver la conexión.',
+            'success'
+        )
+
+        if (item.isCustom) {
+            await loadUserCustomItems({ preferCache: true })
         }
+        await refreshCategoryViewFromLocalCopy()
+    } catch (error) {
+        console.error('No se pudo editar el término:', error)
+        showToast(`No se pudo editar: ${error.message}`, 'error')
+    } finally {
+        store.isEditing = false
     }
-    store.isEditing = false
 }
 
 async function updateWordStatus(itemId, status) {
@@ -86,7 +147,7 @@ async function updateWordStatus(itemId, status) {
     }
 
     const itemIdStr = itemId.toString();
-    
+
     if (itemIdStr.startsWith('temp_')) {
         console.warn('⚠️ No se guarda estado para ID temporal:', itemId);
         showToast('Este elemento no se puede guardar en la base de datos', 'warning');
@@ -113,8 +174,6 @@ async function updateWordStatus(itemId, status) {
     return await saveStatus(itemIdNumber, status, itemIdStr);
 }
 
- 
-
 async function saveStatus(itemIdNumber, status, originalItemId) {
     const currentStatus = store.wordStatusMap.get(originalItemId) || 0;
     let newStatus = currentStatus === status ? 0 : status;
@@ -124,18 +183,28 @@ async function saveStatus(itemIdNumber, status, originalItemId) {
         return false;
     }
 
-    const { error } = await supabase
-        .from('user_word_status')
-        .upsert({
-            user_id: store.currentUser.id,
-            item_id: itemIdNumber,
-            status: newStatus,
-            updated_at: new Date()
-        }, { onConflict: 'user_id, item_id' });
+    const userId = store.currentUser.id;
+    const now = new Date().toISOString();
+    const payload = {
+        user_id: userId,
+        item_id: itemIdNumber,
+        status: newStatus,
+        updated_at: now
+    };
+    const cacheId = `${userId}|${itemIdNumber}`;
 
-    if (error) {
-        console.error('❌ Error al guardar:', error);
-        alert('❌ Error: ' + error.message);
+    await cacheRow(TABLES.wordStatus, cacheId, { ...payload, cache_id: cacheId });
+    const queued = await queueChange({
+        table: TABLES.wordStatus,
+        action: 'upsert',
+        payload,
+        conflict: 'user_id,item_id',
+        localId: cacheId,
+        description: 'Estado de palabra'
+    });
+
+    if (!queued) {
+        showToast('No se pudo guardar el estado en este dispositivo.', 'error');
         return false;
     }
 
@@ -174,8 +243,8 @@ async function saveStatus(itemIdNumber, status, originalItemId) {
         }
     }
 
-    const statusText = newStatus === 0 ? 'eliminado' : 
-                      newStatus === 1 ? '📚 Por aprender' : 
+    const statusText = newStatus === 0 ? 'eliminado' :
+                      newStatus === 1 ? '📚 Por aprender' :
                       newStatus === 2 ? '✅ Aprendido' : '⚠️ Poco importante';
     showToast(`Estado ${statusText}`, newStatus === 0 ? 'info' : 'success');
     return true;
@@ -200,27 +269,33 @@ async function deleteAdjectiveRow(item) {
     if (!window.confirm(message)) return
 
     try {
-        let query = supabase.from(isCustom ? 'user_custom_items' : 'items').delete().eq('id', item.id)
-        if (isCustom) query = query.eq('user_id', store.currentUser.id)
-        const { data, error } = await query.select('id')
-        if (error) throw error
-        if (!data?.length) {
-            throw new Error('No se eliminó ninguna fila. Puede que no tengas permiso para eliminar este término.')
+        const table = isCustom ? TABLES.customItems : 'items'
+        const match = isCustom
+            ? { id: item.id, user_id: store.currentUser.id }
+            : { id: item.id }
+
+        await queueChange({
+            table,
+            action: 'delete',
+            match,
+            description: isCustom ? 'Eliminar vocabulario' : 'Eliminar palabra'
+        })
+
+        if (isCustom) {
+            await removeCachedRow(TABLES.customItems, item.id)
         }
 
+        const idKey = isCustom ? `custom_${item.id}` : String(item.id)
+        await updateCachedCategories(snapshot => removeItemFromSnapshot(snapshot, idKey))
+
         showToast(`Se eliminó "${word}".`, 'success')
-        await loadUserCustomItems()
-        const newData = await loadCategoriesFromSupabase(true)
-        store.categoriesData = newData
-        if (store.currentCategoryData) {
-            const updatedCategory = newData.find(c => c.id === store.currentCategoryData.id)
-            if (updatedCategory) {
-                store.currentCategoryData = updatedCategory
-                const { openCategoryView } = await import('./category-view.js')
-                openCategoryView(updatedCategory)
-            }
+
+        if (isCustom) {
+            await loadUserCustomItems({ preferCache: true })
         }
+        await refreshCategoryViewFromLocalCopy()
         window.refreshSearchResults?.()
+
         try {
             await window.refreshPracticeCategories?.()
         } catch (refreshError) {

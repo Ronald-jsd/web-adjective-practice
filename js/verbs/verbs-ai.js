@@ -9,6 +9,7 @@ import { loadUserCustomItems } from '../auth.js'
 import { renderCategories } from '../data.js'
 import { supabase } from '../app.js'
 import { GEMINI_TEXT_MODELS, GROQ_TEXT_MODELS, AI_MODEL_TIMEOUT_MS, parseAIJson } from '../ai-models.js'
+import { beginAIRequest } from '../ui-status.js'
 
 let tempAIData = null
 
@@ -549,27 +550,33 @@ async function generateWithAI(word) {
     }
 
     console.log(`Orden de proveedores: ${providersToTry.join(' → ')}`)
+    const aiStatus = beginAIRequest('Solicitando a la IA… generando la ficha del verbo.')
 
-    for (const provider of providersToTry) {
-        const apiKey = getApiKey(provider)
-        const providerName = provider === 'groq' ? 'Groq ⚡' : 'Gemini 🤖'
-        showToast(`Consultando con ${providerName}...`, 'info')
+    try {
+        for (const provider of providersToTry) {
+            const apiKey = getApiKey(provider)
+            const providerName = provider === 'groq' ? 'Groq ⚡' : 'Gemini 🤖'
+            aiStatus.update(`Solicitando a la IA… consultando ${providerName}.`)
+            showToast(`Consultando con ${providerName}...`, 'info')
 
-        let result = provider === 'groq'
-            ? await generateWithGroq(word, apiKey)
-            : await generateWithGemini(word, apiKey)
+            let result = provider === 'groq'
+                ? await generateWithGroq(word, apiKey)
+                : await generateWithGemini(word, apiKey)
 
-        if (result && result.error === 'invalid_key') {
-            removeApiKey(provider)
-            updateAIButton()
-            alert(`❌ La API Key de ${providerName} es inválida y fue eliminada.\n\nConfigura una nueva.`)
-            continue
+            if (result && result.error === 'invalid_key') {
+                removeApiKey(provider)
+                updateAIButton()
+                alert(`❌ La API Key de ${providerName} es inválida y fue eliminada.\n\nConfigura una nueva.`)
+                continue
+            }
+
+            if (result && !result.error && result.verb) {
+                return result
+            }
+            console.warn(`${providerName} falló, intentando con el siguiente...`)
         }
-
-        if (result && !result.error && result.verb) {
-            return result
-        }
-        console.warn(`${providerName} falló, intentando con el siguiente...`)
+    } finally {
+        aiStatus.end()
     }
 
     alert('❌ Ningún proveedor de IA funcionó.\n\nRevisa la consola (F12) para más detalles.')

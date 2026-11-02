@@ -11,6 +11,7 @@ import {
     createAIRequestTimeout,
     parseAIJson
 } from "./ai-models.js"
+import { beginAIRequest } from "./ui-status.js"
 
 export async function recommendEnglishSentence(input) {
     const text = String(input || "").trim()
@@ -32,29 +33,35 @@ export async function recommendEnglishSentence(input) {
             : ["groq", "gemini"]
     const failures = []
     const deadline = Date.now() + AI_TOTAL_BUDGET_MS
+    const aiStatus = beginAIRequest("Solicitando a la IA… corrigiendo la frase y preparando la traducción.")
 
-    for (const provider of providers) {
-        if (Date.now() >= deadline) {
-            failures.push("tiempo de espera agotado")
-            break
-        }
-        const apiKey = keys[provider]
-        if (!apiKey) continue
-        try {
-            const recommendation = provider === "groq"
-                ? await recommendWithGroq(text, apiKey, deadline)
-                : await recommendWithGemini(text, apiKey, deadline)
-            if (recommendation) return recommendation
-            failures.push(`${provider}: la respuesta estaba vacía o no tenía el formato esperado`)
-        } catch (error) {
-            if (error.invalidKey) {
-                const keyName = provider === "groq" ? GROQ_KEY_STORAGE : GEMINI_KEY_STORAGE
-                localStorage.removeItem(keyName)
-                failures.push(`${provider}: API key inválida; se eliminó del almacenamiento`)
-            } else {
-                failures.push(`${provider}: ${error.message}`)
+    try {
+        for (const provider of providers) {
+            if (Date.now() >= deadline) {
+                failures.push("tiempo de espera agotado")
+                break
+            }
+            const apiKey = keys[provider]
+            if (!apiKey) continue
+            aiStatus.update(`Solicitando a la IA… consultando ${provider === "groq" ? "Groq" : "Gemini"}.`)
+            try {
+                const recommendation = provider === "groq"
+                    ? await recommendWithGroq(text, apiKey, deadline)
+                    : await recommendWithGemini(text, apiKey, deadline)
+                if (recommendation) return recommendation
+                failures.push(`${provider}: la respuesta estaba vacía o no tenía el formato esperado`)
+            } catch (error) {
+                if (error.invalidKey) {
+                    const keyName = provider === "groq" ? GROQ_KEY_STORAGE : GEMINI_KEY_STORAGE
+                    localStorage.removeItem(keyName)
+                    failures.push(`${provider}: API key inválida; se eliminó del almacenamiento`)
+                } else {
+                    failures.push(`${provider}: ${error.message}`)
+                }
             }
         }
+    } finally {
+        aiStatus.end()
     }
 
     throw new Error(`No se pudo generar la recomendación. ${failures.join(". ")}`)

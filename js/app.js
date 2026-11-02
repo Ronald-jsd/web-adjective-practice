@@ -13,6 +13,10 @@ import { initializeBrowserAI } from "./browser-ai.js";
 import { initializeNotionIntegration } from "./notion.js";
 import { toggleFavorite } from "./favorites.js";
 import { showToast } from "./cache.js";
+import { showLoading, hideLoading } from "./ui-status.js";
+import { initPWA } from "./pwa.js";
+import { initOfflineSync, startAutoSync } from "./offline/sync.js";
+import { initSyncStatus } from "./offline/status.js";
 
 window.toggleVocabularyFavorite = (itemType, itemId) =>
     toggleFavorite(supabase, itemType, itemId);
@@ -106,6 +110,7 @@ function setupEventListeners() {
 }
 
 window.loadVerbsFromSupabase = async function (forceRefresh) {
+    showLoading("verbs-loading-indicator", "Cargando verbos…");
     try {
         console.log("Cargando verbos...");
         const { loadVerbsFromSupabase } = await import("./verbs/verbs-data.js");
@@ -114,10 +119,16 @@ window.loadVerbsFromSupabase = async function (forceRefresh) {
     } catch (error) {
         console.error("Error cargando verbos:", error);
         return [];
+    } finally {
+        hideLoading("verbs-loading-indicator");
     }
 };
 
 async function initApp() {
+    initOfflineSync(supabase, { getUserId: () => store.currentUser?.id || null });
+    initSyncStatus();
+    initPWA();
+    startAutoSync();
     await checkUser();
     initializeBrowserAI();
     initializeNotionIntegration(supabase);
@@ -157,6 +168,7 @@ let mySentencesInitialized = false;
 window.initializeMySentences = async function () {
     if (mySentencesInitialized) return;
     mySentencesInitialized = true;
+    showLoading("sentences-loading-indicator", "Cargando tu aprendizaje…");
     try {
         const { initializeSentencesApp } = await import("./sentences/app.js");
         await initializeSentencesApp();
@@ -164,6 +176,8 @@ window.initializeMySentences = async function () {
         mySentencesInitialized = false;
         console.error("Unable to initialize MySentences", error);
         window.alert("No se pudo abrir MySentences. Recarga la página e inténtalo de nuevo.");
+    } finally {
+        hideLoading("sentences-loading-indicator");
     }
 };
 

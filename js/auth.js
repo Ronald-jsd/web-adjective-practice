@@ -1,6 +1,8 @@
 import { supabase } from './app.js'
 import { store } from './config.js'
 import { loadUserFavorites } from './favorites.js'
+import { cacheRowsPreservingPending, readCachedRows, TABLES } from './offline/cache.js'
+import { flushOutbox, clearOfflineData } from './offline/sync.js'
 
 function updateAuthUI() {
     const authContainer = document.getElementById('auth-container')
@@ -31,7 +33,25 @@ function updateAuthUI() {
 }
 
 async function checkUser() {
-    const { data: { user } } = await supabase.auth.getUser()
+    let user = null
+
+    // getSession lee la sesión guardada en el dispositivo y funciona sin red.
+    try {
+        const { data } = await supabase.auth.getSession()
+        user = data?.session?.user || null
+    } catch (error) {
+        console.warn('No se pudo leer la sesión local:', error)
+    }
+
+    // Con conexión revalidamos el token; sin conexión seguimos con la sesión local.
+    if (navigator.onLine) {
+        try {
+            const { data, error } = await supabase.auth.getUser()
+            if (!error && data?.user) user = data.user
+        } catch (error) {
+            console.warn('No se pudo revalidar la sesión; se usa la copia local.', error)
+        }
+    }
 
     store.currentUser = user
 
@@ -48,61 +68,89 @@ async function checkUser() {
 
 async function loadUserWordStatus() {
     if (!store.currentUser) return
-    
-    const { data, error } = await supabase
-        .from('user_word_status')
-        .select('item_id, status')
-        .eq('user_id', store.currentUser.id)
 
-    if (!error && data) {
-        store.wordStatusMap.clear()
-        store.favoriteSet.clear()
-        
-        const validItems = data.filter(item => 
-            item && item.item_id !== null && 
-            item.item_id !== undefined && 
-            item.item_id !== ''
+    const userId = store.currentUser.id
+    let rows = null
+    let fromNetwork = false
+
+    try {
+        const { data, error } = await supabase
+            .from('user_word_status')
+            .select('id,item_id, status')
+            .eq('user_id', userId)
+        if (error) throw error
+        rows = data || []
+        fromNetwork = true
+        await cacheRowsPreservingPending(
+            TABLES.wordStatus,
+            rows.map(row => ({ ...row, user_id: userId, cache_id: `${userId}|${row.item_id}` })),
+            'cache_id'
         )
-        
-        const nullItems = data.filter(item => 
-            !item || item.item_id === null || 
+    } catch (error) {
+        console.warn('Sin conexión: usando estados guardados en el dispositivo.', error)
+        rows = await readCachedRows(TABLES.wordStatus, row => row.user_id === userId)
+    }
+
+    store.wordStatusMap.clear()
+    store.favoriteSet.clear()
+
+    const validItems = (rows || []).filter(item =>
+        item && item.item_id !== null &&
+        item.item_id !== undefined &&
+        item.item_id !== ''
+    )
+
+    if (fromNetwork) {
+        const nullItems = (rows || []).filter(item =>
+            !item || item.item_id === null ||
             item.item_id === undefined || item.item_id === ''
         )
-        
         if (nullItems.length > 0) {
             console.warn(`⚠️ Encontrados ${nullItems.length} registros con item_id nulo:`, nullItems)
             try {
                 const idsToDelete = nullItems.map(item => item.id).filter(id => id)
                 if (idsToDelete.length > 0) {
-                    await supabase
-                        .from('user_word_status')
-                        .delete()
-                        .in('id', idsToDelete)
-                    console.log(`🗑️ Eliminados ${idsToDelete.length} registros con item_id nulo`)
+                    await supabase.from('user_word_status').delete().in('id', idsToDelete)
                 }
             } catch (err) {
                 console.error('Error al eliminar registros nulos:', err)
             }
         }
-        
-        validItems.forEach(item => {
-            if (item && item.item_id) {
-                store.wordStatusMap.set(item.item_id.toString(), item.status)
-            }
-        })
     }
+
+    validItems.forEach(item => {
+        if (item && item.item_id) {
+            store.wordStatusMap.set(item.item_id.toString(), item.status)
+        }
+    })
 }
 
-async function loadUserCustomItems() {
+async function loadUserCustomItems(options = {}) {
     if (!store.currentUser) return
-    const { data, error } = await supabase
-        .from('user_custom_items')
-        .select('*')
-        .eq('user_id', store.currentUser.id)
-    if (!error && data) {
-        store.userCustomItems.length = 0
-        store.userCustomItems.push(...data)
+
+    const userId = store.currentUser.id
+    let data = null
+
+    if (!options.preferCache) {
+        try {
+            const result = await supabase
+                .from('user_custom_items')
+                .select('*')
+                .eq('user_id', userId)
+            if (result.error) throw result.error
+            data = result.data || []
+            await cacheRowsPreservingPending(TABLES.customItems, data)
+        } catch (error) {
+            console.warn('Sin conexión: usando tu vocabulario guardado en el dispositivo.', error)
+        }
     }
+
+    if (!data) {
+        data = await readCachedRows(TABLES.customItems, row => row.user_id === userId)
+    }
+
+    store.userCustomItems.length = 0
+    store.userCustomItems.push(...data)
 }
 
 function clearCategoriesCache() {
@@ -111,11 +159,26 @@ function clearCategoriesCache() {
 }
 
 async function logout() {
-    await supabase.auth.signOut()
+    const result = await flushOutbox({ silent: true }).catch(() => ({ pending: 0 }))
+    if (result?.pending > 0) {
+        const proceed = window.confirm(
+            `Tienes ${result.pending} ${result.pending === 1 ? 'cambio sin sincronizar' : 'cambios sin sincronizar'}. ` +
+            'Si cierras sesión ahora podrías perderlos. ¿Quieres continuar?'
+        )
+        if (!proceed) return
+    }
+
+    try {
+        await supabase.auth.signOut()
+    } catch (error) {
+        console.warn('No se pudo cerrar la sesión en la nube; se limpia la copia local.', error)
+    }
+
     store.currentUser = null
     store.wordStatusMap.clear()
     store.userCustomItems.length = 0
     clearCategoriesCache()
+    await clearOfflineData()
     updateAuthUI()
     location.reload()
 }

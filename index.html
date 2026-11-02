@@ -4,7 +4,19 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes, viewport-fit=cover" />
-    <title>Oxford Visual Guide - Adjetivos y Verbos en Inglés</title>
+    <title>PowerLearn Visual Guide - Adjetivos y Verbos en Inglés</title>
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.webmanifest" />
+    <meta name="theme-color" content="#1d4ed8" />
+    <meta name="description" content="Guía visual para aprender adjetivos y verbos en inglés, practicar vocabulario y guardar tus frases con repaso espaciado." />
+    <meta name="application-name" content="Visual Guide" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="Visual Guide" />
+    <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="icons/icon-512.png" />
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/merriweather@5.0.8/index.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/inter@5.0.8/index.min.css" />
@@ -25,7 +37,7 @@
                 </div>
                 <div>
                     <h1 class="font-serif-oxford font-bold text-lg leading-tight text-gray-900">
-                        Visual Guide
+                        PowerLearn Visual Guide
                     </h1>
                     <p class="text-xs text-gray-500 uppercase tracking-widest font-semibold">
                         Adjectives & Verbs
@@ -110,9 +122,9 @@
                 </p>
             </div>
 
-            <div id="loading-indicator" class="flex justify-center items-center py-20">
-                <div class="loading-spinner"></div>
-                <span class="ml-3 text-gray-500">Cargando datos...</span>
+            <div id="loading-indicator" class="ui-loading" role="status" aria-live="polite">
+                <span class="ui-spinner" aria-hidden="true"></span>
+                <span>Cargando datos...</span>
             </div>
 
             <div id="categories-grid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 hidden"></div>
@@ -287,6 +299,7 @@
                         <h3>Categorías</h3>
                         <span id="practice-category-count" class="practice-count"></span>
                     </div>
+                    <div id="practice-loading-indicator" class="ui-loading hidden" role="status" aria-live="polite"></div>
                     <div id="practice-category-list" class="practice-category-list"></div>
                     <details class="practice-import-panel">
                         <summary>Pegar tabla para practicar</summary>
@@ -436,6 +449,7 @@
 
         <div id="mysentences-section" class="section">
             <div class="mysentences-shell">
+                <div id="sentences-loading-indicator" class="ui-loading hidden" role="status" aria-live="polite"></div>
                 <section id="auth-panel" class="auth-panel panel hidden">
                     <div class="eyebrow">TU INGLÉS, TUS PALABRAS</div>
                     <h2>Practica lo que realmente quieres decir.</h2>
@@ -470,7 +484,7 @@
                             <fieldset><legend>Topic <span class="required">Choose at least one</span></legend><div id="topic-options" class="topic-options"></div></fieldset>
                             <label>Why are you saving it?<select name="reasonForSaving" required></select></label>
                             <div class="form-grid">
-                                <label class="translation-field">Traducción al español <span class="optional">Optional · Puedes escribirla o pedir una recomendación</span><span class="translation-row"><input name="spanishTranslation" type="text" placeholder="¿Podría darme una mesa para dos, por favor?"><button class="button secondary translate-button" id="translate-button" type="button">Mejorar + traducir con IA</button></span><small class="field-hint">Usa la IA configurada en la Guía Oxford para corregir la idea y proponer su traducción.</small><small id="translation-status" class="field-hint" aria-live="polite"></small></label>
+                                <label class="translation-field">Traducción al español <span class="optional">Optional · Puedes escribirla o pedir una recomendación</span><span class="translation-row"><input name="spanishTranslation" type="text" placeholder="¿Podría darme una mesa para dos, por favor?"><button class="button secondary translate-button" id="translate-button" type="button">Mejorar + traducir con IA</button></span><small class="field-hint">Usa la IA configurada en la Guía PowerLearn para corregir la idea y proponer su traducción.</small><small id="translation-status" class="field-hint" aria-live="polite"></small></label>
                                 <label>Grammar pattern <span class="optional">Optional</span><input name="grammarPattern" type="text" list="grammar-suggestions" placeholder="Suggested when possible"><datalist id="grammar-suggestions"><option>Simple present</option><option>Simple past</option><option>Present perfect</option><option>Continuous tense</option><option>Modal verb</option><option>Conditional sentence</option><option>Complex sentence</option><option>Question form</option></datalist></label>
                             </div>
                             <label>Notas <span class="optional">Opcional</span><textarea name="notes" rows="4" maxlength="2000" placeholder="Usos:&#10;- ...&#10;- ...&#10;Cuándo usarla:&#10;- ..."></textarea><small class="field-hint">Puedes escribir texto libre o secciones como «Usos:», «Cuándo usarla:» y «Errores comunes:». Se mostrarán ordenadas al guardar.</small></label>
@@ -609,6 +623,7 @@
                         </div>
                     </div>
                 </div>
+                <div id="verbs-loading-indicator" class="ui-loading hidden" role="status" aria-live="polite"></div>
                 <div id="verbs-category-grid" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     <!-- Renderizado por JavaScript -->
                 </div>
@@ -708,8 +723,9 @@
 
         window.switchSection = switchSection;
         window.addEventListener("DOMContentLoaded", function () {
-            if (new URLSearchParams(window.location.search).get("section") === "mysentences") {
-                switchSection("mysentences", document.querySelector('[data-section="mysentences"]'));
+            const section = new URLSearchParams(window.location.search).get("section");
+            if (section && document.getElementById(section + "-section")) {
+                switchSection(section, document.querySelector('[data-section="' + section + '"]'));
             }
         });
         window.cerrarModalLogin = function () {

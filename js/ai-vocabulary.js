@@ -7,6 +7,7 @@ import {
     createAIRequestTimeout,
     parseAIJson
 } from "./ai-models.js"
+import { beginAIRequest } from "./ui-status.js"
 
 const MAX_TOKENS = 1200
 
@@ -167,26 +168,37 @@ export async function generateVocabularyEntry(term, { includeNotes = true } = {}
 
     const failures = []
     const deadline = Date.now() + AI_TOTAL_BUDGET_MS
-    for (const provider of providers) {
-        const apiKey = getKey(provider)
-        const models = provider === "groq" ? GROQ_TEXT_MODELS : GEMINI_TEXT_MODELS
-        for (const model of models) {
-            const remaining = deadline - Date.now()
-            if (remaining <= 0) break
-            const entry = provider === "groq"
-                ? await requestGroq(model, input, apiKey, Math.min(AI_MODEL_TIMEOUT_MS, remaining), instructions)
-                : await requestGemini(model, input, apiKey, Math.min(AI_MODEL_TIMEOUT_MS, remaining), instructions)
-            if (entry) {
-                return {
-                    ...entry,
-                    notes: includeNotes ? entry.notes : "",
-                    provider,
-                    modelUsed: `${provider === "groq" ? "Groq" : "Gemini"}: ${model}`
+    const aiStatus = beginAIRequest(
+        includeNotes
+            ? "Solicitando a la IA… preparando la ficha con notas y usos."
+            : "Solicitando a la IA… preparando la ficha de vocabulario."
+    )
+
+    try {
+        for (const provider of providers) {
+            const apiKey = getKey(provider)
+            const models = provider === "groq" ? GROQ_TEXT_MODELS : GEMINI_TEXT_MODELS
+            for (const model of models) {
+                const remaining = deadline - Date.now()
+                if (remaining <= 0) break
+                aiStatus.update(`Solicitando a la IA… probando ${provider === "groq" ? "Groq" : "Gemini"} (${model}).`)
+                const entry = provider === "groq"
+                    ? await requestGroq(model, input, apiKey, Math.min(AI_MODEL_TIMEOUT_MS, remaining), instructions)
+                    : await requestGemini(model, input, apiKey, Math.min(AI_MODEL_TIMEOUT_MS, remaining), instructions)
+                if (entry) {
+                    return {
+                        ...entry,
+                        notes: includeNotes ? entry.notes : "",
+                        provider,
+                        modelUsed: `${provider === "groq" ? "Groq" : "Gemini"}: ${model}`
+                    }
                 }
+                failures.push(`${provider}/${model}`)
             }
-            failures.push(`${provider}/${model}`)
+            if (Date.now() >= deadline) break
         }
-        if (Date.now() >= deadline) break
+    } finally {
+        aiStatus.end()
     }
 
     throw new Error(
