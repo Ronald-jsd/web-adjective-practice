@@ -17,6 +17,9 @@ import {
 } from './ai-models.js'
 import { supabase } from './app.js'
 import { beginAIRequest } from './ui-status.js'
+import { cacheRow, TABLES } from './offline/cache.js'
+import { queueChange, isOnline } from './offline/sync.js'
+import { generateLocalIntegerId } from './offline/ids.js'
 
 // La guía crea hasta 20 tarjetas, así que necesita más margen que una ficha.
 const GUIDE_MODEL_TIMEOUT_MS = 45000
@@ -759,28 +762,38 @@ async function saveAIResult() {
 
     showToast('Guardando en tu base de datos...', 'info')
 
-    const { data, error } = await supabase
-        .from('user_custom_items')
-        .insert({
-            user_id: store.currentUser.id,
-            word: store.currentAIData.word,
-            pronunciation: store.currentAIData.pronunciation || '',
-            spanish: store.currentAIData.spanish || '',
-            example_en: store.currentAIData.example_en || '',
-            example_es: store.currentAIData.example_es || '',
-            category: finalCategory,
-            subcategory: finalSubcategory,
-            created_at: new Date()
-        })
-        .select()
-
-    if (error) {
-        alert('❌ Error al guardar: ' + error.message)
-        return
+    const now = new Date().toISOString()
+    const row = {
+        id: generateLocalIntegerId(),
+        user_id: store.currentUser.id,
+        word: store.currentAIData.word,
+        pronunciation: store.currentAIData.pronunciation || '',
+        spanish: store.currentAIData.spanish || '',
+        example_en: store.currentAIData.example_en || '',
+        example_es: store.currentAIData.example_es || '',
+        category: finalCategory,
+        subcategory: finalSubcategory,
+        created_at: now,
+        updated_at: now
     }
 
+    await cacheRow(TABLES.customItems, row.id, row)
+    await queueChange({
+        table: TABLES.customItems,
+        action: 'upsert',
+        payload: row,
+        conflict: 'id',
+        localId: row.id,
+        description: 'Guardar tarjeta de IA'
+    })
+
     const providerBadge = store.currentAIData.provider === 'groq' ? '⚡ Groq' : '🤖 Gemini'
-    showToast(`✅ Guardado con ${providerBadge} en "${finalSubcategory}"`, 'success')
+    showToast(
+        isOnline()
+            ? `✅ Guardado con ${providerBadge} en "${finalSubcategory}"`
+            : 'Guardado en el dispositivo; se sincronizará al volver la conexión.',
+        'success'
+    )
 
     store.currentAIData = null
 

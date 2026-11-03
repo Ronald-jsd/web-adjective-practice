@@ -8,7 +8,7 @@ import {
     removeCachedRow,
     TABLES
 } from "../offline/cache.js"
-import { queueChange } from "../offline/sync.js"
+import { queueChange, isOnline } from "../offline/sync.js"
 import { generateLocalIntegerId, generateUuid, isLocalIntegerId } from "../offline/ids.js"
 
 const SENTENCES_TABLE = "my_sentences"
@@ -49,8 +49,8 @@ export function createSentenceRepository(supabase) {
                         .order("created_at", { ascending: false })
                 )
                 const withUser = (rows || []).map(row => ({ ...row, user_id: userId }))
-                await cacheRowsPreservingPending(TABLES.sentences, withUser)
-                return sortByCreatedAtDesc(withUser).map(normalizeSentence)
+                const finalRows = await cacheRowsPreservingPending(TABLES.sentences, withUser)
+                return sortByCreatedAtDesc(finalRows).map(normalizeSentence)
             } catch (error) {
                 const cached = await readCachedRows(TABLES.sentences, row => row.user_id === userId)
                 if (cached.length) {
@@ -73,8 +73,15 @@ export function createSentenceRepository(supabase) {
                 const withUser = (rows || []).map(row => ({ ...row, user_id: userId }))
                 // Esta consulta solo trae "Mi vocabulario"; no debe borrar el
                 // resto de elementos personales guardados en el dispositivo.
-                await cacheRows(TABLES.customItems, withUser, "id", { replace: false })
-                return sortByCreatedAtDesc(withUser)
+                const finalRows = await cacheRowsPreservingPending(
+                    TABLES.customItems,
+                    withUser,
+                    "id",
+                    { replace: false }
+                )
+                return sortByCreatedAtDesc(finalRows.filter(
+                    row => row.user_id === userId && row.subcategory === "Mi vocabulario"
+                ))
             } catch (error) {
                 const cached = await readCachedRows(
                     TABLES.customItems,
@@ -145,6 +152,28 @@ export function createSentenceRepository(supabase) {
                 created_at: now,
                 updated_at: now
             }
+
+            if (isOnline()) {
+                try {
+                    // Con conexión se guarda directamente en la nube para
+                    // obtener el id definitivo; si falla, queda en la cola.
+                    const saved = await checked(
+                        supabase.from(VOCABULARY_TABLE)
+                            .insert(values)
+                            .select(VOCABULARY_COLUMNS)
+                            .single()
+                    )
+                    const withUser = { ...saved, user_id: userId }
+                    await cacheRow(TABLES.customItems, withUser.id, withUser)
+                    return withUser
+                } catch (error) {
+                    console.warn(
+                        "[offline] No se pudo guardar el vocabulario en la nube; se guarda en el dispositivo.",
+                        error
+                    )
+                }
+            }
+
             await cacheRow(TABLES.customItems, localId, row)
             await queueChange({
                 table: TABLES.customItems,

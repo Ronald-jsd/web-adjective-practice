@@ -1,6 +1,7 @@
-import { supabase } from '../app.js'
 import { store } from '../config.js'
 import { showToast } from '../cache.js'
+import { cacheRow, readCachedRow, removeCachedRow, TABLES } from '../offline/cache.js'
+import { queueChange, isOnline } from '../offline/sync.js'
 import {
     verbsData,
     currentVerbCategory,
@@ -94,22 +95,41 @@ window.editVerbCell = function (cell, field, verbId) {
         }
 
         const dbField = fieldMap[field] || field
-        const { error } = await supabase
-            .from('verbs')
-            .update({ [dbField]: newValue || null })
-            .eq('id', verbId)
+        const update = { [dbField]: newValue || null }
+        const verb = verbsData.find(v => String(v.id) === String(verbId))
 
-        if (error) {
-            showToast('Error al guardar: ' + error.message, 'error')
-            cell.innerText = currentValue || '—'
-        } else {
-            showToast('✅ Guardado', 'success')
+        try {
+            const cached = await readCachedRow(TABLES.verbs, verbId)
+            const merged = {
+                ...(cached || {}),
+                ...(verb || {}),
+                ...update,
+                id: verb?.id ?? cached?.id ?? verbId
+            }
+            await cacheRow(TABLES.verbs, verbId, merged)
+            await queueChange({
+                table: TABLES.verbs,
+                action: 'update',
+                payload: update,
+                match: { id: verbId },
+                localId: verbId,
+                description: 'Editar verbo'
+            })
+
+            showToast(
+                isOnline()
+                    ? '✅ Guardado'
+                    : 'Guardado en el dispositivo; se sincronizará al volver la conexión.',
+                'success'
+            )
             cell.setAttribute('data-audio-text', newValue)
-            const verb = verbsData.find(v => v.id === verbId)
             if (verb) {
                 verb[field] = newValue
                 verb[dbField] = newValue
             }
+        } catch (error) {
+            showToast('Error al guardar: ' + error.message, 'error')
+            cell.innerText = currentValue || '—'
         }
     }
 
@@ -153,17 +173,21 @@ window.deleteVerbRow = async function (verbId) {
     }
 
     try {
-        const { data, error } = await supabase
-            .from('verbs')
-            .delete()
-            .eq('id', verbId)
-            .select('id')
-        if (error) throw error
-        if (!data?.length) {
-            throw new Error('No se eliminó ninguna fila. Puede que no tengas permiso para eliminar este verbo.')
-        }
+        await removeCachedRow(TABLES.verbs, verbId)
+        await queueChange({
+            table: TABLES.verbs,
+            action: 'delete',
+            match: { id: verbId },
+            localId: verbId,
+            description: 'Eliminar verbo'
+        })
 
-        showToast(`Se eliminó "${name}" de la guía.`, 'success')
+        showToast(
+            isOnline()
+                ? `Se eliminó "${name}" de la guía.`
+                : `"${name}" se eliminará de la guía al volver la conexión.`,
+            'success'
+        )
         const { loadVerbsFromSupabase } = await import('./verbs-loader.js')
         await loadVerbsFromSupabase(true)
 

@@ -19,7 +19,16 @@ import {
 } from "./db.js";
 
 const RETRYABLE_STATUS = new Set([0, 401, 408, 425, 429]);
-const RETRYABLE_CODES = new Set(["PGRST301", "PGRST302", "57014", "53300", "57P01"]);
+const RETRYABLE_CODES = new Set([
+    "PGRST301",
+    "PGRST302",
+    "PGRST204", // columna ausente: no se descarta el cambio
+    "42703",    // columna ausente (Postgres)
+    "428C9",    // id explícito rechazado por una columna identity ALWAYS
+    "57014",
+    "53300",
+    "57P01"
+]);
 
 let client = null;
 let getUser = () => null;

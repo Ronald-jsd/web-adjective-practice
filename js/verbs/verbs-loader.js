@@ -80,8 +80,7 @@ export async function loadVerbsFromSupabase(forceRefresh = false) {
                 console.log('Cargando todos los verbos desde Supabase...')
                 const networkVerbs = await fetchVerbsFromNetwork()
                 if (networkVerbs.length) {
-                    allVerbs = networkVerbs
-                    await cacheRowsPreservingPending(TABLES.verbs, networkVerbs)
+                    allVerbs = await cacheRowsPreservingPending(TABLES.verbs, networkVerbs)
                 }
             } catch (error) {
                 console.warn('No se pudieron cargar los verbos desde la nube:', error)

@@ -81,7 +81,7 @@ async function loadUserWordStatus() {
         if (error) throw error
         rows = data || []
         fromNetwork = true
-        await cacheRowsPreservingPending(
+        rows = await cacheRowsPreservingPending(
             TABLES.wordStatus,
             rows.map(row => ({ ...row, user_id: userId, cache_id: `${userId}|${row.item_id}` })),
             'cache_id'
@@ -139,7 +139,10 @@ async function loadUserCustomItems(options = {}) {
                 .eq('user_id', userId)
             if (result.error) throw result.error
             data = result.data || []
-            await cacheRowsPreservingPending(TABLES.customItems, data)
+            data = await cacheRowsPreservingPending(
+                TABLES.customItems,
+                data.map(row => ({ ...row, user_id: userId }))
+            )
         } catch (error) {
             console.warn('Sin conexión: usando tu vocabulario guardado en el dispositivo.', error)
         }

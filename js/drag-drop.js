@@ -1,42 +1,81 @@
-import { supabase } from './app.js'
 import { store } from './config.js'
-import { showToast, clearCache } from './cache.js'
+import { showToast } from './cache.js'
+import { updateCachedCategories } from './data.js'
+import { cacheRow, readCachedRow, TABLES } from './offline/cache.js'
+import { queueChange, isOnline } from './offline/sync.js'
+
+function withNewOrder(row, index) {
+    const copy = [...row]
+    if (String(copy[5] || '').startsWith('custom_')) {
+        copy[7] = index
+    } else {
+        copy[6] = index
+    }
+    return copy
+}
 
 async function saveItemOrder(items, subcategoryId) {
     if (!store.currentUser) {
         showToast('Inicia sesión para guardar el orden', 'error')
         return
     }
-    
-    console.log('Guardando orden para', items.length, 'items')
-    
+
+    const userId = store.currentUser.id
+    const normalizedItems = items.map(withNewOrder)
+
     for (let idx = 0; idx < items.length; idx++) {
         const item = items[idx]
-        const itemId = item[5] 
+        const itemId = item[5]
         const isCustom = itemId && itemId.toString().startsWith('custom_')
-        
+
         if (isCustom) {
             const customId = item[6]
-            console.log(`  📝 Custom item ${customId} -> sort_order: ${idx}`)
-            await supabase
-                .from('user_custom_items')
-                .update({ sort_order: idx })
-                .eq('id', customId)
-                .eq('user_id', store.currentUser.id)
+            const cached = await readCachedRow(TABLES.customItems, customId)
+            await cacheRow(TABLES.customItems, customId, {
+                ...(cached || {}),
+                id: cached?.id ?? customId,
+                user_id: cached?.user_id || userId,
+                sort_order: idx
+            })
+            await queueChange({
+                table: TABLES.customItems,
+                action: 'update',
+                payload: { sort_order: idx },
+                match: { id: customId, user_id: userId },
+                localId: customId,
+                description: 'Reordenar vocabulario'
+            })
         } else {
             const numericId = parseInt(itemId)
             if (!isNaN(numericId)) {
-                console.log(`  📚 Item ${numericId} -> sort_order: ${idx}`)
-                await supabase
-                    .from('items')
-                    .update({ sort_order: idx })
-                    .eq('id', numericId)
+                await queueChange({
+                    table: 'items',
+                    action: 'update',
+                    payload: { sort_order: idx },
+                    match: { id: numericId },
+                    description: 'Reordenar palabras'
+                })
             }
         }
     }
-    
-    clearCache()
-    console.log('✅ Orden guardado y caché limpiada')
+
+    const updated = await updateCachedCategories(snapshot => {
+        for (const category of snapshot) {
+            for (const subcategory of category.subcategories || []) {
+                if (String(subcategory.id) === String(subcategoryId)) {
+                    subcategory.items = normalizedItems
+                }
+            }
+        }
+    })
+    if (updated) store.categoriesData = updated
+
+    showToast(
+        isOnline()
+            ? '✅ Orden guardado'
+            : 'Orden guardado en el dispositivo; se sincronizará al volver la conexión.',
+        'success'
+    )
 }
 
 function initDragAndDrop(tbody, allItems, subcategoryId, refreshCallback) {
@@ -99,7 +138,6 @@ function initDragAndDrop(tbody, allItems, subcategoryId, refreshCallback) {
             const [movedItem] = allItems.splice(src, 1)
             allItems.splice(tgt, 0, movedItem)
             await saveItemOrder(allItems, subcategoryId)
-            showToast('✅ Orden guardado', 'success')
             refreshCallback([...allItems])
         }
         dragState.sourceIndex = null

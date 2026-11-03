@@ -30,6 +30,7 @@ export async function cacheRows(table, rows, idField = "id", options = {}) {
     } catch (error) {
         console.warn(`[offline] No se pudo guardar "${table}" en el dispositivo:`, error);
     }
+    return rows || [];
 }
 
 export async function cacheRow(table, id, value) {
@@ -113,12 +114,9 @@ export async function pendingChangeIds(table) {
 /* Guarda el resultado de la nube sin borrar filas que aún no se han subido.
  * Sin esto, una recarga con conexión justo después de crear algo sin red
  * eliminaría ese elemento de la copia local. */
-export async function cacheRowsPreservingPending(table, rows, idField = "id") {
+export async function cacheRowsPreservingPending(table, rows, idField = "id", options = {}) {
+    const replace = options.replace !== false;
     const pending = await pendingChangeIds(table);
-    if (!pending.upsert.size && !pending.remove.size) {
-        return cacheRows(table, rows, idField);
-    }
-
     const cached = await readCachedRows(table);
     const byId = new Map();
     const cachedById = new Map();
@@ -128,6 +126,10 @@ export async function cacheRowsPreservingPending(table, rows, idField = "id") {
         const id = row[idField] ?? row.id;
         if (id === undefined || id === null) continue;
         cachedById.set(String(id), row);
+    }
+
+    if (!replace) {
+        for (const [key, row] of cachedById) byId.set(key, row);
     }
 
     for (const row of rows || []) {
@@ -140,17 +142,29 @@ export async function cacheRowsPreservingPending(table, rows, idField = "id") {
         byId.set(key, pending.upsert.has(key) && cachedById.has(key) ? cachedById.get(key) : row);
     }
 
-    for (const row of cached) {
-        if (!row) continue;
-        const id = row[idField] ?? row.id;
-        if (id === undefined || id === null) continue;
-        const key = String(id);
-        if (pending.upsert.has(key) && !byId.has(key)) {
-            byId.set(key, row);
+    if (replace) {
+        for (const [key, row] of cachedById) {
+            if (pending.upsert.has(key) && !byId.has(key)) byId.set(key, row);
         }
     }
 
-    return cacheRows(table, [...byId.values()], idField);
+    // Las filas borradas en el dispositivo desaparecen también de la copia.
+    for (const key of pending.remove) {
+        byId.delete(key);
+        try {
+            await deleteRecord(table, key);
+        } catch (error) {
+            // Sin IndexedDB disponible no hay nada que borrar.
+        }
+    }
+
+    const finalRows = [...byId.values()];
+    if (replace) {
+        await cacheRows(table, finalRows, idField);
+    } else {
+        await cacheRows(table, finalRows, idField, { replace: false });
+    }
+    return finalRows;
 }
 
 export const TABLES = {

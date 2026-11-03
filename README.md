@@ -43,14 +43,17 @@ La app incluye `manifest.webmanifest`, `sw.js` e iconos en `icons/`. El service 
 
 Los datos privados de Supabase, las llamadas a la IA y las funciones de Notion **nunca** se cachean. Al desplegar cambios, sube `VERSION` en `sw.js` para forzar la actualización en los dispositivos.
 
-### Próxima fase: datos offline y sincronización
+### Datos offline y sincronización
 
-Ahora mismo la app abre sin conexión y muestra los datos ya guardados (por ejemplo, las categorías desde la caché local), pero **las escrituras todavía necesitan red**. La siguiente fase añade:
+La app guarda en **IndexedDB** una copia local de categorías, verbos, frases, vocabulario personal, favoritos, estados de palabras y progreso de práctica. Todo lo que no sea IA se puede consultar y editar sin conexión:
 
-- IndexedDB como almacén local de frases, vocabulario, favoritos, progreso y datos de práctica.
-- Una cola de salida (*outbox*) con UUID de cliente para guardar cambios sin conexión.
-- Subida automática al recuperar conexión, al volver a la app y periódicamente, con reintentos y *upsert* para evitar duplicados.
-- Indicador visible de cambios pendientes y estado de sincronización.
+- Las altas usan un id generado en el dispositivo (UUID para frases, entero negativo para vocabulario y verbos) y se guardan primero en local.
+- Cada cambio entra en una cola (*outbox*). Al recuperar conexión, al volver a la app, al recibir el aviso del service worker y cada 60 segundos se sube con `upsert` para no duplicar filas.
+- Los conflictos se resuelven por `updated_at`; el progreso de práctica conserva el repaso más reciente (`last_reviewed_at`).
+- El indicador inferior muestra los cambios pendientes, el estado de sincronización y un aviso de "Todo sincronizado". Tocar el aviso con error reintenta la cola.
+- La IA sigue necesitando red. Sin conexión se muestra un aviso y se mantiene el contenido guardado.
+
+Los ids de `user_custom_items` y `verbs` usan secuencias (`serial`), así que aceptan sin problema los enteros negativos generados en el dispositivo.
 
 ## Práctica temporal desde Notion
 

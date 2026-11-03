@@ -29,7 +29,7 @@ export async function loadUserFavorites(supabase, userId) {
         if (error) throw error;
 
         rows = data || [];
-        await cacheRowsPreservingPending(
+        rows = await cacheRowsPreservingPending(
             TABLES.favorites,
             rows.map((row) => ({
                 ...row,

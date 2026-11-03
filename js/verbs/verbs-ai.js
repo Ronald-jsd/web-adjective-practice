@@ -10,6 +10,9 @@ import { renderCategories } from '../data.js'
 import { supabase } from '../app.js'
 import { GEMINI_TEXT_MODELS, GROQ_TEXT_MODELS, AI_MODEL_TIMEOUT_MS, parseAIJson } from '../ai-models.js'
 import { beginAIRequest } from '../ui-status.js'
+import { cacheRow, TABLES } from '../offline/cache.js'
+import { queueChange, isOnline } from '../offline/sync.js'
+import { generateLocalIntegerId } from '../offline/ids.js'
 
 let tempAIData = null
 
@@ -845,48 +848,59 @@ async function saveAIResult() {
 
     showToast('Guardando en tu base de datos...', 'info')
 
-    const { error } = await supabase
-        .from('verbs')
-        .insert({
-            category: finalCategory,
-            type: data.type || 'regular',
-            verb: data.verb || data.word || '',
-            pronunciation: data.pronunciation || '',
-            translation: data.translation || '',
-            example_base: data.example_base || '',
-            usage: data.usage || '',
-            past_simple: data.past_simple || '',
-            pronunciation_ps: data.pronunciation_ps || '',
-            translation_ps: data.translation_ps || '',
-            example_ps: data.example_ps || '',
-            past_participle: data.past_participle || '',
-            pronunciation_pp: data.pronunciation_pp || '',
-            translation_pp: data.translation_pp || '',
-            example_pp: data.example_pp || '',
-            adjective: data.adjective || '',
-            pronunciation_adj: data.pronunciation_adj || '',
-            translation_adj: data.translation_adj || '',
-            example_adj: data.example_adj || '',
-            example_adj_translation: data.example_adj_translation || '',
-            adverb: data.adverb || '',
-            pronunciation_adv: data.pronunciation_adv || '',
-            translation_adv: data.translation_adv || '',
-            example_adv: data.example_adv || '',
-            example_adv_translation: data.example_adv_translation || '',
-            noun: data.noun || '',
-            pronunciation_noun: data.pronunciation_noun || '',
-            translation_noun: data.translation_noun || '',
-            example_noun: data.example_noun || '',
-            example_noun_translation: data.example_noun_translation || ''
-        })
-
-    if (error) {
-        alert('❌ Error al guardar: ' + error.message)
-        return
+    const now = new Date().toISOString()
+    const row = {
+        id: generateLocalIntegerId(),
+        category: finalCategory,
+        type: data.type || 'regular',
+        verb: data.verb || data.word || '',
+        pronunciation: data.pronunciation || '',
+        translation: data.translation || '',
+        example_base: data.example_base || '',
+        usage: data.usage || '',
+        past_simple: data.past_simple || '',
+        pronunciation_ps: data.pronunciation_ps || '',
+        translation_ps: data.translation_ps || '',
+        example_ps: data.example_ps || '',
+        past_participle: data.past_participle || '',
+        pronunciation_pp: data.pronunciation_pp || '',
+        translation_pp: data.translation_pp || '',
+        example_pp: data.example_pp || '',
+        adjective: data.adjective || '',
+        pronunciation_adj: data.pronunciation_adj || '',
+        translation_adj: data.translation_adj || '',
+        example_adj: data.example_adj || '',
+        example_adj_translation: data.example_adj_translation || '',
+        adverb: data.adverb || '',
+        pronunciation_adv: data.pronunciation_adv || '',
+        translation_adv: data.translation_adv || '',
+        example_adv: data.example_adv || '',
+        example_adv_translation: data.example_adv_translation || '',
+        noun: data.noun || '',
+        pronunciation_noun: data.pronunciation_noun || '',
+        translation_noun: data.translation_noun || '',
+        example_noun: data.example_noun || '',
+        example_noun_translation: data.example_noun_translation || '',
+        created_at: now
     }
 
+    await cacheRow(TABLES.verbs, row.id, row)
+    await queueChange({
+        table: TABLES.verbs,
+        action: 'upsert',
+        payload: row,
+        conflict: 'id',
+        localId: row.id,
+        description: 'Guardar verbo de IA'
+    })
+
     const providerBadge = data.provider === 'groq' ? '⚡ Groq' : '🤖 Gemini'
-    showToast(`✅ Guardado con ${providerBadge} en "${finalSubcategory}"`, 'success')
+    showToast(
+        isOnline()
+            ? `✅ Guardado con ${providerBadge} en "${finalSubcategory}"`
+            : 'Guardado en el dispositivo; se sincronizará al volver la conexión.',
+        'success'
+    )
 
     tempAIData = null
     store.currentAIData = null

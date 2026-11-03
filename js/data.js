@@ -2,7 +2,7 @@ import { supabase } from './app.js'
 import { saveToCache, loadFromCache, showToast } from './cache.js'
 import { store } from './config.js'
 import { showLoading, hideLoading } from './ui-status.js'
-import { cacheSnapshot, readSnapshot, readCachedRows, TABLES } from './offline/cache.js'
+import { cacheSnapshot, readSnapshot, readCachedRows, cacheRowsPreservingPending, TABLES } from './offline/cache.js'
 
 async function readLocalCategories() {
     return loadFromCache() || await readSnapshot('categories') || null
@@ -87,6 +87,16 @@ async function loadCategoriesFromSupabase(forceRefresh = false, options = {}) {
                     customItems = await readCachedRows(
                         TABLES.customItems,
                         row => row.user_id === store.currentUser.id
+                    )
+                } else {
+                    // Refresca el espejo local; conserva los cambios que aún
+                    // están pendientes de subir.
+                    customItems = await cacheRowsPreservingPending(
+                        TABLES.customItems,
+                        (networkCustomItems || []).map(row => ({
+                            ...row,
+                            user_id: store.currentUser.id
+                        }))
                     )
                 }
 
