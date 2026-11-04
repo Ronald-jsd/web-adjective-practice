@@ -4,6 +4,7 @@ import { playAudioEnhanced } from "../audio.js"
 import { REASONS, TOPICS, suggestGrammarPattern, validateSentence } from "./model.js"
 import { isDue, scheduleReview } from "./scheduler.js"
 import { createSentenceRepository } from "./repository.js"
+import { resolveSessionUser } from "../offline/session.js"
 import { createNotesView } from "./notes.js"
 import { filterVocabulary } from "./vocabulary-search.js"
 import { showLoading, hideLoading } from "../ui-status.js"
@@ -639,13 +640,7 @@ export async function initializeSentencesApp() {
     setupEvents()
     showLoading("sentences-loading-indicator", "Cargando tu aprendizaje…")
     try {
-        let user = null
-        try {
-            const { data } = await supabase.auth.getSession()
-            user = data?.session?.user || null
-        } catch (error) {
-            console.warn("No se pudo leer la sesión local de Mi aprendizaje", error)
-        }
+        let user = await resolveSessionUser(supabase)
 
         if (!user && navigator.onLine) {
             const { data, error } = await supabase.auth.getUser()

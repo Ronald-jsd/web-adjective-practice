@@ -25,6 +25,7 @@ import { getSelectedNotionPageIds, loadNotionPracticeCategories } from "./notion
 import { parsePracticeTable } from "./practice-import.js";
 import { showLoading, hideLoading } from "./ui-status.js";
 import { cacheRowsPreservingPending, readCachedRows, TABLES } from "./offline/cache.js";
+import { isOnline } from "./offline/sync.js";
 
 const PROGRESS_STORAGE_KEY = "vocabulary_practice_progress_v1";
 const CATEGORY_SELECTION_STORAGE_KEY = "practice_selected_categories_v1";
@@ -751,33 +752,54 @@ async function initializePractice(categories = [], options = {}) {
     }
     if (options.supabase && options.userId
         && (practiceAIQueriesCache === null || options.refreshAIQueries || practiceAIQueriesUserId !== userId)) {
-        try {
-            const queries = [];
-            const pageSize = 1000;
-            for (let start = 0; ; start += pageSize) {
-                const { data, error } = await options.supabase
-                    .from("user_ai_queries")
-                    .select("id, cards")
-                    .eq("user_id", options.userId)
-                    .order("created_at", { ascending: true })
-                    .range(start, start + pageSize - 1);
-                if (error) throw error;
-                queries.push(...(data || []));
-                if (!data || data.length < pageSize) break;
-            }
-
-            const withUser = queries.map(query => ({ ...query, user_id: userId }));
-            practiceAIQueriesCache = await cacheRowsPreservingPending(TABLES.aiQueries, withUser);
-            practiceAIQueriesUserId = userId;
-        } catch (error) {
-            console.error("No se pudieron cargar las tarjetas de consultas IA para practicar:", error);
+        if (!isOnline()) {
             const cached = await readCachedRows(TABLES.aiQueries, row => row.user_id === userId);
             if (cached.length) {
                 practiceAIQueriesCache = cached;
                 practiceAIQueriesUserId = userId;
                 showToast("Mostrando las tarjetas de IA guardadas en el dispositivo.", "info");
             } else {
-                showToast(`No se pudieron cargar las tarjetas de tus consultas IA. Verifica supabase/ai_queries.sql. ${error.message || ""}`, "warning");
+                practiceAIQueriesCache = null;
+                showToast("No hay tarjetas de IA guardadas en este dispositivo.", "info");
+            }
+        } else {
+            try {
+                const queries = [];
+                const pageSize = 1000;
+                for (let start = 0; ; start += pageSize) {
+                    const { data, error } = await options.supabase
+                        .from("user_ai_queries")
+                        .select("id, cards")
+                        .eq("user_id", options.userId)
+                        .order("created_at", { ascending: true })
+                        .range(start, start + pageSize - 1);
+                    if (error) throw error;
+                    queries.push(...(data || []));
+                    if (!data || data.length < pageSize) break;
+                }
+
+                // La consulta de práctica solo trae id y cards: se fusiona con
+                // las filas completas del espejo para no borrar question,
+                // summary, image_paths, etc.
+                const cached = await readCachedRows(TABLES.aiQueries, row => row.user_id === userId);
+                const cachedById = new Map(cached.map(row => [String(row.id), row]));
+                const withUser = queries.map(query => ({
+                    ...(cachedById.get(String(query.id)) || {}),
+                    ...query,
+                    user_id: userId
+                }));
+                practiceAIQueriesCache = await cacheRowsPreservingPending(TABLES.aiQueries, withUser);
+                practiceAIQueriesUserId = userId;
+            } catch (error) {
+                console.error("No se pudieron cargar las tarjetas de consultas IA para practicar:", error);
+                const cached = await readCachedRows(TABLES.aiQueries, row => row.user_id === userId);
+                if (cached.length) {
+                    practiceAIQueriesCache = cached;
+                    practiceAIQueriesUserId = userId;
+                    showToast("Mostrando las tarjetas de IA guardadas en el dispositivo.", "info");
+                } else {
+                    showToast(`No se pudieron cargar las tarjetas de tus consultas IA. Verifica supabase/ai_queries.sql. ${error.message || ""}`, "warning");
+                }
             }
         }
     }

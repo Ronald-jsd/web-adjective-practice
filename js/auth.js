@@ -2,7 +2,15 @@ import { supabase } from './app.js'
 import { store } from './config.js'
 import { loadUserFavorites } from './favorites.js'
 import { cacheRowsPreservingPending, readCachedRows, TABLES } from './offline/cache.js'
-import { flushOutbox, clearOfflineData } from './offline/sync.js'
+import { flushOutbox, clearOfflineData, isOnline } from './offline/sync.js'
+import {
+    forgetUser,
+    isInvalidSessionError,
+    readRememberedUser,
+    readStoredSessionUser,
+    rememberUser,
+    resolveSessionUser
+} from './offline/session.js'
 
 function updateAuthUI() {
     const authContainer = document.getElementById('auth-container')
@@ -33,27 +41,29 @@ function updateAuthUI() {
 }
 
 async function checkUser() {
-    let user = null
-
-    // getSession lee la sesión guardada en el dispositivo y funciona sin red.
-    try {
-        const { data } = await supabase.auth.getSession()
-        user = data?.session?.user || null
-    } catch (error) {
-        console.warn('No se pudo leer la sesión local:', error)
-    }
+    // Primero la sesión guardada; si Supabase no puede refrescar el token sin
+    // red, resolveSessionUser recurre al token y al espejo local.
+    let user = await resolveSessionUser(supabase)
 
     // Con conexión revalidamos el token; sin conexión seguimos con la sesión local.
-    if (navigator.onLine) {
+    if (isOnline()) {
         try {
             const { data, error } = await supabase.auth.getUser()
-            if (!error && data?.user) user = data.user
+            if (!error && data?.user) {
+                user = data.user
+                rememberUser(user)
+            } else if (error && isInvalidSessionError(error)) {
+                console.warn('La sesión guardada ya no es válida:', error.message)
+                user = null
+                forgetUser()
+            }
         } catch (error) {
             console.warn('No se pudo revalidar la sesión; se usa la copia local.', error)
         }
     }
 
     store.currentUser = user
+    if (user) rememberUser(user)
 
     updateAuthUI()
     if (user) {
@@ -64,6 +74,81 @@ async function checkUser() {
         store.favoriteSet.clear()
     }
     return user
+}
+
+/* Aplica el cierre de sesión sin tocar los datos locales salvo que el usuario
+ * lo pida desde el botón Salir. */
+function applySignedOut() {
+    forgetUser()
+    store.currentUser = null
+    store.wordStatusMap.clear()
+    store.userCustomItems.length = 0
+    store.favoriteSet.clear()
+    updateAuthUI()
+}
+
+let revalidating = false
+
+/* Al recuperar la conexión se comprueba el token real y se refrescan los datos
+ * del usuario. Si falla por red se conserva la sesión local. */
+async function revalidateSession() {
+    if (!isOnline() || revalidating) return store.currentUser
+    revalidating = true
+    try {
+        const { data, error } = await supabase.auth.getUser()
+        if (error) {
+            if (isInvalidSessionError(error)) applySignedOut()
+            return store.currentUser
+        }
+        if (!data?.user) return store.currentUser
+
+        store.currentUser = rememberUser(data.user)
+        updateAuthUI()
+        await loadUserWordStatus()
+        await loadUserCustomItems()
+        await loadUserFavorites(supabase, store.currentUser.id)
+        window.dispatchEvent(new CustomEvent('session-revalidated', { detail: { user: store.currentUser } }))
+        return store.currentUser
+    } catch (error) {
+        console.warn('Sin conexión: se mantiene la sesión guardada.', error)
+        return store.currentUser
+    } finally {
+        revalidating = false
+    }
+}
+
+let authSessionInitialized = false
+
+export function initAuthSession() {
+    if (authSessionInitialized) return
+    authSessionInitialized = true
+
+    try {
+        supabase.auth.onAuthStateChange((event, session) => {
+            if (session?.user) {
+                store.currentUser = rememberUser(session.user)
+                updateAuthUI()
+            } else if (event === 'SIGNED_OUT') {
+                // Sin red, Supabase puede emitir SIGNED_OUT al no poder
+                // refrescar el token. No debe borrar la sesión local.
+                if (!isOnline() && (readStoredSessionUser() || readRememberedUser())) {
+                    console.warn('Supabase emitió SIGNED_OUT sin conexión; se conserva la sesión local.')
+                    return
+                }
+                applySignedOut()
+            }
+        })
+    } catch (error) {
+        console.warn('No se pudo escuchar los cambios de sesión:', error)
+    }
+
+    window.addEventListener('online', () => {
+        revalidateSession().catch(() => {})
+    })
+    // Sin conexión no se borra nada: la sesión local y los datos siguen válidos.
+    window.addEventListener('offline', () => {
+        if (store.currentUser) rememberUser(store.currentUser)
+    })
 }
 
 async function loadUserWordStatus() {
@@ -180,6 +265,7 @@ async function logout() {
     store.currentUser = null
     store.wordStatusMap.clear()
     store.userCustomItems.length = 0
+    forgetUser()
     clearCategoriesCache()
     await clearOfflineData()
     updateAuthUI()
@@ -228,13 +314,26 @@ async function loginWithEmail() {
     const email = document.getElementById('login-email')?.value
     const password = document.getElementById('login-password')?.value
     if (!email || !password) { alert('❌ Ingresa email y contraseña'); return }
-    const { error } = await supabase.auth.signInWithPassword({ email, password })
-    if (error) {
-        alert('❌ Error: ' + error.message)
-    } else {
+
+    if (!isOnline()) {
+        const saved = readStoredSessionUser() || readRememberedUser()
+        if (saved) {
+            alert(`Sin conexión a internet. Se mantiene la sesión guardada de ${saved.email}.`)
+            window.cerrarModalLogin()
+        } else {
+            alert('Sin conexión a internet. Para iniciar sesión por primera vez necesitas conectarte. Después podrás usar la app sin conexión.')
+        }
+        return
+    }
+
+    try {
+        const { error } = await supabase.auth.signInWithPassword({ email, password })
+        if (error) throw error
         clearCategoriesCache()
         window.cerrarModalLogin()
         location.reload()
+    } catch (error) {
+        alert('❌ Error: ' + authErrorMessage(error))
     }
 }
 
@@ -243,16 +342,30 @@ async function signUpWithEmail() {
     const password = document.getElementById('signup-password')?.value
     if (!email || !password) { alert('❌ Ingresa email y contraseña'); return }
     if (password.length < 6) { alert('❌ La contraseña debe tener al menos 6 caracteres'); return }
-    const { error } = await supabase.auth.signUp({ email, password })
-    if (error) {
-        alert('❌ Error: ' + error.message)
-    } else {
+    if (!isOnline()) {
+        alert('Sin conexión a internet. Para crear una cuenta necesitas conectarte.')
+        return
+    }
+
+    try {
+        const { error } = await supabase.auth.signUp({ email, password })
+        if (error) throw error
         clearCategoriesCache()
         alert('✅ Registro exitoso! Ahora inicia sesión.')
         document.getElementById('signup-email').value = ''
         document.getElementById('signup-password').value = ''
         window.mostrarLogin()
+    } catch (error) {
+        alert('❌ Error: ' + authErrorMessage(error))
     }
+}
+
+function authErrorMessage(error) {
+    const message = String(error?.message || error || 'Error desconocido')
+    if (/failed to fetch|network|load failed|timeout/i.test(message)) {
+        return 'No se pudo conectar con el servidor. Comprueba tu conexión a internet e inténtalo de nuevo.'
+    }
+    return message
 }
 
 

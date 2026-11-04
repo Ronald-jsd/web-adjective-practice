@@ -3,7 +3,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY, store } from "./config.js";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-import { checkUser, loadUserCustomItems } from "./auth.js";
+import { checkUser, loadUserCustomItems, initAuthSession } from "./auth.js";
 import { renderCategories, loadCategoriesFromSupabase } from "./data.js";
 import { performSearch, initSearchModeListeners } from "./search.js";
 import { closeCategoryView } from "./category-view.js";
@@ -57,6 +57,21 @@ window.addEventListener("personal-sentences-changed", async () => {
     } catch (error) {
         console.error("No se pudieron actualizar tus frases en la práctica:", error);
         showToast("La frase se guardó, pero no se pudo actualizar la práctica. Recarga la página.", "warning");
+    }
+});
+
+window.addEventListener("session-revalidated", async () => {
+    if (!store.currentUser) return;
+    try {
+        await initializePractice(store.categoriesData, {
+            supabase,
+            userId: store.currentUser.id,
+            refreshVerbs: false,
+            refreshAIQueries: true,
+            refreshNotion: false
+        });
+    } catch (error) {
+        console.warn("No se pudo actualizar la práctica al recuperar la conexión:", error);
     }
 });
 
@@ -129,6 +144,7 @@ async function initApp() {
     initSyncStatus();
     initPWA();
     startAutoSync();
+    initAuthSession();
     await checkUser();
     initializeBrowserAI();
     initializeNotionIntegration(supabase);

@@ -6,6 +6,8 @@ import { loadCategoriesFromSupabase, renderCategories } from './data.js'
 import { generateWithAI, hasApiKey } from './ai.js'
 import { initializePractice } from './practice.js'
 import { showLoading } from './ui-status.js'
+import { cacheRowsPreservingPending, readCachedRows, removeCachedRow, TABLES } from './offline/cache.js'
+import { isOnline, queueChange } from './offline/sync.js'
 import {
     AI_QUERY_IMAGE_BUCKET,
     MAX_AI_QUERY_IMAGES,
@@ -24,6 +26,7 @@ let querySort = 'newest'
 let activeQueryId = null
 let pendingImages = []
 let pendingImageKey = 0
+let queryHistoryOffline = false
 
 function updateAvailability() {
     const status = document.getElementById('browser-ai-availability')
@@ -78,6 +81,11 @@ function createQueryImageSection(query) {
         previewHint.className = 'ai-query-image-hint'
         previewHint.textContent = 'Haz clic en una imagen para verla grande'
         section.appendChild(previewHint)
+    } else if (query.offline_images) {
+        const offlineImages = document.createElement('p')
+        offlineImages.className = 'text-sm text-amber-700'
+        offlineImages.textContent = 'Las imágenes de esta consulta no están disponibles sin conexión. Vuelve a conectarte para verlas.'
+        section.appendChild(offlineImages)
     } else if (query.image_error) {
         const imageError = document.createElement('p')
         imageError.className = 'text-sm text-red-700'
@@ -313,12 +321,21 @@ function renderHistory(queries) {
     savedQueries = queries
 
     history.replaceChildren()
+
+    if (queryHistoryOffline) {
+        const notice = document.createElement('p')
+        notice.className = 'mb-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800'
+        notice.textContent = 'Sin conexión: estás viendo las consultas guardadas en este dispositivo. Las imágenes estarán disponibles cuando vuelvas a conectarte.'
+        history.appendChild(notice)
+    }
+
     const normalizedSearch = querySearch.trim().toLowerCase()
-    const filtered = queries.filter(query =>
-        `${query.question} ${query.summary} ${query.cards.map(card => Object.values(card).join(' ')).join(' ')}`
+    const filtered = queries.filter(query => {
+        const cards = Array.isArray(query.cards) ? query.cards : []
+        return `${query.question || ''} ${query.summary || ''} ${cards.map(card => Object.values(card).join(' ')).join(' ')}`
             .toLowerCase()
             .includes(normalizedSearch)
-    )
+    })
     const sorted = [...filtered]
     if (querySort === 'oldest') sorted.sort((a, b) => new Date(a.created_at) - new Date(b.created_at))
     if (querySort === 'alphabetical') sorted.sort((a, b) => a.question.localeCompare(b.question, 'es', { sensitivity: 'base' }))
@@ -329,7 +346,11 @@ function renderHistory(queries) {
     if (!filtered.length) {
         const empty = document.createElement('p')
         empty.className = 'text-sm text-gray-500'
-        empty.textContent = queries.length ? 'No hay consultas que coincidan con la búsqueda.' : 'Aún no tienes consultas guardadas.'
+        empty.textContent = queries.length
+            ? 'No hay consultas que coincidan con la búsqueda.'
+            : queryHistoryOffline
+                ? 'No hay consultas guardadas en este dispositivo. Conéctate a internet una vez para descargarlas.'
+                : 'Aún no tienes consultas guardadas.'
         history.appendChild(empty)
         return
     }
@@ -376,7 +397,8 @@ function renderHistory(queries) {
         excerpt.textContent = query.summary
         const meta = document.createElement('span')
         meta.className = 'ai-query-tile-meta'
-        meta.textContent = `${query.cards.length} ${query.cards.length === 1 ? 'tarjeta' : 'tarjetas'} · ${new Date(query.created_at).toLocaleDateString()}`
+        const cardCount = Array.isArray(query.cards) ? query.cards.length : 0
+        meta.textContent = `${cardCount} ${cardCount === 1 ? 'tarjeta' : 'tarjetas'} · ${new Date(query.created_at).toLocaleDateString()}`
         const open = document.createElement('button')
         open.type = 'button'
         open.className = 'ai-query-tile-open'
@@ -853,28 +875,45 @@ async function deleteQuery(query, button) {
 
     button.disabled = true
     button.textContent = 'Eliminando...'
+    const userId = store.currentUser.id
     try {
-        const { error } = await supabase
-            .from('user_ai_queries')
-            .delete()
-            .eq('id', query.id)
-            .eq('user_id', store.currentUser.id)
+        if (isOnline()) {
+            const { error } = await supabase
+                .from('user_ai_queries')
+                .delete()
+                .eq('id', query.id)
+                .eq('user_id', userId)
 
-        if (error) throw error
+            if (error) throw error
 
-        const imagePaths = normalizeImagePaths(query)
-        if (imagePaths.length) {
-            const { error: storageError } = await supabase.storage.from(AI_QUERY_IMAGE_BUCKET).remove(imagePaths)
-            if (storageError) {
-                console.error('Consulta eliminada, pero no se pudieron eliminar sus imágenes:', storageError)
-                showToast('La consulta se eliminó, pero no se pudieron eliminar sus imágenes.', 'warning')
+            const imagePaths = normalizeImagePaths(query)
+            if (imagePaths.length) {
+                const { error: storageError } = await supabase.storage.from(AI_QUERY_IMAGE_BUCKET).remove(imagePaths)
+                if (storageError) {
+                    console.error('Consulta eliminada, pero no se pudieron eliminar sus imágenes:', storageError)
+                    showToast('La consulta se eliminó, pero no se pudieron eliminar sus imágenes.', 'warning')
+                } else {
+                    showToast('Consulta y tarjetas eliminadas.', 'success')
+                }
             } else {
                 showToast('Consulta y tarjetas eliminadas.', 'success')
             }
         } else {
-            showToast('Consulta y tarjetas eliminadas.', 'success')
+            await queueChange({
+                table: 'user_ai_queries',
+                action: 'delete',
+                match: { id: query.id, user_id: userId },
+                localId: query.id
+            })
+            showToast('Sin conexión: la consulta se eliminará de la nube cuando vuelvas a conectarte.', 'info')
         }
-        await refreshSavedAIItems()
+
+        await removeCachedRow(TABLES.aiQueries, query.id)
+        try {
+            await refreshSavedAIItems()
+        } catch (error) {
+            console.warn('No se pudo refrescar la práctica tras eliminar la consulta:', error)
+        }
         await loadQueryHistory()
     } catch (error) {
         console.error('No se pudo eliminar la consulta de IA:', error)
@@ -898,24 +937,41 @@ async function loadQueryHistory() {
         return
     }
 
+    const userId = store.currentUser.id
     history.replaceChildren()
     const loading = document.createElement('p')
     loading.className = 'ui-loading'
     showLoading(loading, 'Cargando consultas guardadas…')
     history.appendChild(loading)
 
-    const controller = new AbortController()
-    const timeout = window.setTimeout(() => controller.abort(), 20000)
-    try {
-        const { data, error } = await supabase
-            .from('user_ai_queries')
-            .select('id, question, summary, provider, cards, image_path, image_paths, created_at')
-            .eq('user_id', store.currentUser.id)
-            .order('created_at', { ascending: false })
-            .abortSignal(controller.signal)
+    let networkRows = null
+    let networkError = null
 
-        if (error) throw error
-        const queries = await Promise.all((data || []).map(async query => {
+    if (isOnline()) {
+        const controller = new AbortController()
+        const timeout = window.setTimeout(() => controller.abort(), 20000)
+        try {
+            const { data, error } = await supabase
+                .from('user_ai_queries')
+                .select('id, question, summary, provider, cards, image_path, image_paths, created_at')
+                .eq('user_id', userId)
+                .order('created_at', { ascending: false })
+                .abortSignal(controller.signal)
+
+            if (error) throw error
+            networkRows = (data || []).map(query => ({ ...query, user_id: userId }))
+        } catch (error) {
+            networkError = error
+            console.warn('No se pudo cargar el historial desde la nube; se usa la copia local.', error)
+        } finally {
+            window.clearTimeout(timeout)
+        }
+    }
+
+    if (networkRows) {
+        const rows = await cacheRowsPreservingPending(TABLES.aiQueries, networkRows)
+        queryHistoryOffline = false
+        const queries = await Promise.all(rows.map(async query => {
             const paths = normalizeImagePaths(query)
             if (!paths.length) return { ...query, images: [] }
 
@@ -945,24 +1001,58 @@ async function loadQueryHistory() {
         const activeQuery = queries.find(query => query.id === activeQueryId)
         if (activeDialog && activeQuery) activeDialog.replaceChildren(createQueryDetail(activeQuery))
         else if (activeDialog) activeDialog.close()
-    } catch (error) {
-        history.replaceChildren()
-        const errorMessage = document.createElement('p')
-        errorMessage.className = 'text-sm text-red-700'
-        errorMessage.textContent = error.name === 'AbortError'
-            ? 'La carga del historial tardó demasiado. Comprueba tu conexión y vuelve a intentarlo.'
-            : `No se pudo cargar el historial: ${error.message}. Verifica que ejecutaste supabase/ai_queries.sql.`
-        history.appendChild(errorMessage)
-
-        const retry = document.createElement('button')
-        retry.type = 'button'
-        retry.className = 'mt-2 px-3 py-2 rounded-lg border border-purple-200 bg-white text-purple-800 text-sm font-medium'
-        retry.textContent = 'Reintentar carga'
-        retry.addEventListener('click', loadQueryHistory)
-        history.appendChild(retry)
-    } finally {
-        window.clearTimeout(timeout)
+        return
     }
+
+    // Sin red o con la nube inaccesible: se muestran las consultas completas
+    // guardadas en el dispositivo. Las imágenes necesitan conexión.
+    queryHistoryOffline = true
+    const cached = await readCachedRows(TABLES.aiQueries, row => row.user_id === userId)
+    const queries = cached
+        .map(row => {
+            const cards = Array.isArray(row.cards) ? row.cards : []
+            return {
+                ...row,
+                question: row.question || 'Consulta guardada',
+                summary: row.summary || 'Esta consulta está guardada en el dispositivo. Conéctate a internet para ver todos sus detalles.',
+                cards,
+                images: [],
+                offline_images: normalizeImagePaths(row).length > 0
+            }
+        })
+        .sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0))
+
+    if (queries.length) {
+        renderHistory(queries)
+        const activeDialog = document.querySelector('.ai-query-dialog')
+        const activeQuery = queries.find(query => query.id === activeQueryId)
+        if (activeDialog && activeQuery) activeDialog.replaceChildren(createQueryDetail(activeQuery))
+        else if (activeDialog) activeDialog.close()
+        return
+    }
+
+    history.replaceChildren()
+    const errorMessage = document.createElement('p')
+    errorMessage.className = 'text-sm text-red-700'
+    if (!networkError) {
+        errorMessage.textContent = 'No hay consultas guardadas en este dispositivo. Conéctate a internet una vez para descargarlas.'
+    } else if (networkError.name === 'AbortError') {
+        errorMessage.textContent = 'La carga del historial tardó demasiado. Comprueba tu conexión y vuelve a intentarlo.'
+    } else {
+        const message = String(networkError.message || '')
+        const migrationHint = /user_ai_queries|relation|does not exist|42P01|PGRST205/i.test(message)
+            ? ' Verifica que ejecutaste supabase/ai_queries.sql.'
+            : ''
+        errorMessage.textContent = `No se pudo cargar el historial: ${message}.${migrationHint}`
+    }
+    history.appendChild(errorMessage)
+
+    const retry = document.createElement('button')
+    retry.type = 'button'
+    retry.className = 'mt-2 px-3 py-2 rounded-lg border border-purple-200 bg-white text-purple-800 text-sm font-medium'
+    retry.textContent = 'Reintentar carga'
+    retry.addEventListener('click', loadQueryHistory)
+    history.appendChild(retry)
 }
 
 async function createAndSaveCard(question, { imageFiles = [], visionImages = [] } = {}) {
@@ -1115,6 +1205,10 @@ function initializeBrowserAI() {
     updateAvailability()
     renderPendingImages()
     loadQueryHistory()
+
+    window.addEventListener('online', () => loadQueryHistory())
+    window.addEventListener('offline', () => loadQueryHistory())
+    window.addEventListener('session-revalidated', () => loadQueryHistory())
 
     imageInput?.addEventListener('change', () => {
         addPendingImages([...(imageInput.files || [])])
