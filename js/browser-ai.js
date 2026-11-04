@@ -6,15 +6,15 @@ import { loadCategoriesFromSupabase, renderCategories } from './data.js'
 import { generateWithAI, hasApiKey } from './ai.js'
 import { initializePractice } from './practice.js'
 import { showLoading } from './ui-status.js'
+import {
+    AI_QUERY_IMAGE_BUCKET,
+    MAX_AI_QUERY_IMAGES,
+    validateImageFile,
+    normalizeImagePaths,
+    getImageExtension,
+    prepareImageForVision
+} from './ai-images.js'
 
-const AI_QUERY_IMAGE_BUCKET = 'ai-query-images'
-const MAX_AI_QUERY_IMAGE_SIZE = 5 * 1024 * 1024
-const AI_QUERY_IMAGE_TYPES = new Map([
-    ['image/jpeg', 'jpg'],
-    ['image/png', 'png'],
-    ['image/webp', 'webp'],
-    ['image/gif', 'gif']
-])
 const DEFAULT_QUERY_PAGE_SIZE = 12
 let savedQueries = []
 let querySearch = ''
@@ -22,6 +22,8 @@ let queryPage = 0
 let queryPageSize = DEFAULT_QUERY_PAGE_SIZE
 let querySort = 'newest'
 let activeQueryId = null
+let pendingImages = []
+let pendingImageKey = 0
 
 function updateAvailability() {
     const status = document.getElementById('browser-ai-availability')
@@ -35,6 +37,163 @@ function updateAvailability() {
         : '⚠️ Primero configura una API key de Gemini o Groq para usar la IA.'
     submit.disabled = !hasProvider
     if (configure) configure.classList.toggle('hidden', hasProvider)
+}
+
+function createQueryImageSection(query) {
+    const section = document.createElement('section')
+    section.className = 'space-y-3'
+
+    const images = Array.isArray(query.images) ? query.images : []
+    if (images.length) {
+        const gallery = document.createElement('div')
+        gallery.className = 'ai-query-image-gallery'
+        images.forEach((image, index) => {
+            const figure = document.createElement('figure')
+            figure.className = 'ai-query-image-thumb'
+
+            const preview = document.createElement('button')
+            preview.type = 'button'
+            preview.className = 'ai-query-image-preview'
+            preview.setAttribute('aria-label', `Abrir imagen ${index + 1} de la consulta en tamaño grande`)
+            const img = document.createElement('img')
+            img.src = image.url
+            img.alt = `Imagen ${index + 1} de la consulta: ${query.question}`
+            img.loading = 'lazy'
+            preview.appendChild(img)
+            preview.addEventListener('click', () => openQueryImage(query, index))
+
+            const remove = document.createElement('button')
+            remove.type = 'button'
+            remove.className = 'ai-query-image-remove'
+            remove.textContent = 'Quitar'
+            remove.setAttribute('aria-label', `Quitar imagen ${index + 1}`)
+            remove.addEventListener('click', () => removeQueryImage(query, image.path, remove))
+
+            figure.append(preview, remove)
+            gallery.appendChild(figure)
+        })
+        section.appendChild(gallery)
+
+        const previewHint = document.createElement('span')
+        previewHint.className = 'ai-query-image-hint'
+        previewHint.textContent = 'Haz clic en una imagen para verla grande'
+        section.appendChild(previewHint)
+    } else if (query.image_error) {
+        const imageError = document.createElement('p')
+        imageError.className = 'text-sm text-red-700'
+        imageError.textContent = 'No se pudieron cargar las imágenes guardadas para esta consulta.'
+        section.appendChild(imageError)
+    }
+
+    const remaining = Math.max(0, MAX_AI_QUERY_IMAGES - images.length)
+    const actions = document.createElement('div')
+    actions.className = 'flex flex-wrap items-center gap-2'
+
+    const dropZone = document.createElement('div')
+    dropZone.className = 'ai-image-dropzone'
+    dropZone.tabIndex = 0
+    dropZone.setAttribute('role', 'textbox')
+    dropZone.setAttribute('aria-multiline', 'true')
+    dropZone.contentEditable = 'true'
+    dropZone.setAttribute('aria-label', 'Suelta una o varias imágenes aquí o enfoca esta zona y pega con Ctrl+V')
+
+    if (remaining > 0) {
+        const imageLabel = document.createElement('label')
+        imageLabel.className = 'inline-flex cursor-pointer items-center gap-2 rounded-lg border border-purple-200 bg-white px-3 py-2 text-sm font-medium text-purple-800 hover:bg-purple-100'
+        imageLabel.textContent = images.length ? '🖼️ Agregar más imágenes' : '🖼️ Elegir imágenes'
+        const imageInput = document.createElement('input')
+        imageInput.type = 'file'
+        imageInput.accept = 'image/jpeg,image/png,image/webp,image/gif'
+        imageInput.multiple = true
+        imageInput.className = 'sr-only'
+        imageInput.addEventListener('change', () => {
+            saveQueryImages(query, [...(imageInput.files || [])], imageInput, dropZone)
+        })
+        imageLabel.appendChild(imageInput)
+        actions.appendChild(imageLabel)
+
+        const pasteImageButton = document.createElement('button')
+        pasteImageButton.type = 'button'
+        pasteImageButton.className = 'rounded-lg border border-purple-200 bg-white px-3 py-2 text-sm font-medium text-purple-800 hover:bg-purple-100'
+        pasteImageButton.textContent = '📋 Pegar imágenes'
+        pasteImageButton.addEventListener('click', async () => {
+            const files = await readClipboardImages()
+            if (files === null) {
+                dropZone.focus()
+                showToast('Este navegador no permite leer imágenes del portapapeles desde un botón. Mantén pulsada la zona de pegado y elige “Pegar”, o usa “Elegir imágenes”.', 'warning')
+                return
+            }
+            if (!files.length) {
+                showToast('El portapapeles no contiene imágenes.', 'warning')
+                return
+            }
+            await saveQueryImages(query, files, imageInput, dropZone)
+        })
+        actions.appendChild(pasteImageButton)
+
+        dropZone.textContent = images.length
+            ? 'Arrastra más imágenes aquí o pega con Ctrl+V'
+            : 'Arrastra una o varias imágenes aquí, o pega con Ctrl+V'
+        dropZone.addEventListener('dragover', event => {
+            event.preventDefault()
+            dropZone.classList.add('is-dragging')
+        })
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('is-dragging'))
+        dropZone.addEventListener('drop', event => {
+            event.preventDefault()
+            dropZone.classList.remove('is-dragging')
+            const files = [...(event.dataTransfer?.files || [])].filter(item => item.type.startsWith('image/'))
+            if (!files.length) {
+                showToast('Suelta archivos de imagen válidos.', 'warning')
+                return
+            }
+            saveQueryImages(query, files, imageInput, dropZone)
+        })
+        dropZone.addEventListener('paste', event => {
+            event.preventDefault()
+            const files = [...(event.clipboardData?.items || [])]
+                .filter(item => item.kind === 'file' && item.type.startsWith('image/'))
+                .map(item => item.getAsFile())
+                .filter(Boolean)
+            if (!files.length) {
+                showToast('El portapapeles no contiene imágenes. Copia una imagen antes de pegar.', 'warning')
+                return
+            }
+            saveQueryImages(query, files, imageInput, dropZone)
+        })
+        section.appendChild(dropZone)
+    } else {
+        dropZone.classList.add('is-full')
+        dropZone.textContent = `Límite de ${MAX_AI_QUERY_IMAGES} imágenes alcanzado. Quita una para agregar otra.`
+        section.appendChild(dropZone)
+    }
+
+    const imageHint = document.createElement('span')
+    imageHint.className = 'text-xs text-gray-500'
+    imageHint.textContent = `${images.length} de ${MAX_AI_QUERY_IMAGES} imágenes · JPG, PNG, WebP o GIF · máximo 5 MB cada una`
+    actions.appendChild(imageHint)
+    section.appendChild(actions)
+
+    return section
+}
+
+async function readClipboardImages() {
+    if (!navigator.clipboard?.read) return null
+    try {
+        const clipboardItems = await navigator.clipboard.read()
+        const files = []
+        for (const item of clipboardItems) {
+            const imageType = item.types.find(type => type.startsWith('image/'))
+            if (!imageType) continue
+            const blob = await item.getType(imageType)
+            const extension = imageType.split('/')[1] || 'png'
+            files.push(new File([blob], `consulta-${Date.now()}-${files.length}.${extension}`, { type: imageType }))
+        }
+        return files
+    } catch (error) {
+        console.error('No se pudieron leer imágenes del portapapeles:', error)
+        return []
+    }
 }
 
 function createQueryDetail(query) {
@@ -70,118 +229,7 @@ function createQueryDetail(query) {
     answer.textContent = query.summary
     content.appendChild(answer)
 
-    if (query.image_url) {
-        const imagePreview = document.createElement('button')
-        imagePreview.type = 'button'
-        imagePreview.className = 'ai-query-image-preview'
-        imagePreview.setAttribute('aria-label', 'Abrir imagen de la consulta en tamaño grande')
-        const image = document.createElement('img')
-        image.src = query.image_url
-        image.alt = `Imagen para la consulta: ${query.question}`
-        image.loading = 'lazy'
-        image.className = 'max-h-80 max-w-full rounded-lg object-contain'
-        imagePreview.appendChild(image)
-        imagePreview.addEventListener('click', () => openQueryImage(query))
-        const previewHint = document.createElement('span')
-        previewHint.className = 'ai-query-image-hint'
-        previewHint.textContent = 'Haz clic en la imagen para verla grande'
-        const preview = document.createElement('div')
-        preview.className = 'ai-query-image-container'
-        preview.append(imagePreview, previewHint)
-        content.appendChild(preview)
-    } else if (query.image_error) {
-        const imageError = document.createElement('p')
-        imageError.className = 'mb-3 text-sm text-red-700'
-        imageError.textContent = 'No se pudo cargar la imagen guardada para esta consulta.'
-        content.appendChild(imageError)
-    }
-
-    const imageActions = document.createElement('div')
-    imageActions.className = 'mb-4 flex flex-wrap items-center gap-2'
-    const imageLabel = document.createElement('label')
-    imageLabel.className = 'inline-flex cursor-pointer items-center gap-2 rounded-lg border border-purple-200 bg-white px-3 py-2 text-sm font-medium text-purple-800 hover:bg-purple-100'
-    imageLabel.textContent = query.image_path ? '🖼️ Cambiar imagen' : '🖼️ Elegir imagen'
-    const imageInput = document.createElement('input')
-    imageInput.type = 'file'
-    imageInput.accept = 'image/jpeg,image/png,image/webp,image/gif'
-    imageInput.className = 'sr-only'
-    imageInput.addEventListener('change', () => saveQueryImage(query, imageInput.files[0], imageInput, dropZone))
-    imageLabel.appendChild(imageInput)
-    imageActions.appendChild(imageLabel)
-
-    const pasteImageButton = document.createElement('button')
-    pasteImageButton.type = 'button'
-    pasteImageButton.className = 'rounded-lg border border-purple-200 bg-white px-3 py-2 text-sm font-medium text-purple-800 hover:bg-purple-100'
-    pasteImageButton.textContent = '📋 Pegar imagen'
-    pasteImageButton.addEventListener('click', async () => {
-        if (!navigator.clipboard?.read) {
-            dropZone.focus()
-            showToast('Este navegador no permite leer imágenes del portapapeles desde un botón. Mantén pulsada la zona de pegado y elige “Pegar”, o usa “Elegir imagen”.', 'warning')
-            return
-        }
-        try {
-            const clipboardItems = await navigator.clipboard.read()
-            for (const item of clipboardItems) {
-                const imageType = item.types.find(type => type.startsWith('image/'))
-                if (!imageType) continue
-                const blob = await item.getType(imageType)
-                const file = new File([blob], `consulta-${Date.now()}.${imageType.split('/')[1] || 'png'}`, { type: imageType })
-                await saveQueryImage(query, file, imageInput, dropZone)
-                return
-            }
-            showToast('El portapapeles no contiene una imagen.', 'warning')
-        } catch (error) {
-            console.error('No se pudo leer una imagen del portapapeles:', error)
-            showToast(`No se pudo leer el portapapeles. ${error.message || ''}`, 'warning')
-        }
-    })
-    imageActions.appendChild(pasteImageButton)
-
-    if (query.image_path) {
-        const removeImageButton = document.createElement('button')
-        removeImageButton.type = 'button'
-        removeImageButton.className = 'rounded-lg border border-red-200 bg-white px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50'
-        removeImageButton.textContent = 'Quitar imagen'
-        removeImageButton.addEventListener('click', () => removeQueryImage(query, removeImageButton))
-        imageActions.appendChild(removeImageButton)
-    }
-    const imageHint = document.createElement('span')
-    imageHint.className = 'text-xs text-gray-500'
-    imageHint.textContent = 'Una imagen para toda la consulta · JPG, PNG, WebP o GIF · máximo 5 MB'
-    imageActions.appendChild(imageHint)
-    content.appendChild(imageActions)
-    const dropZone = document.createElement('div')
-    dropZone.className = 'ai-image-dropzone'
-    dropZone.tabIndex = 0
-    dropZone.setAttribute('role', 'textbox')
-    dropZone.setAttribute('aria-multiline', 'true')
-    dropZone.contentEditable = 'true'
-    dropZone.setAttribute('aria-label', 'Suelta una imagen aquí o enfoca esta zona y pega una imagen')
-    dropZone.textContent = 'Arrastra una imagen aquí o enfoca esta zona y pega con Ctrl+V'
-    dropZone.addEventListener('dragover', event => {
-        event.preventDefault()
-        dropZone.classList.add('is-dragging')
-    })
-    dropZone.addEventListener('dragleave', () => dropZone.classList.remove('is-dragging'))
-    dropZone.addEventListener('drop', event => {
-        event.preventDefault()
-        dropZone.classList.remove('is-dragging')
-        const file = [...(event.dataTransfer?.files || [])].find(item => item.type.startsWith('image/'))
-        if (file) saveQueryImage(query, file, imageInput, dropZone)
-        else showToast('Suelta un archivo de imagen válido.', 'warning')
-    })
-    dropZone.addEventListener('paste', event => {
-        event.preventDefault()
-        const imageItem = [...(event.clipboardData?.items || [])]
-            .find(item => item.kind === 'file' && item.type.startsWith('image/'))
-        const file = imageItem?.getAsFile()
-        if (!file) {
-            showToast('El portapapeles no contiene una imagen. Copia una imagen antes de pegar.', 'warning')
-            return
-        }
-        saveQueryImage(query, file, imageInput, dropZone)
-    })
-    content.appendChild(dropZone)
+    content.appendChild(createQueryImageSection(query))
 
     if (!query.cards.length) {
         const emptyCards = document.createElement('p')
@@ -294,18 +342,25 @@ function renderHistory(queries) {
     pageQueries.forEach(query => {
         const tile = document.createElement('article')
         tile.className = 'ai-query-tile'
-        if (query.image_url) {
+        const firstImage = Array.isArray(query.images) ? query.images[0] : null
+        if (firstImage) {
             const imageButton = document.createElement('button')
             imageButton.type = 'button'
             imageButton.className = 'ai-query-tile-image-button'
-            imageButton.setAttribute('aria-label', 'Abrir imagen de la consulta')
+            imageButton.setAttribute('aria-label', 'Abrir imágenes de la consulta')
             const image = document.createElement('img')
-            image.src = query.image_url
+            image.src = firstImage.url
             image.alt = ''
             image.loading = 'lazy'
             image.className = 'ai-query-tile-image'
             imageButton.appendChild(image)
-            imageButton.addEventListener('click', () => openQueryImage(query))
+            if (query.images.length > 1) {
+                const count = document.createElement('span')
+                count.className = 'ai-query-tile-image-count'
+                count.textContent = `+${query.images.length - 1}`
+                imageButton.appendChild(count)
+            }
+            imageButton.addEventListener('click', () => openQueryImage(query, 0))
             tile.appendChild(imageButton)
         } else {
             const icon = document.createElement('span')
@@ -362,12 +417,36 @@ function renderHistory(queries) {
     }
 }
 
-function openQueryImage(query) {
-    if (!query.image_url) return
+function openQueryImage(query, startIndex = 0) {
+    const images = Array.isArray(query.images) && query.images.length
+        ? query.images
+        : (query.image_url ? [{ path: query.image_path, url: query.image_url }] : [])
+    if (!images.length) return
+
+    let index = Math.max(0, Math.min(images.length - 1, Number(startIndex) || 0))
     const dialog = document.createElement('dialog')
     dialog.className = 'ai-query-image-dialog'
     const controls = document.createElement('div')
     controls.className = 'ai-query-image-controls'
+
+    const previous = document.createElement('button')
+    previous.type = 'button'
+    previous.className = 'ai-query-image-zoom-button'
+    previous.textContent = '‹'
+    previous.setAttribute('aria-label', 'Imagen anterior')
+    previous.disabled = images.length < 2
+
+    const counter = document.createElement('output')
+    counter.className = 'ai-query-image-counter'
+    counter.setAttribute('aria-live', 'polite')
+
+    const next = document.createElement('button')
+    next.type = 'button'
+    next.className = 'ai-query-image-zoom-button'
+    next.textContent = '›'
+    next.setAttribute('aria-label', 'Imagen siguiente')
+    next.disabled = images.length < 2
+
     const closeButton = document.createElement('button')
     closeButton.type = 'button'
     closeButton.className = 'ai-query-image-close'
@@ -398,15 +477,13 @@ function openQueryImage(query) {
     zoomReset.className = 'ai-query-image-zoom-reset'
     zoomReset.textContent = 'Restablecer'
     const image = document.createElement('img')
-    image.src = query.image_url
-    image.alt = `Imagen para la consulta: ${query.question}`
     const stage = document.createElement('div')
     stage.className = 'ai-query-image-stage'
     const canvas = document.createElement('div')
     canvas.className = 'ai-query-image-canvas'
     canvas.appendChild(image)
     stage.appendChild(canvas)
-    controls.append(zoomOut, zoomRange, zoomIn, zoomLabel, zoomReset, closeButton)
+    controls.append(previous, counter, next, zoomOut, zoomRange, zoomIn, zoomLabel, zoomReset, closeButton)
     dialog.append(controls, stage)
 
     let zoom = 1
@@ -430,13 +507,30 @@ function openQueryImage(query) {
         fitHeight = image.naturalHeight * fit
         setZoom(zoom)
     }
-    image.addEventListener('load', fitImage, { once: true })
+    const showImage = nextIndex => {
+        index = (nextIndex + images.length) % images.length
+        zoom = 1
+        counter.textContent = `${index + 1} / ${images.length}`
+        image.src = images[index].url
+        image.alt = `Imagen ${index + 1} de la consulta: ${query.question}`
+        if (image.complete) fitImage()
+    }
+
+    image.addEventListener('load', fitImage)
+    previous.addEventListener('click', () => showImage(index - 1))
+    next.addEventListener('click', () => showImage(index + 1))
     zoomOut.addEventListener('click', () => setZoom(zoom - 0.1))
     zoomIn.addEventListener('click', () => setZoom(zoom + 0.1))
     zoomRange.addEventListener('input', () => setZoom(Number(zoomRange.value) / 100))
     zoomReset.addEventListener('click', () => setZoom(1))
     dialog.addEventListener('keydown', event => {
-        if (event.key === '+' || event.key === '=') {
+        if (event.key === 'ArrowLeft' && images.length > 1) {
+            event.preventDefault()
+            showImage(index - 1)
+        } else if (event.key === 'ArrowRight' && images.length > 1) {
+            event.preventDefault()
+            showImage(index + 1)
+        } else if (event.key === '+' || event.key === '=') {
             event.preventDefault()
             setZoom(zoom + 0.1)
         } else if (event.key === '-') {
@@ -456,7 +550,7 @@ function openQueryImage(query) {
     document.body.appendChild(dialog)
     dialog.showModal()
     window.addEventListener('resize', fitImage)
-    if (image.complete) fitImage()
+    showImage(index)
 }
 
 function openQueryDetails(query) {
@@ -551,68 +645,115 @@ function createCardEditForm(query, card, index) {
     return form
 }
 
-function validateQueryImage(file) {
-    if (!AI_QUERY_IMAGE_TYPES.has(file.type)) {
-        showToast('Elige una imagen JPG, PNG, WebP o GIF.', 'warning')
-        return false
+async function uploadQueryImages(queryId, files) {
+    const uploaded = []
+    try {
+        for (const file of files) {
+            const extension = getImageExtension(file.type)
+            if (!extension) throw new Error('Tipo de imagen no compatible.')
+            const path = `${store.currentUser.id}/${queryId}/query-${crypto.randomUUID()}.${extension}`
+            const { error } = await supabase.storage.from(AI_QUERY_IMAGE_BUCKET).upload(path, file, {
+                contentType: file.type,
+                upsert: false
+            })
+            if (error) throw error
+            uploaded.push(path)
+        }
+        return uploaded
+    } catch (error) {
+        if (uploaded.length) {
+            const { error: cleanupError } = await supabase.storage.from(AI_QUERY_IMAGE_BUCKET).remove(uploaded)
+            if (cleanupError) console.error('No se pudieron limpiar las imágenes subidas:', cleanupError)
+        }
+        throw error
     }
-    if (file.size > MAX_AI_QUERY_IMAGE_SIZE) {
-        showToast('La imagen no puede superar los 5 MB.', 'warning')
-        return false
-    }
-    return true
 }
 
-async function uploadQueryImage(queryId, file) {
-    const extension = AI_QUERY_IMAGE_TYPES.get(file.type)
-    const path = `${store.currentUser.id}/${queryId}/query-${crypto.randomUUID()}.${extension}`
-    const { error } = await supabase.storage.from(AI_QUERY_IMAGE_BUCKET).upload(path, file, {
-        contentType: file.type,
-        upsert: false
+async function attachImagesToQuery(queryId, files) {
+    const uploaded = await uploadQueryImages(queryId, files)
+    const { error } = await supabase.rpc('set_user_ai_query_images', {
+        p_query_id: queryId,
+        p_image_paths: uploaded
     })
-    if (error) throw error
-    return path
+    if (error) {
+        const { error: cleanupError } = await supabase.storage.from(AI_QUERY_IMAGE_BUCKET).remove(uploaded)
+        if (cleanupError) console.error('No se pudieron limpiar las imágenes no asociadas:', cleanupError)
+        throw error
+    }
+    return uploaded
 }
 
-async function saveQueryImage(query, file, input, dropZone) {
-    if (dropZone.dataset.uploading === 'true') return
-    if (!file || !validateQueryImage(file)) {
+function filterValidImages(files, limit) {
+    const accepted = []
+    const rejected = []
+    for (const file of files) {
+        const validation = validateImageFile(file)
+        if (!validation.ok) {
+            rejected.push(validation.message)
+            continue
+        }
+        if (accepted.length >= limit) {
+            rejected.push(`Puedes adjuntar hasta ${MAX_AI_QUERY_IMAGES} imágenes.`)
+            continue
+        }
+        accepted.push(file)
+    }
+    if (rejected.length) {
+        showToast(
+            rejected.length === 1 ? rejected[0] : `${rejected.length} archivos no se agregaron. ${rejected[0]}`,
+            'warning'
+        )
+    }
+    return accepted
+}
+
+async function saveQueryImages(query, files, input, dropZone) {
+    if (dropZone?.dataset.uploading === 'true') return
+    const currentPaths = normalizeImagePaths(query)
+    const remaining = Math.max(0, MAX_AI_QUERY_IMAGES - currentPaths.length)
+    if (!remaining) {
+        showToast(`Ya tienes ${MAX_AI_QUERY_IMAGES} imágenes en esta consulta.`, 'warning')
         if (input) input.value = ''
         return
     }
-    dropZone.dataset.uploading = 'true'
-    dropZone.setAttribute('aria-busy', 'true')
+
+    const accepted = filterValidImages([...files], remaining)
+    if (!accepted.length) {
+        if (input) input.value = ''
+        return
+    }
+
+    if (dropZone) {
+        dropZone.dataset.uploading = 'true'
+        dropZone.setAttribute('aria-busy', 'true')
+        dropZone.classList.add('opacity-60')
+    }
     if (input) input.disabled = true
-    dropZone.classList.add('opacity-60')
-    let uploadedPath
+    let uploaded = []
     try {
-        uploadedPath = await uploadQueryImage(query.id, file)
-        const { error } = await supabase.rpc('set_user_ai_query_image', {
+        uploaded = await uploadQueryImages(query.id, accepted)
+        const { error } = await supabase.rpc('set_user_ai_query_images', {
             p_query_id: query.id,
-            p_image_path: uploadedPath
+            p_image_paths: [...currentPaths, ...uploaded]
         })
         if (error) throw error
 
-        if (query.image_path) {
-            const { error: cleanupError } = await supabase.storage.from(AI_QUERY_IMAGE_BUCKET).remove([query.image_path])
-            if (cleanupError) {
-                console.error('La imagen se cambió, pero no se pudo borrar la anterior:', cleanupError)
-                showToast('Imagen guardada. No se pudo eliminar la imagen anterior.', 'warning')
-            } else {
-                showToast('Imagen guardada para toda la consulta.', 'success')
-            }
-        } else {
-            showToast('Imagen guardada para toda la consulta.', 'success')
-        }
+        showToast(
+            `${uploaded.length} ${uploaded.length === 1 ? 'imagen agregada' : 'imágenes agregadas'} a la consulta.`,
+            'success'
+        )
         await loadQueryHistory()
     } catch (error) {
-        console.error('No se pudo guardar la imagen de la consulta:', error)
-        showToast(`No se pudo guardar la imagen: ${error.message}`, 'error')
-        if (uploadedPath) {
-            const { error: cleanupError } = await supabase.storage.from(AI_QUERY_IMAGE_BUCKET).remove([uploadedPath])
+        console.error('No se pudieron guardar las imágenes de la consulta:', error)
+        const migrationHint = String(error.message || '').includes('set_user_ai_query_images')
+            ? ' Ejecuta de nuevo supabase/ai_queries.sql.'
+            : ''
+        showToast(`No se pudieron guardar las imágenes: ${error.message}.${migrationHint}`, 'error')
+        if (uploaded.length) {
+            const { error: cleanupError } = await supabase.storage.from(AI_QUERY_IMAGE_BUCKET).remove(uploaded)
             if (cleanupError) {
-                console.error('No se pudo limpiar la imagen que no quedó asociada:', cleanupError)
-                showToast('La imagen no se asoció y tampoco se pudo borrar del almacenamiento.', 'warning')
+                console.error('No se pudieron limpiar las imágenes que no quedaron asociadas:', cleanupError)
+                showToast('Las imágenes no se asociaron y tampoco se pudieron borrar del almacenamiento.', 'warning')
             }
         }
     } finally {
@@ -620,21 +761,26 @@ async function saveQueryImage(query, file, input, dropZone) {
             input.disabled = false
             input.value = ''
         }
-        delete dropZone.dataset.uploading
-        dropZone.removeAttribute('aria-busy')
-        dropZone.classList.remove('opacity-60', 'is-dragging')
+        if (dropZone) {
+            delete dropZone.dataset.uploading
+            dropZone.removeAttribute('aria-busy')
+            dropZone.classList.remove('opacity-60', 'is-dragging')
+        }
     }
 }
 
-async function removeQueryImage(query, button) {
+async function removeQueryImage(query, path, button) {
+    if (!path) return
     button.disabled = true
+    const currentPaths = normalizeImagePaths(query)
+    const nextPaths = currentPaths.filter(item => item !== path)
     try {
-        const { error } = await supabase.rpc('set_user_ai_query_image', {
+        const { error } = await supabase.rpc('set_user_ai_query_images', {
             p_query_id: query.id,
-            p_image_path: null
+            p_image_paths: nextPaths
         })
         if (error) throw error
-        const { error: cleanupError } = await supabase.storage.from(AI_QUERY_IMAGE_BUCKET).remove([query.image_path])
+        const { error: cleanupError } = await supabase.storage.from(AI_QUERY_IMAGE_BUCKET).remove([path])
         if (cleanupError) {
             console.error('La imagen se quitó de la consulta, pero no se pudo borrar del almacenamiento:', cleanupError)
             showToast('La imagen se quitó de la consulta, pero no se pudo eliminar del almacenamiento.', 'warning')
@@ -716,8 +862,9 @@ async function deleteQuery(query, button) {
 
         if (error) throw error
 
-        if (query.image_path) {
-            const { error: storageError } = await supabase.storage.from(AI_QUERY_IMAGE_BUCKET).remove([query.image_path])
+        const imagePaths = normalizeImagePaths(query)
+        if (imagePaths.length) {
+            const { error: storageError } = await supabase.storage.from(AI_QUERY_IMAGE_BUCKET).remove(imagePaths)
             if (storageError) {
                 console.error('Consulta eliminada, pero no se pudieron eliminar sus imágenes:', storageError)
                 showToast('La consulta se eliminó, pero no se pudieron eliminar sus imágenes.', 'warning')
@@ -762,26 +909,36 @@ async function loadQueryHistory() {
     try {
         const { data, error } = await supabase
             .from('user_ai_queries')
-            .select('id, question, summary, provider, cards, image_path, created_at')
+            .select('id, question, summary, provider, cards, image_path, image_paths, created_at')
             .eq('user_id', store.currentUser.id)
             .order('created_at', { ascending: false })
             .abortSignal(controller.signal)
 
         if (error) throw error
         const queries = await Promise.all((data || []).map(async query => {
-            let imageFields = {}
-            if (query.image_path) {
-                const { data: signedImage, error: imageError } = await supabase.storage
-                    .from(AI_QUERY_IMAGE_BUCKET)
-                    .createSignedUrl(query.image_path, 60 * 60)
-                if (imageError) {
-                    console.error('No se pudo crear un enlace temporal para la imagen de la consulta:', imageError)
-                    imageFields = { image_error: true }
-                } else {
-                    imageFields = { image_url: signedImage.signedUrl }
-                }
+            const paths = normalizeImagePaths(query)
+            if (!paths.length) return { ...query, images: [] }
+
+            const { data: signedImages, error: imageError } = await supabase.storage
+                .from(AI_QUERY_IMAGE_BUCKET)
+                .createSignedUrls(paths, 60 * 60)
+            if (imageError) {
+                console.error('No se pudieron crear enlaces temporales para las imágenes de la consulta:', imageError)
+                return { ...query, images: [], image_error: true }
             }
-            return { ...query, ...imageFields }
+
+            const byPath = new Map((signedImages || []).map(item => [item.path, item]))
+            const images = []
+            let failed = false
+            for (const path of paths) {
+                const item = byPath.get(path)
+                if (!item || item.error || !item.signedUrl) {
+                    failed = true
+                    continue
+                }
+                images.push({ path, url: item.signedUrl })
+            }
+            return { ...query, images, image_error: failed }
         }))
         renderHistory(queries)
         const activeDialog = document.querySelector('.ai-query-dialog')
@@ -808,14 +965,14 @@ async function loadQueryHistory() {
     }
 }
 
-async function createAndSaveCard(question) {
+async function createAndSaveCard(question, { imageFiles = [], visionImages = [] } = {}) {
     if (!store.currentUser) {
         showToast('Inicia sesión para crear y guardar tarjetas.', 'warning')
         window.abrirModalLogin?.()
         return false
     }
 
-    const guide = await generateWithAI(question, { guide: true })
+    const guide = await generateWithAI(question, { guide: true, images: visionImages })
     if (!guide) return false
     if (typeof guide.summary !== 'string' || !guide.summary.trim() ||
         !Array.isArray(guide.cards) || guide.cards.length < 1 || guide.cards.length > 20) {
@@ -833,7 +990,7 @@ async function createAndSaveCard(question) {
     const category = store.categoriesData.find(item => item.id === 'grammar')
     if (!category) throw new Error('No se encontró la categoría donde guardar la tarjeta.')
 
-    const { error } = await supabase.rpc('save_user_ai_query', {
+    const { data: queryId, error } = await supabase.rpc('save_user_ai_query', {
         p_question: question,
         p_summary: guide.summary.trim(),
         p_provider: guide.provider,
@@ -847,6 +1004,18 @@ async function createAndSaveCard(question) {
             ? ' La base de datos aún tiene el límite anterior: vuelve a ejecutar supabase/ai_queries.sql en el SQL Editor del mismo proyecto Supabase.'
             : ''
         throw new Error(`No se pudo guardar la consulta y sus tarjetas: ${error.message}.${migrationHint}`)
+    }
+
+    if (imageFiles.length && queryId) {
+        try {
+            await attachImagesToQuery(queryId, imageFiles)
+        } catch (imagesError) {
+            console.error('La consulta se guardó, pero no sus imágenes:', imagesError)
+            showToast(
+                `La consulta y las tarjetas se guardaron, pero no se pudieron adjuntar las imágenes: ${imagesError.message}`,
+                'warning'
+            )
+        }
     }
 
     showToast(`${cards.length} ${cards.length === 1 ? 'tarjeta guardada' : 'tarjetas guardadas'} en Mis Expresiones.`, 'success')
@@ -867,6 +1036,70 @@ function showBackgroundRequestStatus() {
     return status
 }
 
+function renderPendingImages() {
+    const host = document.getElementById('browser-ai-image-previews')
+    const count = document.getElementById('browser-ai-image-count')
+    if (!host) return
+
+    host.replaceChildren()
+    pendingImages.forEach((item, index) => {
+        const figure = document.createElement('figure')
+        figure.className = 'ai-pending-image'
+
+        const image = document.createElement('img')
+        image.src = item.url
+        image.alt = `Imagen ${index + 1} adjunta al mensaje`
+        image.loading = 'lazy'
+        figure.appendChild(image)
+
+        const remove = document.createElement('button')
+        remove.type = 'button'
+        remove.className = 'ai-pending-image-remove'
+        remove.textContent = '×'
+        remove.setAttribute('aria-label', `Quitar imagen ${index + 1}`)
+        remove.addEventListener('click', () => removePendingImage(item.key))
+        figure.appendChild(remove)
+
+        host.appendChild(figure)
+    })
+    host.classList.toggle('hidden', pendingImages.length === 0)
+    if (count) {
+        count.textContent = pendingImages.length
+            ? `${pendingImages.length} de ${MAX_AI_QUERY_IMAGES} imágenes adjuntas`
+            : `Puedes adjuntar hasta ${MAX_AI_QUERY_IMAGES} imágenes`
+    }
+}
+
+function addPendingImages(files) {
+    const remaining = Math.max(0, MAX_AI_QUERY_IMAGES - pendingImages.length)
+    if (!remaining) {
+        showToast(`Puedes adjuntar hasta ${MAX_AI_QUERY_IMAGES} imágenes por mensaje.`, 'warning')
+        return
+    }
+    const accepted = filterValidImages([...files], remaining)
+    for (const file of accepted) {
+        pendingImages.push({
+            key: ++pendingImageKey,
+            file,
+            url: URL.createObjectURL(file)
+        })
+    }
+    renderPendingImages()
+}
+
+function removePendingImage(key) {
+    const item = pendingImages.find(image => image.key === key)
+    if (item) URL.revokeObjectURL(item.url)
+    pendingImages = pendingImages.filter(image => image.key !== key)
+    renderPendingImages()
+}
+
+function clearPendingImages() {
+    pendingImages.forEach(item => URL.revokeObjectURL(item.url))
+    pendingImages = []
+    renderPendingImages()
+}
+
 function initializeBrowserAI() {
     const form = document.getElementById('browser-ai-form')
     const submit = document.getElementById('browser-ai-submit')
@@ -874,10 +1107,60 @@ function initializeBrowserAI() {
     const search = document.getElementById('browser-ai-search')
     const sort = document.getElementById('browser-ai-sort')
     const pageSize = document.getElementById('browser-ai-page-size')
+    const imageInput = document.getElementById('browser-ai-image-input')
+    const imageDropZone = document.getElementById('browser-ai-image-dropzone')
+    const imagePaste = document.getElementById('browser-ai-image-paste')
     if (!form || !submit) return
 
     updateAvailability()
+    renderPendingImages()
     loadQueryHistory()
+
+    imageInput?.addEventListener('change', () => {
+        addPendingImages([...(imageInput.files || [])])
+        imageInput.value = ''
+    })
+    imagePaste?.addEventListener('click', async () => {
+        const files = await readClipboardImages()
+        if (files === null) {
+            showToast('Este navegador no permite leer imágenes del portapapeles desde un botón. Usa “Adjuntar imágenes” o pega con Ctrl+V en la zona de imágenes.', 'warning')
+            return
+        }
+        if (!files.length) {
+            showToast('El portapapeles no contiene imágenes.', 'warning')
+            return
+        }
+        addPendingImages(files)
+    })
+    if (imageDropZone) {
+        imageDropZone.addEventListener('dragover', event => {
+            event.preventDefault()
+            imageDropZone.classList.add('is-dragging')
+        })
+        imageDropZone.addEventListener('dragleave', () => imageDropZone.classList.remove('is-dragging'))
+        imageDropZone.addEventListener('drop', event => {
+            event.preventDefault()
+            imageDropZone.classList.remove('is-dragging')
+            const files = [...(event.dataTransfer?.files || [])].filter(item => item.type.startsWith('image/'))
+            if (!files.length) {
+                showToast('Suelta archivos de imagen válidos.', 'warning')
+                return
+            }
+            addPendingImages(files)
+        })
+        imageDropZone.addEventListener('paste', event => {
+            event.preventDefault()
+            const files = [...(event.clipboardData?.items || [])]
+                .filter(item => item.kind === 'file' && item.type.startsWith('image/'))
+                .map(item => item.getAsFile())
+                .filter(Boolean)
+            if (!files.length) {
+                showToast('El portapapeles no contiene imágenes. Copia una imagen antes de pegar.', 'warning')
+                return
+            }
+            addPendingImages(files)
+        })
+    }
     search?.addEventListener('input', () => {
         querySearch = search.value
         queryPage = 0
@@ -904,18 +1187,39 @@ function initializeBrowserAI() {
         if (!question) return
 
         submit.disabled = true
+        const imageFiles = pendingImages.map(item => item.file)
+        let visionImages = []
+        if (imageFiles.length) {
+            submit.textContent = 'Preparando imágenes...'
+            try {
+                visionImages = await Promise.all(imageFiles.map(prepareImageForVision))
+            } catch (error) {
+                console.error('No se pudieron preparar las imágenes para la IA:', error)
+                showToast(`No se pudieron preparar las imágenes: ${error.message}`, 'error')
+                submit.textContent = 'Generar explicación y guardar tarjetas'
+                updateAvailability()
+                return
+            }
+        }
+
         submit.textContent = 'Generando y guardando...'
         const backgroundStatus = showBackgroundRequestStatus()
-        showToast('Consultando el proveedor de IA configurado...', 'info')
+        showToast(
+            imageFiles.length
+                ? `Consultando el proveedor de IA con ${imageFiles.length} ${imageFiles.length === 1 ? 'imagen' : 'imágenes'}...`
+                : 'Consultando el proveedor de IA configurado...',
+            'info'
+        )
         let saved = false
         let failed = false
         try {
-            saved = await createAndSaveCard(question)
+            saved = await createAndSaveCard(question, { imageFiles, visionImages })
         } catch (error) {
             failed = true
             console.error('Error al crear la tarjeta con IA:', error)
             showToast(error.message || 'No se pudo crear la tarjeta.', 'error')
         } finally {
+            if (saved) clearPendingImages()
             submit.textContent = 'Generar explicación y guardar tarjetas'
             updateAvailability()
             backgroundStatus.textContent = saved

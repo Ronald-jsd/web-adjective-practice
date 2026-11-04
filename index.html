@@ -403,6 +403,22 @@
                     <form id="browser-ai-form" class="space-y-4">
                         <label for="browser-ai-question" class="block text-sm font-medium text-gray-700">¿Qué quieres aprender?</label>
                         <textarea id="browser-ai-question" rows="3" required maxlength="500" class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-purple-500 outline-none" placeholder="Por ejemplo: ¿Qué diferencia hay entre save, keep, put away y store? Da un ejemplo traducido para cada uso."></textarea>
+                        <div class="ai-message-images">
+                            <div class="flex flex-wrap items-center gap-2">
+                                <label class="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-purple-200 bg-white px-3 py-2 text-sm font-medium text-purple-800 hover:bg-purple-100">
+                                    📎 Adjuntar imágenes
+                                    <input id="browser-ai-image-input" type="file" accept="image/jpeg,image/png,image/webp,image/gif" multiple class="sr-only">
+                                </label>
+                                <button id="browser-ai-image-paste" type="button" class="rounded-lg border border-purple-200 bg-white px-3 py-2 text-sm font-medium text-purple-800 hover:bg-purple-100">
+                                    📋 Pegar
+                                </button>
+                                <span id="browser-ai-image-count" class="text-xs text-gray-500">Puedes adjuntar hasta 6 imágenes</span>
+                            </div>
+                            <div id="browser-ai-image-previews" class="ai-pending-images hidden" aria-live="polite"></div>
+                            <div id="browser-ai-image-dropzone" class="ai-image-dropzone" tabindex="0" role="textbox" aria-multiline="true" contenteditable="true" aria-label="Arrastra una o varias imágenes aquí o enfoca esta zona y pega con Ctrl+V">
+                                Arrastra una o varias imágenes aquí, o pega con Ctrl+V
+                            </div>
+                        </div>
                         <button id="browser-ai-submit" type="submit" class="w-full px-5 py-3 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 text-white font-semibold rounded-xl transition-colors">
                             Generar explicación y guardar tarjetas
                         </button>
@@ -411,7 +427,7 @@
                 <section class="mt-8" aria-labelledby="browser-ai-history-title">
                     <div class="mb-4">
                         <h3 id="browser-ai-history-title" class="text-xl font-bold text-gray-900">Mis consultas guardadas</h3>
-                        <p class="text-sm text-gray-500 mt-1">Abre una consulta para ver su explicación, agregar una sola imagen para toda la consulta y editar sus tarjetas.</p>
+                        <p class="text-sm text-gray-500 mt-1">Abre una consulta para ver su explicación, agregar hasta seis imágenes y editar sus tarjetas.</p>
                     </div>
                     <div class="ai-query-controls mb-5">
                         <label class="ai-query-search">

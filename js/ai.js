@@ -20,6 +20,7 @@ import { beginAIRequest } from './ui-status.js'
 import { cacheRow, TABLES } from './offline/cache.js'
 import { queueChange, isOnline } from './offline/sync.js'
 import { generateLocalIntegerId } from './offline/ids.js'
+import { buildVisionInstruction } from './ai-images.js'
 
 // La guía crea hasta 20 tarjetas, así que necesita más margen que una ficha.
 const GUIDE_MODEL_TIMEOUT_MS = 45000
@@ -328,7 +329,7 @@ Responde SOLO en formato JSON válido, sin texto adicional, sin markdown:
     return null
 }
 
-async function generateWithGemini(word, apiKey, guide = false, deadline = Infinity) {
+async function generateWithGemini(word, apiKey, guide = false, deadline = Infinity, images = []) {
     const categoriesList = store.categoriesData.map(cat => {
         const subcats = cat.subcategories.map(sub => sub.title).join(', ')
         return `${cat.title}: [${subcats}]`
@@ -373,12 +374,15 @@ Responde SOLO en formato JSON válido, sin texto adicional:
   "example_en": "Example sentence in English",
   "example_es": "Ejemplo de oración en español"
 }`
-    const prompt = guide ? guidePrompt : vocabularyPrompt
+    const prompt = `${guide ? guidePrompt : vocabularyPrompt}${buildVisionInstruction(images.length)}`
+    const imageParts = images.map(image => ({
+        inlineData: { mimeType: image.mimeType, data: image.data }
+    }))
 
     const modelsToTry = GEMINI_TEXT_MODELS
 
     const requestBody = {
-        contents: [{ parts: [{ text: prompt }] }],
+        contents: [{ parts: [{ text: prompt }, ...imageParts] }],
         generationConfig: {
             temperature: 0.7,
             topK: 40,
@@ -438,7 +442,7 @@ Responde SOLO en formato JSON válido, sin texto adicional:
     return null
 }
 
-async function generateWithAI(word, { guide = false } = {}) {
+async function generateWithAI(word, { guide = false, images = [] } = {}) {
     if (!store.currentUser) {
         alert('🔐 Debes iniciar sesión para usar la IA')
         return null
@@ -447,6 +451,8 @@ async function generateWithAI(word, { guide = false } = {}) {
     const preferred = getPreferredProvider()
     const hasGemini = hasApiKey('gemini')
     const hasGroq = hasApiKey('groq')
+    const attachedImages = Array.isArray(images) ? images : []
+    const hasImages = attachedImages.length > 0
 
     if (!hasGemini && !hasGroq) {
         const shouldConfigure = confirm(
@@ -458,8 +464,19 @@ async function generateWithAI(word, { guide = false } = {}) {
         return null
     }
 
+    if (hasImages && !hasGemini) {
+        alert(
+            '🖼️ Para analizar imágenes necesitas configurar una API key de Gemini.\n\n' +
+            'Groq solo procesa texto. Configura Gemini y vuelve a intentarlo.'
+        )
+        return null
+    }
+
     let providersToTry = []
-    if (preferred === 'groq' && hasGroq) {
+    if (hasImages) {
+        // Solo Gemini admite imágenes; no caemos a Groq para no ignorarlas.
+        providersToTry.push('gemini')
+    } else if (preferred === 'groq' && hasGroq) {
         providersToTry.push('groq')
         if (hasGemini) providersToTry.push('gemini')
     } else if (preferred === 'gemini' && hasGemini) {
@@ -474,9 +491,11 @@ async function generateWithAI(word, { guide = false } = {}) {
 
     const deadline = Date.now() + (guide ? GUIDE_TOTAL_BUDGET_MS : AI_TOTAL_BUDGET_MS)
     const aiStatus = beginAIRequest(
-        guide
-            ? 'Solicitando a la IA… preparando tu guía y tarjetas.'
-            : 'Solicitando a la IA… buscando la información de la palabra.'
+        hasImages
+            ? `Solicitando a la IA… analizando ${attachedImages.length} ${attachedImages.length === 1 ? 'imagen' : 'imágenes'} y preparando tu guía.`
+            : guide
+                ? 'Solicitando a la IA… preparando tu guía y tarjetas.'
+                : 'Solicitando a la IA… buscando la información de la palabra.'
     )
 
     try {
@@ -489,7 +508,7 @@ async function generateWithAI(word, { guide = false } = {}) {
 
             let result = provider === 'groq'
                 ? await generateWithGroq(word, apiKey, guide, deadline)
-                : await generateWithGemini(word, apiKey, guide, deadline)
+                : await generateWithGemini(word, apiKey, guide, deadline, attachedImages)
 
             if (result && result.error === 'invalid_key') {
                 removeApiKey(provider)
@@ -505,7 +524,9 @@ async function generateWithAI(word, { guide = false } = {}) {
         aiStatus.end()
     }
 
-    alert('❌ Ningún proveedor de IA respondió a tiempo o devolvió un resultado válido.\n\nRevisa la consola (F12) para más detalles o inténtalo de nuevo en unos segundos.')
+    alert(hasImages
+        ? '❌ Gemini no pudo analizar las imágenes a tiempo o devolvió un resultado válido.\n\nRevisa la consola (F12) para más detalles o inténtalo de nuevo en unos segundos.'
+        : '❌ Ningún proveedor de IA respondió a tiempo o devolvió un resultado válido.\n\nRevisa la consola (F12) para más detalles o inténtalo de nuevo en unos segundos.')
     return null
 }
 
