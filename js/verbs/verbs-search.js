@@ -6,7 +6,7 @@ import {
     verbSortState, verbPaginationState,
     setPaginationState
 } from './verbs-state.js'
-import { renderVerbTable, renderVerbCategories, openVerbCategory, showVerbAIPreview, VERB_FIELDS } from './verbs-render.js'
+import { renderVerbTable, renderVerbCategories, openVerbCategory, showVerbAIPreview, VERB_FIELDS, buildVerbCell, decorateVerbCells } from './verbs-render.js'
 import { sortVerbs } from './verbs-sort.js'
 import { renderVerbPagination } from './verbs-pagination.js'
 import { filterFavoriteVerbs } from './verbs-render.js'
@@ -117,37 +117,24 @@ window.searchVerbs = function () {
     const pageData = results.slice(start, start + verbPaginationState.itemsPerPage)
 
     const { buildSearchRows } = buildSearchRowsHelper(pageData)
-    if (resultsTbody) resultsTbody.innerHTML = buildSearchRows
+    if (resultsTbody) {
+        resultsTbody.innerHTML = buildSearchRows
+        decorateVerbCells(resultsTbody)
+    }
 
     renderVerbPagination()
 }
 
 function buildSearchRowsHelper(pageData) {
-    const SPANISH_FIELDS = new Set([
-        'translation', 'translation_ps', 'translation_pp',
-        'translation_adj', 'translation_adv', 'translation_noun',
-        'example_adj_translation', 'example_adv_translation', 'example_noun_translation'
-    ])
-
     const buildSearchRows = pageData.map(v => {
         const cells = VERB_FIELDS.map(f => {
             const value = v[f.key] || ''
-            const escaped = String(value).replace(/"/g, '&quot;').replace(/'/g, '&#39;')
-            const lang = SPANISH_FIELDS.has(f.key) ? 'es-ES' : 'en-US'
 
             if (f.isCategory) {
                 return `<td class="border-b px-4 py-3 text-sm font-medium text-gray-700">${value || 'Sin Categoría'}</td>`
             }
 
-            return `<td
-                class="editable-cell border-b px-4 py-3 hover:bg-gray-50 cursor-pointer text-sm"
-                data-verb-id="${v.id}"
-                data-field="${f.key}"
-                data-audio-text="${escaped}"
-                data-audio-lang="${lang}"
-                ondblclick="window.editVerbCell(this, '${f.key}', ${v.id})"
-                onclick="window.playVerbAudio(this)"
-            >${value || '<span class="text-gray-400">—</span>'}</td>`
+            return buildVerbCell(v, f)
         }).join('')
 
         const favorite = store.favoriteSet.has(`verb:${String(v.id)}`)

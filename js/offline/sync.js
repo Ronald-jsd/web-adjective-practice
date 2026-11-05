@@ -18,12 +18,10 @@ import {
     clearAllOfflineData
 } from "./db.js";
 
-const RETRYABLE_STATUS = new Set([0, 401, 408, 425, 429]);
+const RETRYABLE_STATUS = new Set([401, 408, 425, 429]);
 const RETRYABLE_CODES = new Set([
     "PGRST301",
     "PGRST302",
-    "PGRST204", // columna ausente: no se descarta el cambio
-    "42703",    // columna ausente (Postgres)
     "428C9",    // id explícito rechazado por una columna identity ALWAYS
     "57014",
     "53300",
@@ -154,13 +152,14 @@ export async function flushOutbox(options = {}) {
     try {
         const entries = await listOutboxEntries();
         entries.sort((a, b) => (a.id || 0) - (b.id || 0));
+        const context = { refreshed: false };
 
         for (const entry of entries) {
             const currentUser = getUser();
             if (!currentUser) break;
             if (entry.userId && entry.userId !== currentUser) continue;
 
-            const outcome = await sendEntry(entry);
+            const outcome = await sendEntry(entry, context);
             if (outcome.ok) {
                 await removeOutboxEntry(entry.id);
                 processed += 1;
@@ -177,9 +176,15 @@ export async function flushOutbox(options = {}) {
                     lastError: outcome.message,
                     lastAttemptAt: Date.now()
                 });
-                // Sin red (o con el servidor caído) no tiene sentido seguir
-                // intentando el resto de la cola en este momento.
-                break;
+                console.warn(
+                    `[offline] No se pudo sincronizar "${entry.description || entry.table}":`,
+                    outcome.message
+                );
+                // Sin red, con el servidor caído o con límite de peticiones no
+                // tiene sentido seguir. Otros errores reintentables (por
+                // ejemplo un token caducado) no deben bloquear al resto.
+                if (outcome.networkish || outcome.status === 429 || outcome.status >= 500) break;
+                continue;
             }
 
             // Error permanente: se descarta para que no bloquee la cola.
@@ -213,32 +218,79 @@ export async function flushOutbox(options = {}) {
     return { processed, failed, pending: remaining, error: lastError };
 }
 
-async function sendEntry(entry) {
-    try {
-        const table = client.from(entry.table);
-        let query;
+async function sendOnce(entry) {
+    const table = client.from(entry.table);
+    let query;
 
-        if (entry.action === "upsert") {
-            query = entry.conflict
-                ? table.upsert(entry.payload, { onConflict: entry.conflict })
-                : table.upsert(entry.payload);
-        } else if (entry.action === "update") {
-            query = table.update(entry.payload);
-            for (const [column, value] of Object.entries(entry.match || {})) {
-                query = query.eq(column, value);
-            }
-        } else if (entry.action === "delete") {
-            query = table.delete();
-            for (const [column, value] of Object.entries(entry.match || {})) {
-                query = query.eq(column, value);
-            }
-        } else {
-            return { ok: false, retry: false, message: `Acción desconocida: ${entry.action}` };
+    if (entry.action === "upsert") {
+        query = entry.conflict
+            ? table.upsert(entry.payload, { onConflict: entry.conflict })
+            : table.upsert(entry.payload);
+    } else if (entry.action === "update") {
+        query = table.update(entry.payload);
+        for (const [column, value] of Object.entries(entry.match || {})) {
+            query = query.eq(column, value);
+        }
+    } else if (entry.action === "delete") {
+        query = table.delete();
+        for (const [column, value] of Object.entries(entry.match || {})) {
+            query = query.eq(column, value);
+        }
+    } else {
+        return { ok: false, retry: false, message: `Acción desconocida: ${entry.action}` };
+    }
+
+    const { error } = await query;
+    if (!error) return { ok: true };
+    return classifySyncError(error);
+}
+
+function extractMissingColumn(message) {
+    const text = String(message || "");
+    return text.match(/Could not find the '([^']+)' column/i)?.[1]
+        || text.match(/column "([^"]+)" does not exist/i)?.[1]
+        || text.match(/column '([^']+)' does not exist/i)?.[1]
+        || null;
+}
+
+/* Si la tabla ya no tiene una columna del payload, se quita y se reintenta.
+ * Así un cambio antiguo no bloquea la cola para siempre. */
+function withoutMissingColumn(entry, error) {
+    if (!entry.payload || typeof entry.payload !== "object") return null;
+    if (!["PGRST204", "42703"].includes(error.code)) return null;
+    const column = extractMissingColumn(error.message);
+    if (!column || !Object.prototype.hasOwnProperty.call(entry.payload, column)) return null;
+    const payload = { ...entry.payload };
+    delete payload[column];
+    if (!Object.keys(payload).length) return null;
+    return { ...entry, payload };
+}
+
+async function sendEntry(entry, context = {}) {
+    try {
+        const outcome = await sendOnce(entry);
+        if (outcome.ok) return outcome;
+
+        const cleaned = withoutMissingColumn(entry, outcome);
+        if (cleaned) {
+            console.warn(`[offline] La columna "${extractMissingColumn(outcome.message)}" ya no existe; se omite en "${entry.description || entry.table}".`);
+            const retried = await sendOnce(cleaned);
+            return retried.ok ? { ok: true } : retried;
         }
 
-        const { error } = await query;
-        if (!error) return { ok: true };
-        return classifySyncError(error);
+        // Un token caducado se puede recuperar: se fuerza una sola renovación
+        // por vaciado de cola y se reintenta el cambio.
+        if (outcome.status === 401 && !context.refreshed && client?.auth?.refreshSession) {
+            context.refreshed = true;
+            try {
+                await client.auth.refreshSession();
+                return await sendEntry(entry, context);
+            } catch (refreshError) {
+                return classifySyncError(refreshError);
+            }
+        }
+
+        return outcome;
     } catch (error) {
         return classifySyncError(error);
     }
@@ -252,15 +304,18 @@ export function classifySyncError(error) {
     const networkish =
         name === "TypeError" ||
         name === "AbortError" ||
+        name === "AuthRetryableFetchError" ||
         /fetch|network|load failed|failed to fetch|timeout|timed out|offline/i.test(message);
 
+    // Un error de PostgREST sin estado HTTP (status 0) no es un fallo de red:
+    // puede ser una columna inexistente, un duplicado o una regla RLS. Antes
+    // se reintentaba para siempre y bloqueaba el resto de la cola.
     const retry =
         networkish ||
-        RETRYABLE_STATUS.has(status) ||
-        status >= 500 ||
+        (status > 0 && (RETRYABLE_STATUS.has(status) || status >= 500)) ||
         RETRYABLE_CODES.has(code);
 
-    return { ok: false, retry, status, code, message };
+    return { ok: false, retry, networkish, status, code, message };
 }
 
 export async function clearOfflineData() {

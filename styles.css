@@ -166,6 +166,158 @@
         box-shadow: 0 4px 20px rgba(245, 158, 11, 0.25);
     }
 
+    /* Celdas largas: se recortan a tres líneas y se abren en una ventana. */
+    #verbs-section .editable-cell,
+    #verbs-table-view .editable-cell,
+    #verbs-search-results .editable-cell {
+        position: relative;
+        vertical-align: top;
+    }
+
+    #verbs-section .verb-cell-content,
+    #verbs-table-view .verb-cell-content,
+    #verbs-search-results .verb-cell-content {
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        overflow-wrap: anywhere;
+        max-height: 4.8em;
+    }
+
+    #verbs-section .editable-cell.editing .verb-cell-content,
+    #verbs-table-view .editable-cell.editing .verb-cell-content,
+    #verbs-search-results .editable-cell.editing .verb-cell-content {
+        display: block;
+        -webkit-line-clamp: unset;
+        max-height: none;
+        overflow: visible;
+    }
+
+    #verbs-section .verb-cell-expand,
+    #verbs-table-view .verb-cell-expand,
+    #verbs-search-results .verb-cell-expand {
+        display: none;
+        position: absolute;
+        top: 4px;
+        right: 4px;
+        align-items: center;
+        justify-content: center;
+        width: 22px;
+        height: 22px;
+        padding: 0;
+        border-radius: 6px;
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        color: #64748b;
+        font-size: 0.8rem;
+        line-height: 1;
+        cursor: pointer;
+        box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12);
+    }
+
+    #verbs-section .editable-cell.is-truncated .verb-cell-content,
+    #verbs-table-view .editable-cell.is-truncated .verb-cell-content,
+    #verbs-search-results .editable-cell.is-truncated .verb-cell-content {
+        padding-right: 26px;
+    }
+
+    #verbs-section .editable-cell.editing .verb-cell-content,
+    #verbs-table-view .editable-cell.editing .verb-cell-content,
+    #verbs-search-results .editable-cell.editing .verb-cell-content {
+        padding-right: 0;
+    }
+
+    #verbs-section .editable-cell.is-truncated .verb-cell-expand,
+    #verbs-table-view .editable-cell.is-truncated .verb-cell-expand,
+    #verbs-search-results .editable-cell.is-truncated .verb-cell-expand {
+        display: inline-flex;
+    }
+
+    #verbs-section .editable-cell.editing .verb-cell-expand,
+    #verbs-table-view .editable-cell.editing .verb-cell-expand,
+    #verbs-search-results .editable-cell.editing .verb-cell-expand {
+        display: none;
+    }
+
+    #verbs-section .verb-cell-expand:hover,
+    #verbs-table-view .verb-cell-expand:hover,
+    #verbs-search-results .verb-cell-expand:hover {
+        color: #2563eb;
+        border-color: #93c5fd;
+    }
+
+    .verb-cell-viewer {
+        width: min(680px, calc(100vw - 32px));
+        max-height: min(80vh, 720px);
+        padding: 0;
+        border: 1px solid #e2e8f0;
+        border-radius: 16px;
+        box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
+        background: #fff;
+        color: #0f172a;
+        overflow: hidden;
+    }
+
+    .verb-cell-viewer::backdrop {
+        background: rgba(15, 23, 42, 0.45);
+    }
+
+    .verb-cell-viewer-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 16px 20px;
+        border-bottom: 1px solid #e2e8f0;
+        background: #f8fafc;
+    }
+
+    .verb-cell-viewer-head h3 {
+        margin: 0;
+        font-size: 1rem;
+        font-weight: 700;
+    }
+
+    .verb-cell-viewer-close {
+        border: 1px solid #e2e8f0;
+        background: #fff;
+        border-radius: 8px;
+        padding: 6px 12px;
+        font-size: 0.85rem;
+        cursor: pointer;
+    }
+
+    .verb-cell-viewer-body {
+        padding: 20px;
+        max-height: 55vh;
+        overflow: auto;
+        white-space: pre-wrap;
+        overflow-wrap: anywhere;
+        line-height: 1.7;
+        font-size: 0.95rem;
+    }
+
+    .verb-cell-viewer-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 8px;
+        padding: 12px 20px;
+        border-top: 1px solid #e2e8f0;
+        background: #f8fafc;
+    }
+
+    .verb-cell-viewer-edit {
+        border: 1px solid #bfdbfe;
+        background: #eff6ff;
+        color: #1d4ed8;
+        border-radius: 8px;
+        padding: 8px 14px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        cursor: pointer;
+    }
+
     #verbs-section table td:last-child,
     #verbs-table-view table td:last-child,
     #verbs-search-results table td:last-child {

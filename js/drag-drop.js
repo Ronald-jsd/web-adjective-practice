@@ -134,6 +134,11 @@ function initDragAndDrop(tbody, allItems, subcategoryId, refreshCallback) {
         const tgt = dragState.targetIndex
 
         if (src !== null && tgt !== null && src !== tgt && tgt >= 0 && tgt <= allItems.length) {
+            if (!window.confirm('¿Guardar el nuevo orden?')) {
+                dragState.sourceIndex = null
+                dragState.targetIndex = null
+                return
+            }
             showToast('Guardando orden...', 'info')
             const [movedItem] = allItems.splice(src, 1)
             allItems.splice(tgt, 0, movedItem)

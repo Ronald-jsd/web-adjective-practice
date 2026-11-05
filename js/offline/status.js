@@ -46,6 +46,7 @@ function render(state) {
 
     element.classList.remove("hidden", "is-offline", "is-pending", "is-syncing", "is-synced", "is-error");
     element.dataset.retry = "false";
+    element.title = state.lastError || "";
 
     if (state.syncing) {
         element.classList.add("is-syncing");

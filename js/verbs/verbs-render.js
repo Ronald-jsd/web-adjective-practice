@@ -87,27 +87,105 @@ function buildThead(includeCategory = true) {
     return `<tr><th class="px-3 py-3 text-center text-xs font-bold text-gray-600 uppercase">Importante</th>${cols}<th class="px-3 py-3 text-center text-xs font-bold text-gray-600 uppercase">Acciones</th></tr>`
 }
 
+/* Celda reutilizable por la tabla de categorías y la de búsqueda. El texto
+ * largo se recorta a tres líneas y se puede abrir en una ventana flotante. */
+export function buildVerbCell(v, f) {
+    const value = v[f.key] || ''
+    const escaped = String(value).replace(/"/g, '&quot;').replace(/'/g, '&#39;')
+    const lang = SPANISH_FIELDS.has(f.key) ? 'es-ES' : 'en-US'
+
+    return `<td
+        class="editable-cell border-b px-4 py-3 hover:bg-gray-50 cursor-pointer text-sm"
+        data-verb-id="${v.id}"
+        data-field="${f.key}"
+        data-audio-text="${escaped}"
+        data-audio-lang="${lang}"
+        ondblclick="window.editVerbCell(this, '${f.key}', ${v.id})"
+        onclick="window.playVerbAudio(this)"
+    ><div class="verb-cell-content">${value || '<span class="text-gray-400">—</span>'}</div><button type="button" class="verb-cell-expand" contenteditable="false" title="Ver contenido completo" aria-label="Ver contenido completo" onclick="event.stopPropagation(); window.openVerbCellViewer(this.closest('td'))" ondblclick="event.stopPropagation()">⤢</button></td>`
+}
+
+export function decorateVerbCells(root = document) {
+    root.querySelectorAll('.editable-cell').forEach(cell => {
+        const content = cell.querySelector('.verb-cell-content')
+        if (!content) return
+        const text = content.textContent.trim()
+        const clipped = content.scrollHeight > content.clientHeight + 2
+            || text.length > 110
+        cell.classList.toggle('is-truncated', clipped)
+    })
+}
+
+/* Ventana flotante con el contenido completo de una celda larga. */
+function openVerbCellViewer(cell) {
+    if (!cell) return
+    const field = cell.getAttribute('data-field') || ''
+    const label = VERB_FIELDS.find(item => item.key === field)?.label || 'Contenido'
+    const text = cell.getAttribute('data-audio-text') || cell.textContent.trim()
+
+    document.getElementById('verb-cell-viewer')?.remove()
+
+    const dialog = document.createElement('dialog')
+    dialog.id = 'verb-cell-viewer'
+    dialog.className = 'verb-cell-viewer'
+
+    const heading = document.createElement('div')
+    heading.className = 'verb-cell-viewer-head'
+    const title = document.createElement('h3')
+    title.textContent = label
+    const closeDialog = () => {
+        dialog.close()
+        dialog.remove()
+    }
+
+    const close = document.createElement('button')
+    close.type = 'button'
+    close.className = 'verb-cell-viewer-close'
+    close.textContent = 'Cerrar'
+    close.addEventListener('click', closeDialog)
+    heading.append(title, close)
+
+    const body = document.createElement('div')
+    body.className = 'verb-cell-viewer-body'
+    body.textContent = text || '—'
+
+    const actions = document.createElement('div')
+    actions.className = 'verb-cell-viewer-actions'
+    const edit = document.createElement('button')
+    edit.type = 'button'
+    edit.className = 'verb-cell-viewer-edit'
+    edit.textContent = '✏️ Editar'
+    edit.addEventListener('click', () => {
+        closeDialog()
+        window.editVerbCell?.(cell, field, cell.getAttribute('data-verb-id'))
+    })
+    actions.appendChild(edit)
+
+    dialog.append(heading, body, actions)
+    dialog.addEventListener('click', event => {
+        if (event.target === dialog) closeDialog()
+    })
+    dialog.addEventListener('cancel', event => {
+        event.preventDefault()
+        closeDialog()
+    })
+    document.body.appendChild(dialog)
+    dialog.showModal()
+}
+
+window.openVerbCellViewer = openVerbCellViewer
+
 function buildVerbRow(v, includeCategory = true) {
     const fields = VERB_FIELDS.filter(f => includeCategory || !f.isCategory)
 
     const cells = fields.map(f => {
         const value = v[f.key] || ''
-        const escaped = String(value).replace(/"/g, '&quot;').replace(/'/g, '&#39;')
-        const lang = SPANISH_FIELDS.has(f.key) ? 'es-ES' : 'en-US'
 
         if (f.isCategory) {
             return `<td class="border-b px-4 py-3 text-sm font-medium text-gray-700">${value || 'Sin Categoría'}</td>`
         }
 
-        return `<td
-            class="editable-cell border-b px-4 py-3 hover:bg-gray-50 cursor-pointer text-sm"
-            data-verb-id="${v.id}"
-            data-field="${f.key}"
-            data-audio-text="${escaped}"
-            data-audio-lang="${lang}"
-            ondblclick="window.editVerbCell(this, '${f.key}', ${v.id})"
-            onclick="window.playVerbAudio(this)"
-        >${value || '<span class="text-gray-400">—</span>'}</td>`
+        return buildVerbCell(v, f)
     }).join('')
 
     const deleteCell = store.currentUser
@@ -149,6 +227,7 @@ export function renderVerbTable(verbs, includeCategory = true) {
     }
 
     tbody.innerHTML = pageData.map(v => buildVerbRow(v, includeCategory)).join('')
+    decorateVerbCells(tbody)
     renderVerbPagination()
 }
 

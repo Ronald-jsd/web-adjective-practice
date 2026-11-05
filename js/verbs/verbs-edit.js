@@ -19,26 +19,44 @@ window.editVerbCell = function (cell, field, verbId) {
     setIsVerbEditing(true)
 
     const currentValue = cell.getAttribute('data-audio-text') || ''
+    const content = cell.querySelector('.verb-cell-content')
 
-    cell.contentEditable = true
-    cell.focus()
+    // Se edita solo el texto: el botón para abrir la ventana flotante queda
+    // fuera del área editable para que no se pueda borrar por accidente.
+    if (content) {
+        content.contentEditable = 'true'
+        content.focus()
+    } else {
+        cell.contentEditable = true
+        cell.focus()
+    }
     cell.classList.add('editing')
 
     const range = document.createRange()
-    range.selectNodeContents(cell)
+    range.selectNodeContents(content || cell)
     const selection = window.getSelection()
     selection.removeAllRanges()
     selection.addRange(range)
 
     const saveEdit = async () => {
         if (!isVerbEditing) return
+        if (content) content.contentEditable = 'false'
         cell.contentEditable = false
         cell.classList.remove('editing')
         setIsVerbEditing(false)
 
-        const newValue = cell.innerText.trim()
+        const rawValue = (content?.innerText ?? cell.innerText).trim()
+        const newValue = rawValue === '—' ? '' : rawValue
         if (newValue === currentValue) {
+            if (content) content.textContent = currentValue || '—'
             showToast('⚠️ Sin cambios para guardar', 'info')
+            return
+        }
+
+        // Al salir de la celda no se guarda por sorpresa: primero se confirma.
+        if (!window.confirm('¿Guardar los cambios en este campo?')) {
+            if (content) content.textContent = currentValue || '—'
+            cell.setAttribute('data-audio-text', currentValue)
             return
         }
 
@@ -123,25 +141,30 @@ window.editVerbCell = function (cell, field, verbId) {
                 'success'
             )
             cell.setAttribute('data-audio-text', newValue)
+            if (content) {
+                content.textContent = newValue || '—'
+                cell.classList.toggle('is-truncated', newValue.length > 110)
+            }
             if (verb) {
                 verb[field] = newValue
                 verb[dbField] = newValue
             }
         } catch (error) {
             showToast('Error al guardar: ' + error.message, 'error')
-            cell.innerText = currentValue || '—'
+            if (content) content.textContent = currentValue || '—'
         }
     }
 
     const cancelEdit = () => {
         if (!isVerbEditing) return
+        if (content) content.contentEditable = 'false'
         cell.contentEditable = false
         cell.classList.remove('editing')
         setIsVerbEditing(false)
-        cell.innerText = currentValue || '—'
+        if (content) content.textContent = currentValue || '—'
     }
 
-    cell.addEventListener('blur', saveEdit, { once: true })
+    ;(content || cell).addEventListener('blur', saveEdit, { once: true })
     cell.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault()
