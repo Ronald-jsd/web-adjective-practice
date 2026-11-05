@@ -89,7 +89,6 @@ function setupEventListeners() {
     }
 
     if (searchInput) {
-        searchInput.value = "";
         searchInput.addEventListener("input", async (e) => {
             if (clearBtn) clearBtn.classList.toggle("hidden", !e.target.value);
             performSearch(e.target.value);
@@ -140,6 +139,11 @@ window.loadVerbsFromSupabase = async function (forceRefresh) {
 };
 
 async function initApp() {
+    // Los listeners de la interfaz se conectan antes de las tareas lentas
+    // (sesión, datos y práctica) para que el buscador responda desde el
+    // primer momento y no borre lo que el usuario escribió mientras carga.
+    setupEventListeners();
+
     initOfflineSync(supabase, { getUserId: () => store.currentUser?.id || null });
     initSyncStatus();
     initPWA();
@@ -151,6 +155,9 @@ async function initApp() {
     const data = await loadCategoriesFromSupabase();
     store.categoriesData = data;
     renderCategories(data);
+    // Si el usuario ya había escrito en el buscador, se repite la búsqueda
+    // ahora que los datos están disponibles.
+    if (store.lastSearchQuery?.trim()) performSearch(store.lastSearchQuery);
     await initializePractice(data, { supabase, userId: store.currentUser?.id });
     window.refreshPracticeCategories = async function (options = {}) {
         await initializePractice(store.categoriesData, {
@@ -173,7 +180,6 @@ async function initApp() {
         });
     };
     updateAIButton();
-    setupEventListeners();
 
     setTimeout(() => {
         initSearchModeListeners();

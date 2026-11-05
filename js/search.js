@@ -29,9 +29,9 @@ function performSearch(query) {
         }
     }
 
-    store.categoriesData.forEach(cat => {
-        cat.subcategories.forEach(sub => {
-            sub.items.forEach(item => {
+    ;(store.categoriesData || []).forEach(cat => {
+        ;(cat.subcategories || []).forEach(sub => {
+            ;(sub.items || []).forEach(item => {
                 const wordMatch = matchesSearch(item[0])
                 const spanishMatch = matchesSearch(item[2])
 

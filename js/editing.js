@@ -49,7 +49,17 @@ async function refreshCategoryViewFromLocalCopy() {
     const newData = await loadCategoriesFromSupabase(true, { preferSnapshot: true })
     store.categoriesData = newData
 
-    if (!store.currentCategoryData) return newData
+    // Si el usuario está viendo los resultados de una búsqueda, se refrescan
+    // con los datos locales recién actualizados (sin cambiar de vista).
+    const searchDiv = document.getElementById('search-results')
+    if (searchDiv && !searchDiv.classList.contains('hidden')) {
+        window.refreshSearchResults?.()
+        return newData
+    }
+
+    const categoryView = document.getElementById('category-view')
+    const categoryViewVisible = categoryView && !categoryView.classList.contains('hidden')
+    if (!store.currentCategoryData || !categoryViewVisible) return newData
 
     const updatedCategory = newData.find(category => String(category.id) === String(store.currentCategoryData.id))
     if (updatedCategory) {

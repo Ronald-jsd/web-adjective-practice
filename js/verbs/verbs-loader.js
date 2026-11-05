@@ -103,6 +103,13 @@ export async function loadVerbsFromSupabase(forceRefresh = false) {
         const { renderVerbCategories } = await import('./verbs-render.js')
         renderVerbCategories()
 
+        // Si el usuario ya había escrito en el buscador de verbos mientras
+        // cargaban los datos, se repite la búsqueda para mostrar resultados.
+        const searchInput = document.getElementById('verbs-search-input')
+        if (searchInput?.value?.trim() && typeof window.searchVerbs === 'function') {
+            window.searchVerbs()
+        }
+
         return mapped
     } catch (error) {
         console.error('Error cargando verbos:', error)
