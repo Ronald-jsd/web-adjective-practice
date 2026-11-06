@@ -857,7 +857,7 @@ async function saveQueryCards(query, cards, operation = 'update') {
 async function refreshSavedAIItems() {
     if (!store.currentUser) return
     await loadUserCustomItems()
-    const categories = await loadCategoriesFromSupabase(true)
+    const categories = await loadCategoriesFromSupabase(false)
     store.categoriesData = categories
     renderCategories(categories)
     await initializePractice(categories, {

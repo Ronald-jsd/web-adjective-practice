@@ -4,7 +4,7 @@ import { SUPABASE_URL, SUPABASE_ANON_KEY, store } from "./config.js";
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 import { checkUser, loadUserCustomItems, initAuthSession } from "./auth.js";
-import { renderCategories, loadCategoriesFromSupabase } from "./data.js";
+import { renderCategories, loadCategoriesFromSupabase, refreshCategoriesFromLocalCustomItems } from "./data.js";
 import { performSearch, initSearchModeListeners } from "./search.js";
 import { closeCategoryView } from "./category-view.js";
 import { updateAIButton } from "./ai.js";
@@ -22,25 +22,28 @@ window.toggleVocabularyFavorite = (itemType, itemId) =>
     toggleFavorite(supabase, itemType, itemId);
 window.setNotionPracticeCategories = setNotionPracticeCategories;
 
-window.addEventListener("personal-vocabulary-changed", async () => {
+window.refreshPersonalVocabulary = async function () {
     if (!store.currentUser) return;
-    try {
-        await loadUserCustomItems();
-        const categories = await loadCategoriesFromSupabase(true);
-        store.categoriesData = categories;
-        renderCategories(categories);
-        await initializePractice(categories, {
-            supabase,
-            userId: store.currentUser.id,
-            refreshVerbs: false,
-            refreshAIQueries: false,
-            refreshPersonalVocabulary: true,
-            refreshNotion: false
-        });
-    } catch (error) {
-        console.error("No se pudo actualizar la práctica con tu vocabulario:", error);
-        showToast("Tu vocabulario se guardó, pero no se pudo actualizar la práctica. Recarga la página.", "warning");
-    }
+    await loadUserCustomItems({ preferCache: true });
+    const categories = await refreshCategoriesFromLocalCustomItems() || store.categoriesData;
+    initializePractice(categories, {
+        supabase,
+        userId: store.currentUser.id,
+        refreshVerbs: false,
+        refreshAIQueries: false,
+        refreshPersonalVocabulary: true,
+        refreshNotion: false
+    }).catch((error) => {
+        console.warn("No se pudo actualizar la práctica con tu vocabulario:", error);
+        showToast("Tu vocabulario se guardó, pero no se pudo actualizar la práctica.", "warning");
+    });
+};
+
+window.addEventListener("personal-vocabulary-changed", () => {
+    window.refreshPersonalVocabulary?.().catch((error) => {
+        console.error("No se pudo actualizar tu vocabulario:", error);
+        showToast("Tu vocabulario se guardó, pero no se pudo actualizar la vista.", "warning");
+    });
 });
 
 window.addEventListener("personal-sentences-changed", async () => {
@@ -96,12 +99,10 @@ function setupEventListeners() {
     }
 
     if (clearBtn) {
-        clearBtn.addEventListener("click", async () => {
+        clearBtn.addEventListener("click", () => {
             if (searchInput) searchInput.value = "";
             clearBtn.classList.add("hidden");
-            const data = await loadCategoriesFromSupabase(true);
-            store.categoriesData = data;
-            renderCategories(data);
+            renderCategories(store.categoriesData);
         });
     }
 
@@ -138,6 +139,30 @@ window.loadVerbsFromSupabase = async function (forceRefresh) {
     }
 };
 
+/* Actualiza las categorías desde la nube sin bloquear la interfaz. La copia
+ * local ya está visible; cuando llega la respuesta se refresca la vista
+ * respetando la búsqueda o la categoría que el usuario esté viendo. */
+async function refreshCategoriesInBackground() {
+    try {
+        const fresh = await loadCategoriesFromSupabase(true, { silent: true });
+        if (!fresh?.length) return;
+        store.categoriesData = fresh;
+
+        const searchDiv = document.getElementById("search-results");
+        if (searchDiv && !searchDiv.classList.contains("hidden")) {
+            window.refreshSearchResults?.();
+            return;
+        }
+
+        const categoryView = document.getElementById("category-view");
+        if (!categoryView || categoryView.classList.contains("hidden")) {
+            renderCategories(fresh);
+        }
+    } catch (error) {
+        console.warn("No se pudieron actualizar las categorías en segundo plano:", error);
+    }
+}
+
 async function initApp() {
     // Los listeners de la interfaz se conectan antes de las tareas lentas
     // (sesión, datos y práctica) para que el buscador responda desde el
@@ -158,6 +183,7 @@ async function initApp() {
     // Si el usuario ya había escrito en el buscador, se repite la búsqueda
     // ahora que los datos están disponibles.
     if (store.lastSearchQuery?.trim()) performSearch(store.lastSearchQuery);
+    refreshCategoriesInBackground();
     await initializePractice(data, { supabase, userId: store.currentUser?.id });
     window.refreshPracticeCategories = async function (options = {}) {
         await initializePractice(store.categoriesData, {

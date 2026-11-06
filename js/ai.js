@@ -5,7 +5,6 @@ import {
     AI_PROVIDER_STORAGE
 } from './config.js'
 import { showToast } from './cache.js'
-import { loadUserCustomItems } from './auth.js'
 import { renderCategories } from './data.js'
 import {
     AI_MODEL_TIMEOUT_MS,
@@ -818,7 +817,7 @@ async function saveAIResult() {
 
     store.currentAIData = null
 
-    await loadUserCustomItems()
+    await window.refreshPersonalVocabulary?.()
 
     const aiContainer = document.getElementById('ai-suggestion-container')
     if (aiContainer) {

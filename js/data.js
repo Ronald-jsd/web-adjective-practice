@@ -8,6 +8,109 @@ async function readLocalCategories() {
     return loadFromCache() || await readSnapshot('categories') || null
 }
 
+function normalizeTitle(value) {
+    return String(value ?? '').trim().toLowerCase()
+}
+
+function formatCustomItem(item) {
+    return [
+        item.word || '',
+        item.pronunciation || '',
+        item.spanish || '',
+        item.example_en || '',
+        item.example_es || '',
+        `custom_${item.id}`,
+        item.id,
+        item.sort_order || 0
+    ]
+}
+
+function findCategory(categories, value) {
+    if (value === null || value === undefined || value === '') return null
+    const key = normalizeTitle(value)
+    return categories.find(category =>
+        String(category.id) === String(value) || normalizeTitle(category.title) === key
+    ) || null
+}
+
+function findSubcategory(category, value) {
+    if (!category || value === null || value === undefined || value === '') return null
+    const key = normalizeTitle(value)
+    return (category.subcategories || []).find(subcategory =>
+        String(subcategory.id) === String(value) || normalizeTitle(subcategory.title) === key
+    ) || null
+}
+
+function getOrCreateMisExpresiones(category) {
+    let subcategory = (category.subcategories || []).find(sub => sub.id === 3012)
+    if (!subcategory) {
+        subcategory = {
+            id: 3012,
+            title: '📝 Mis Expresiones',
+            color: 'bg-purple-100',
+            items: []
+        }
+        category.subcategories.push(subcategory)
+    }
+    return subcategory
+}
+
+/* Coloca las tarjetas personales en la categoría/subcategoría elegida al
+ * guardarlas. Antes todas se amontonaban en "Mis Expresiones", así que una
+ * palabra creada con IA no aparecía en la categoría que el usuario eligió. */
+function mergeCustomItemsIntoCategories(categories, customItems, options = {}) {
+    if (!Array.isArray(categories)) return categories
+    const replace = options.replace !== false
+    if (!replace && (!customItems || customItems.length === 0)) return categories
+
+    // Quita las tarjetas personales de la copia anterior para no duplicarlas.
+    for (const category of categories) {
+        for (const subcategory of category.subcategories || []) {
+            subcategory.items = (subcategory.items || []).filter(item =>
+                !String(item?.[5] ?? '').startsWith('custom_')
+            )
+        }
+    }
+
+    if (!customItems || customItems.length === 0) return categories
+
+    const grammarCategory = categories.find(category => category.id === 'grammar') || categories[0]
+
+    for (const item of customItems) {
+        const category = findCategory(categories, item.category) || grammarCategory
+        if (!category) continue
+
+        let subcategory = findSubcategory(category, item.subcategory)
+        // El vocabulario de "Mi aprendizaje" se sigue mostrando en
+        // "Mis Expresiones" para no romper la vista existente.
+        if (!subcategory && normalizeTitle(item.subcategory) === 'mi vocabulario') {
+            subcategory = getOrCreateMisExpresiones(grammarCategory || category)
+        }
+        if (!subcategory) {
+            subcategory = getOrCreateMisExpresiones(category)
+        }
+
+        subcategory.items = subcategory.items || []
+        subcategory.items.push(formatCustomItem(item))
+    }
+
+    return categories
+}
+
+async function withLocalCustomItems(categories) {
+    if (!categories || !store.currentUser) return categories
+    const customItems = await readCachedRows(
+        TABLES.customItems,
+        row => row.user_id === store.currentUser.id
+    )
+    if (!customItems.length) return categories
+
+    mergeCustomItemsIntoCategories(categories, customItems, { replace: false })
+    saveToCache(categories)
+    await cacheSnapshot('categories', categories)
+    return categories
+}
+
 async function loadCategoriesFromSupabase(forceRefresh = false, options = {}) {
     console.log('Cargando datos...')
 
@@ -15,7 +118,7 @@ async function loadCategoriesFromSupabase(forceRefresh = false, options = {}) {
         const snapshot = await readSnapshot('categories')
         if (snapshot) {
             console.log('Usando copia local actualizada')
-            return snapshot
+            return withLocalCustomItems(snapshot)
         }
     }
 
@@ -23,26 +126,45 @@ async function loadCategoriesFromSupabase(forceRefresh = false, options = {}) {
         const cachedData = loadFromCache()
         if (cachedData) {
             console.log('Usando caché')
-            return cachedData
+            return withLocalCustomItems(cachedData)
+        }
+
+        // Sin caché reciente se usa la copia persistente para no bloquear la
+        // interfaz; la actualización desde la nube se hace en segundo plano.
+        const snapshot = await readSnapshot('categories')
+        if (snapshot) {
+            console.log('Usando copia local')
+            return withLocalCustomItems(snapshot)
         }
     }
 
-    showLoading('loading-indicator', 'Cargando datos...')
+    if (!options.silent) {
+        showLoading('loading-indicator', 'Cargando datos...')
+    }
 
     try {
-        const { data: categories, error } = await supabase
-            .from('categories')
-            .select(`*, subcategories:subcategories(*, items:items(*))`)
-            .order('display_order')
+        const controller = new AbortController()
+        const timeoutId = setTimeout(() => controller.abort(), options.timeoutMs || 15000)
+        let categories
+        let error
+        try {
+            ({ data: categories, error } = await supabase
+                .from('categories')
+                .select(`*, subcategories:subcategories(*, items:items(*))`)
+                .order('display_order')
+                .abortSignal(controller.signal))
+        } finally {
+            clearTimeout(timeoutId)
+        }
 
         if (error) {
             console.error('❌ Error:', error)
             const cachedData = await readLocalCategories()
-            if (cachedData) return cachedData
+            if (cachedData) return withLocalCustomItems(cachedData)
             return []
         }
 
-        const transformedData = categories.map(cat => ({
+        const transformedData = (categories || []).map(cat => ({
             id: cat.id,
             title: cat.title,
             subtitle: cat.subtitle,
@@ -74,11 +196,20 @@ async function loadCategoriesFromSupabase(forceRefresh = false, options = {}) {
             console.log('👤 Cargando items para usuario:', store.currentUser.id)
 
             try {
-                const { data: networkCustomItems, error: customError } = await supabase
-                    .from('user_custom_items')
-                    .select('*')
-                    .eq('user_id', store.currentUser.id)
-                    .order('sort_order', { ascending: true })
+                const customController = new AbortController()
+                const customTimeoutId = setTimeout(() => customController.abort(), 10000)
+                let networkCustomItems = null
+                let customError = null
+                try {
+                    ({ data: networkCustomItems, error: customError } = await supabase
+                        .from('user_custom_items')
+                        .select('*')
+                        .eq('user_id', store.currentUser.id)
+                        .order('sort_order', { ascending: true })
+                        .abortSignal(customController.signal))
+                } finally {
+                    clearTimeout(customTimeoutId)
+                }
 
                 let customItems = networkCustomItems
 
@@ -101,46 +232,14 @@ async function loadCategoriesFromSupabase(forceRefresh = false, options = {}) {
                 }
 
                 console.log(`📦 Items personalizados encontrados: ${customItems?.length || 0}`)
-
-                const grammarCat = transformedData.find(c => c.id === 'grammar')
-
-                if (grammarCat) {
-                    let misExp = grammarCat.subcategories.find(s => s.id === 3012)
-
-                    if (!misExp) {
-                        misExp = {
-                            id: 3012,
-                            title: '📝 Mis Expresiones',
-                            color: 'bg-purple-100',
-                            items: []
-                        }
-                        grammarCat.subcategories.push(misExp)
-                        console.log('✅ Subcategoría creada')
-                    }
-
-                    if (customItems && customItems.length > 0) {
-                        const formattedItems = customItems.map(item => [
-                            item.word || '',
-                            item.pronunciation || '',
-                            item.spanish || '',
-                            item.example_en || '',
-                            item.example_es || '',
-                            `custom_${item.id}`,
-                            item.id,
-                            item.sort_order || 0
-                        ])
-
-                        misExp.items = formattedItems
-                        console.log(`✅ ${formattedItems.length} items asignados a "Mis Expresiones"`)
-                    } else {
-                        misExp.items = []
-                        console.log('📭 No hay items personalizados')
-                    }
-
-                    console.log(`📊 FINAL - Items en Mis Expresiones: ${misExp.items.length}`)
-                }
+                mergeCustomItemsIntoCategories(transformedData, customItems, { replace: true })
             } catch (err) {
                 console.error('❌ Error:', err)
+                const customItems = await readCachedRows(
+                    TABLES.customItems,
+                    row => row.user_id === store.currentUser.id
+                )
+                mergeCustomItemsIntoCategories(transformedData, customItems, { replace: false })
             }
         } else {
             console.log('👤 Usuario NO logueado - store.currentUser es null')
@@ -154,12 +253,12 @@ async function loadCategoriesFromSupabase(forceRefresh = false, options = {}) {
         console.error('❌ Error general:', err)
         const cachedData = await readLocalCategories()
         if (cachedData) {
-            showToast('Usando datos locales (sin conexión)', 'info')
-            return cachedData
+            if (!options.silent) showToast('Usando datos locales (sin conexión)', 'info')
+            return withLocalCustomItems(cachedData)
         }
         return []
     } finally {
-        hideLoading('loading-indicator')
+        if (!options.silent) hideLoading('loading-indicator')
     }
 }
 
@@ -172,6 +271,43 @@ async function updateCachedCategories(mutator) {
     await cacheSnapshot('categories', snapshot)
     saveToCache(snapshot)
     return snapshot
+}
+
+/* Reconstruye la vista de categorías usando el espejo local de las tarjetas
+ * personales. Es instantáneo y evita descargar todas las categorías cada vez
+ * que se guarda, edita o elimina una palabra propia. */
+async function refreshCategoriesFromLocalCustomItems() {
+    const base = (await readSnapshot('categories')) || loadFromCache() || store.categoriesData
+    if (!base) return store.categoriesData
+
+    const customItems = store.currentUser
+        ? await readCachedRows(TABLES.customItems, row => row.user_id === store.currentUser.id)
+        : []
+
+    mergeCustomItemsIntoCategories(base, customItems, { replace: true })
+    saveToCache(base)
+    await cacheSnapshot('categories', base)
+    store.categoriesData = base
+
+    const searchDiv = document.getElementById('search-results')
+    const categoryView = document.getElementById('category-view')
+
+    if (searchDiv && !searchDiv.classList.contains('hidden')) {
+        window.refreshSearchResults?.()
+    } else if (categoryView && !categoryView.classList.contains('hidden') && store.currentCategoryData) {
+        const updatedCategory = base.find(category =>
+            String(category.id) === String(store.currentCategoryData.id)
+        )
+        if (updatedCategory) {
+            store.currentCategoryData = updatedCategory
+            const { openCategoryView } = await import('./category-view.js')
+            openCategoryView(updatedCategory)
+        }
+    } else {
+        renderCategories(base)
+    }
+
+    return base
 }
 
 function renderCategories(data) {
@@ -203,15 +339,11 @@ function renderCategories(data) {
         }
         const totalItems = cat.subcategories.reduce((acc, sub) => acc + sub.items.length, 0)
 
-        const hasCustomSub = cat.subcategories.some(sub =>
-            sub.id === 3012 && sub.items.length > 0
-        )
-
-        let customCount = 0
-        if (hasCustomSub) {
-            const misExp = cat.subcategories.find(sub => sub.id === 3012)
-            customCount = misExp ? misExp.items.length : 0
-        }
+        const customCount = cat.subcategories.reduce((acc, sub) =>
+            acc + (sub.items || []).filter(item =>
+                String(item?.[5] ?? '').startsWith('custom_')
+            ).length, 0)
+        const hasCustomSub = customCount > 0
 
         card.innerHTML = `
             <div class="text-4xl mb-2">${cat.icon || '📚'}</div>
@@ -229,4 +361,4 @@ function renderCategories(data) {
     if (loading) loading.classList.add('hidden')
 }
 
-export { loadCategoriesFromSupabase, renderCategories, updateCachedCategories }
+export { loadCategoriesFromSupabase, renderCategories, updateCachedCategories, refreshCategoriesFromLocalCustomItems }
