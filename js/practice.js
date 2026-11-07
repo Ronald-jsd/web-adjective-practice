@@ -875,7 +875,7 @@ async function initializePractice(categories = [], options = {}) {
         try {
             const { data, error } = await options.supabase
                 .from("my_sentences")
-                .select("id,english_text,spanish_translation,topic_tags,reason_for_saving,grammar_pattern,notes,review_box,next_review_at,total_attempts,total_failures,consecutive_successes,last_reviewed_at,created_at,updated_at")
+                .select("id,english_text,spanish_translation,topic_tags,reason_for_saving,grammar_pattern,grammar_pattern_translation,notes,review_box,next_review_at,total_attempts,total_failures,consecutive_successes,last_reviewed_at,created_at,updated_at")
                 .eq("user_id", userId)
                 .order("created_at", { ascending: false });
             if (error) throw error;

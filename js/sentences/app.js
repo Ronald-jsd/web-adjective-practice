@@ -119,6 +119,15 @@ function renderSentenceList(items = state.sentences) {
             meta.append(translation)
         }
         content.append(sentenceHeading, meta)
+        if (sentence.grammarPattern || sentence.grammarPatternTranslation) {
+            const pattern = document.createElement("p")
+            pattern.className = "sentence-pattern"
+            pattern.textContent = [
+                sentence.grammarPattern ? `Patrón: ${sentence.grammarPattern}` : "",
+                sentence.grammarPatternTranslation ? `→ ${sentence.grammarPatternTranslation}` : ""
+            ].filter(Boolean).join(" ")
+            content.append(pattern)
+        }
         if (sentence.notes) {
             const notesWrap = document.createElement("div")
             notesWrap.className = "sentence-notes"
@@ -352,7 +361,7 @@ function renderAll() {
 
 function filteredSentences() {
     const query = byId("search-input").value.trim().toLowerCase()
-    return state.sentences.filter(sentence => `${sentence.englishText} ${sentence.spanishTranslation} ${sentence.topicTags.join(" ")}`.toLowerCase().includes(query))
+    return state.sentences.filter(sentence => `${sentence.englishText} ${sentence.spanishTranslation} ${sentence.grammarPattern} ${sentence.grammarPatternTranslation} ${sentence.notes} ${sentence.topicTags.join(" ")}`.toLowerCase().includes(query))
 }
 
 function filteredVocabulary() {
@@ -366,6 +375,7 @@ function beginEdit(sentence) {
     form.elements.spanishTranslation.value = sentence.spanishTranslation
     form.elements.reasonForSaving.value = sentence.reasonForSaving
     form.elements.grammarPattern.value = sentence.grammarPattern
+    form.elements.grammarPatternTranslation.value = sentence.grammarPatternTranslation || ""
     form.elements.notes.value = sentence.notes || ""
     form.querySelectorAll('[name="topicTags"]').forEach(input => { input.checked = sentence.topicTags.includes(input.value) })
     byId("form-title").textContent = "Edit your sentence"
@@ -481,6 +491,7 @@ function setupEvents() {
             topicTags,
             reasonForSaving: form.elements.reasonForSaving.value,
             grammarPattern: form.elements.grammarPattern.value || suggestGrammarPattern(sentenceText),
+            grammarPatternTranslation: form.elements.grammarPatternTranslation.value,
             notes: form.elements.notes.value
         }
         if (!sentence.reasonForSaving) return showNotice("Choose a reason for saving this sentence.", true)
@@ -576,43 +587,40 @@ function setupEvents() {
         const pattern = byId("sentence-form").elements.grammarPattern
         if (!pattern.value) pattern.value = suggestGrammarPattern(event.target.value)
     })
-    byId("translate-button").addEventListener("click", async event => {
+    byId("sentence-ai-button").addEventListener("click", async event => {
         const button = event.currentTarget
-        const status = byId("translation-status")
-        const sentence = byId("sentence-form").elements.englishText.value.trim()
-        if (!sentence) {
-            status.textContent = "Escribe primero la frase en inglés."
+        const form = byId("sentence-form")
+        const status = byId("sentence-ai-status")
+        const sentence = form.elements.englishText.value.trim()
+        const pattern = form.elements.grammarPattern.value.trim()
+        if (!sentence && !pattern) {
+            status.textContent = "Escribe primero una frase o un patrón en inglés o español."
+            form.elements.englishText.focus()
             return
         }
 
         button.disabled = true
-        button.textContent = "Preparando…"
-        status.textContent = "La IA está corrigiendo la frase y preparando una traducción natural."
+        button.textContent = "Completando…"
+        status.textContent = "La IA está completando la frase, la traducción, el patrón y las notas."
         try {
-            const { recommendEnglishSentence } = await import("../ai-translation.js")
-            const recommendation = await recommendEnglishSentence(sentence)
-            byId("recommendation-english").textContent = recommendation.english
-            byId("recommendation-spanish").textContent = recommendation.spanish
-            byId("recommendation-panel").classList.remove("hidden")
-            status.textContent = "Revisa la sugerencia y elige si quieres usarla."
+            const { completeSentenceEntry } = await import("../ai-translation.js")
+            const entry = await completeSentenceEntry(
+                sentence || pattern,
+                { pattern: sentence ? pattern : "" }
+            )
+            form.elements.englishText.value = entry.english
+            form.elements.spanishTranslation.value = entry.spanish
+            form.elements.grammarPattern.value = entry.pattern
+            form.elements.grammarPatternTranslation.value = entry.patternSpanish
+            form.elements.notes.value = entry.notes || ""
+            status.textContent = "Ficha completada. Revisa los datos, elige tema y motivo, y guarda la frase."
         } catch (error) {
-            console.error("Unable to translate sentence", error)
-            status.textContent = error.message
+            console.error("Unable to complete sentence with AI", error)
+            status.textContent = error.message || "No se pudo completar la ficha."
         } finally {
             button.disabled = false
-            button.textContent = "Mejorar + traducir con IA"
+            button.textContent = "✨ Completar con IA"
         }
-    })
-    byId("apply-recommendation").addEventListener("click", () => {
-        const form = byId("sentence-form")
-        const english = byId("recommendation-english").textContent
-        const spanish = byId("recommendation-spanish").textContent
-        form.elements.englishText.value = english
-        form.elements.spanishTranslation.value = spanish
-        const pattern = suggestGrammarPattern(english)
-        if (pattern) form.elements.grammarPattern.value = pattern
-        byId("recommendation-panel").classList.add("hidden")
-        byId("translation-status").textContent = "Frase recomendada y traducción aplicadas. Puedes editarlas antes de guardar."
     })
     byId("auth-form").addEventListener("submit", async event => {
         event.preventDefault()

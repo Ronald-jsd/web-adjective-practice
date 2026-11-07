@@ -496,20 +496,19 @@
                         <div class="section-heading"><div><p class="eyebrow">CAPTURA RÁPIDA</p><h2 id="form-title">Una frase que quieres recordar</h2></div></div>
                         <form id="sentence-form" class="panel form-stack">
                             <input type="hidden" name="id">
-                            <label>English sentence or idea <span class="required">Required</span><textarea name="englishText" rows="3" required placeholder="For example: I want a table for two, I am hungry"></textarea><small class="field-hint">Escribe tu idea en español o inglés, aunque no estés seguro de la gramática. La IA sugerirá una frase natural en inglés. No guardamos palabras aisladas como frase final.</small></label>
+                            <label>Frase o idea <span class="required">Obligatorio</span><textarea name="englishText" rows="3" required placeholder="Escribe en inglés o español: I want a table for two / Quiero una mesa para dos"></textarea><small class="field-hint">Escribe una frase o un patrón en inglés o español, aunque no estés seguro de la gramática. La IA lo convertirá en una frase natural en inglés.</small></label>
+                            <div class="sentence-ai-row">
+                                <button class="button secondary translate-button" id="sentence-ai-button" type="button">✨ Completar con IA</button>
+                                <small id="sentence-ai-status" class="field-hint" aria-live="polite">La IA completará la frase en inglés, su traducción, el patrón en inglés, su traducción y las notas.</small>
+                            </div>
                             <fieldset><legend>Topic <span class="required">Choose at least one</span></legend><div id="topic-options" class="topic-options"></div></fieldset>
                             <label>Why are you saving it?<select name="reasonForSaving" required></select></label>
+                            <label class="translation-field">Traducción de la frase al español <span class="optional">Opcional · La IA también la completa</span><input name="spanishTranslation" type="text" placeholder="¿Podría darme una mesa para dos, por favor?"></label>
                             <div class="form-grid">
-                                <label class="translation-field">Traducción al español <span class="optional">Optional · Puedes escribirla o pedir una recomendación</span><span class="translation-row"><input name="spanishTranslation" type="text" placeholder="¿Podría darme una mesa para dos, por favor?"><button class="button secondary translate-button" id="translate-button" type="button">Mejorar + traducir con IA</button></span><small class="field-hint">Usa la IA configurada en la Guía PowerLearn para corregir la idea y proponer su traducción.</small><small id="translation-status" class="field-hint" aria-live="polite"></small></label>
-                                <label>Grammar pattern <span class="optional">Optional</span><input name="grammarPattern" type="text" list="grammar-suggestions" placeholder="Suggested when possible"><datalist id="grammar-suggestions"><option>Simple present</option><option>Simple past</option><option>Present perfect</option><option>Continuous tense</option><option>Modal verb</option><option>Conditional sentence</option><option>Complex sentence</option><option>Question form</option></datalist></label>
+                                <label>Patrón en inglés <span class="optional">Opcional</span><input name="grammarPattern" type="text" list="grammar-suggestions" placeholder="I'd like + noun, please"><datalist id="grammar-suggestions"><option>Simple present</option><option>Simple past</option><option>Present perfect</option><option>Continuous tense</option><option>Modal verb</option><option>Conditional sentence</option><option>Complex sentence</option><option>Question form</option></datalist></label>
+                                <label>Traducción del patrón <span class="optional">Opcional</span><input name="grammarPatternTranslation" type="text" placeholder="Quisiera + sustantivo, por favor"></label>
                             </div>
                             <label>Notas <span class="optional">Opcional</span><textarea name="notes" rows="4" maxlength="2000" placeholder="Usos:&#10;- ...&#10;- ...&#10;Cuándo usarla:&#10;- ..."></textarea><small class="field-hint">Puedes escribir texto libre o secciones como «Usos:», «Cuándo usarla:» y «Errores comunes:». Se mostrarán ordenadas al guardar.</small></label>
-                            <div id="recommendation-panel" class="recommendation-panel hidden" aria-live="polite">
-                                <p class="eyebrow">SUGERENCIA DE LA IA</p>
-                                <p class="recommendation-english" id="recommendation-english"></p>
-                                <p class="recommendation-spanish" id="recommendation-spanish"></p>
-                                <button class="button primary" id="apply-recommendation" type="button">Usar frase y traducción</button>
-                            </div>
                             <div class="form-actions"><button class="button primary" type="submit">Guardar frase</button><button class="button secondary hidden" id="cancel-edit" type="button">Cancelar edición</button><span class="save-note">Se guarda al instante en tu cuenta.</span></div>
                         </form>
                         <div class="section-heading list-heading"><div><p class="eyebrow">TU COLECCIÓN</p><h2>Mis frases</h2></div><input id="search-input" class="search" type="search" placeholder="Buscar en mis frases…" aria-label="Buscar frases"></div>

@@ -50,6 +50,7 @@ export function normalizeSentence(row) {
         topicTags: row.topic_tags || [],
         reasonForSaving: row.reason_for_saving,
         grammarPattern: row.grammar_pattern || "",
+        grammarPatternTranslation: row.grammar_pattern_translation || "",
         notes: row.notes || "",
         reviewBox: row.review_box,
         nextReviewAt: row.next_review_at,

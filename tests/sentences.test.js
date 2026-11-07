@@ -5,7 +5,7 @@ import { DEFAULT_REVIEW_INTERVALS, isDue, scheduleReview } from "../js/sentences
 import { checkFillBlank, createFillBlank } from "../js/sentences/exercises.js"
 import { createSentenceRepository } from "../js/sentences/repository.js"
 import { AI_PROVIDER_STORAGE, GROQ_KEY_STORAGE } from "../js/config.js"
-import { recommendEnglishSentence } from "../js/ai-translation.js"
+import { completeSentenceEntry, recommendEnglishSentence } from "../js/ai-translation.js"
 import { createPracticeProgressSync } from "../js/practice-progress.js"
 import {
     filterAudioPracticeItems,
@@ -225,6 +225,108 @@ test("sentence recommendation reports when no existing AI key is configured", as
     } finally {
         globalThis.localStorage = originalStorage
     }
+})
+
+test("sentence completion fills the English sentence, translations, pattern and notes from any input language", async () => {
+    const originalStorage = globalThis.localStorage
+    const originalFetch = globalThis.fetch
+    const values = new Map([
+        [GROQ_KEY_STORAGE, "existing-groq-key"],
+        [AI_PROVIDER_STORAGE, "groq"]
+    ])
+    globalThis.localStorage = {
+        getItem: key => values.get(key) || null,
+        removeItem: key => values.delete(key)
+    }
+    let request
+    globalThis.fetch = async (url, options) => {
+        request = { url, options }
+        return {
+            ok: true,
+            json: async () => ({
+                choices: [{
+                    message: {
+                        content: JSON.stringify({
+                            english: "I'd like a table for two, please.",
+                            spanish: "Quisiera una mesa para dos, por favor.",
+                            pattern: "I'd like + noun, please",
+                            patternSpanish: "Quisiera + sustantivo, por favor",
+                            notes: "Usos:\n- Pedir algo educadamente en un restaurante."
+                        })
+                    }
+                }]
+            })
+        }
+    }
+    try {
+        const entry = await completeSentenceEntry("quiero una mesa para dos")
+        assert.deepEqual(entry, {
+            english: "I'd like a table for two, please.",
+            spanish: "Quisiera una mesa para dos, por favor.",
+            pattern: "I'd like + noun, please",
+            patternSpanish: "Quisiera + sustantivo, por favor",
+            notes: "Usos:\n- Pedir algo educadamente en un restaurante."
+        })
+        assert.match(request.url, /api\.groq\.com/)
+        const body = JSON.parse(request.options.body)
+        assert.equal(body.messages[1].content, "Frase o idea del usuario: quiero una mesa para dos")
+        assert.match(body.messages[0].content, /patternSpanish/)
+        assert.match(body.messages[0].content, /"notes"/)
+        assert.deepEqual(body.response_format, { type: "json_object" })
+    } finally {
+        globalThis.localStorage = originalStorage
+        globalThis.fetch = originalFetch
+    }
+})
+
+test("sentence completion uses the pattern as input when the sentence is empty", async () => {
+    const originalStorage = globalThis.localStorage
+    const originalFetch = globalThis.fetch
+    const values = new Map([
+        [GROQ_KEY_STORAGE, "existing-groq-key"],
+        [AI_PROVIDER_STORAGE, "groq"]
+    ])
+    globalThis.localStorage = {
+        getItem: key => values.get(key) || null,
+        removeItem: key => values.delete(key)
+    }
+    let request
+    globalThis.fetch = async (url, options) => {
+        request = { url, options }
+        return {
+            ok: true,
+            json: async () => ({
+                choices: [{
+                    message: {
+                        content: JSON.stringify({
+                            english: "She used to live in Madrid.",
+                            spanish: "Ella solía vivir en Madrid.",
+                            pattern: "used to + verb",
+                            patternSpanish: "solía + verbo",
+                            notes: ""
+                        })
+                    }
+                }]
+            })
+        }
+    }
+    try {
+        const entry = await completeSentenceEntry("", { pattern: "used to" })
+        assert.equal(entry.pattern, "used to + verb")
+        assert.equal(entry.notes, "")
+        const body = JSON.parse(request.options.body)
+        assert.equal(body.messages[1].content, "Patrón indicado por el usuario: used to")
+    } finally {
+        globalThis.localStorage = originalStorage
+        globalThis.fetch = originalFetch
+    }
+})
+
+test("sentence completion rejects an empty sentence and pattern", async () => {
+    await assert.rejects(
+        completeSentenceEntry("   ", { pattern: "" }),
+        /Escribe primero una frase o un patrón/
+    )
 })
 
 test("first practice sync uploads browser progress, then restores it on another device", async () => {

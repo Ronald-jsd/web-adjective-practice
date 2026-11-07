@@ -18,6 +18,12 @@
 .recommendation-panel{padding:16px;border:1px solid #d3e4d8;border-radius:9px;background:#f2f7f1}.recommendation-panel .eyebrow{margin-bottom:8px}.recommendation-english{margin:0 0 5px;color:var(--green-dark);font:700 18px/1.45 Manrope,sans-serif}.recommendation-spanish{margin:0 0 13px;color:var(--muted);font-size:14px;line-height:1.45}
 .mysentences-shell{max-width:1080px;margin:0 auto;padding:10px 22px 30px}header h1{font-family:inherit;font-size:inherit;letter-spacing:inherit;line-height:inherit}#mysentences-section h1,#mysentences-section h2,#mysentences-section h3{font-family:Manrope,sans-serif;letter-spacing:-.035em}#mysentences-section h1{font-size:clamp(30px,4vw,43px);line-height:1.1}#mysentences-section h2{font-size:clamp(23px,3vw,30px)}#mysentences-section p{line-height:1.55}
 @media(max-width:700px){.translation-row{align-items:stretch;flex-direction:column}.translation-row .translate-button{width:100%}}
+.sentence-ai-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.sentence-ai-row .field-hint{flex:1;min-width:220px;margin:0}
+.sentence-ai-row .field-hint:empty{display:none}
+#sentence-ai-button:disabled{opacity:.65;cursor:wait}
+.sentence-pattern{margin:4px 0 0;color:#4d6a5b;font-size:13px;line-height:1.5;overflow-wrap:anywhere}
+@media(max-width:700px){.sentence-ai-row{align-items:stretch;flex-direction:column}.sentence-ai-row .translate-button{width:100%}}
 .vocab-notes{margin-top:0;padding-top:0;border-top:0}
 .vocab-notes-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
 .vocab-notes-tab{padding:5px 10px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--muted);font:600 11px "DM Sans",sans-serif;cursor:pointer}

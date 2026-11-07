@@ -14,7 +14,7 @@ import { generateLocalIntegerId, generateUuid, isLocalIntegerId } from "../offli
 const SENTENCES_TABLE = "my_sentences"
 const VOCABULARY_TABLE = "user_custom_items"
 
-const SENTENCE_COLUMNS = "id,english_text,spanish_translation,topic_tags,reason_for_saving,grammar_pattern,notes,review_box,next_review_at,total_attempts,total_failures,consecutive_successes,last_reviewed_at,created_at,updated_at"
+const SENTENCE_COLUMNS = "id,english_text,spanish_translation,topic_tags,reason_for_saving,grammar_pattern,grammar_pattern_translation,notes,review_box,next_review_at,total_attempts,total_failures,consecutive_successes,last_reviewed_at,created_at,updated_at"
 const VOCABULARY_COLUMNS = "id,word,pronunciation,spanish,example_en,example_es,notes,category,subcategory,created_at"
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000
@@ -206,6 +206,7 @@ export function createSentenceRepository(supabase) {
                 topic_tags: sentence.topicTags,
                 reason_for_saving: sentence.reasonForSaving,
                 grammar_pattern: sentence.grammarPattern.trim() || null,
+                grammar_pattern_translation: String(sentence.grammarPatternTranslation || "").trim() || null,
                 notes: String(sentence.notes || "").trim() || null
             }
             const now = new Date().toISOString()

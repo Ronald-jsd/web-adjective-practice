@@ -13,43 +13,56 @@ import {
 } from "./ai-models.js"
 import { beginAIRequest } from "./ui-status.js"
 
-export async function recommendEnglishSentence(input) {
-    const text = String(input || "").trim()
-    if (!text) throw new Error("Escribe la idea o frase que quieres mejorar.")
-
-    const keys = {
+function readAIKeys() {
+    return {
         groq: localStorage.getItem(GROQ_KEY_STORAGE) || "",
         gemini: localStorage.getItem(GEMINI_KEY_STORAGE) || ""
     }
-    if (!keys.groq && !keys.gemini) {
-        throw new Error("No hay una API key de IA configurada. Configúrala en la Guía Oxford y vuelve a intentarlo.")
-    }
+}
 
+function providerOrder() {
     const preferred = localStorage.getItem(AI_PROVIDER_STORAGE) || "auto"
-    const providers = preferred === "groq"
+    return preferred === "groq"
         ? ["groq", "gemini"]
         : preferred === "gemini"
             ? ["gemini", "groq"]
             : ["groq", "gemini"]
+}
+
+function missingKeyError() {
+    return new Error("No hay una API key de IA configurada. Configúrala en la Guía Oxford y vuelve a intentarlo.")
+}
+
+function invalidKeyError() {
+    const error = new Error("API key inválida.")
+    error.invalidKey = true
+    return error
+}
+
+/* Ejecuta la petición con el proveedor preferido y, si falla, con el otro.
+ * Cada proveedor recibe las mismas instrucciones y el mismo parser JSON. */
+async function runAIRequest({ input, instructions, parse, maxTokens, statusMessage, failureLabel }) {
+    const keys = readAIKeys()
+    if (!keys.groq && !keys.gemini) throw missingKeyError()
+
     const failures = []
     const deadline = Date.now() + AI_TOTAL_BUDGET_MS
-    const aiStatus = beginAIRequest("Solicitando a la IA… corrigiendo la frase y preparando la traducción.")
+    const aiStatus = beginAIRequest(statusMessage)
 
     try {
-        for (const provider of providers) {
+        for (const provider of providerOrder()) {
             if (Date.now() >= deadline) {
                 failures.push("tiempo de espera agotado")
                 break
             }
             const apiKey = keys[provider]
             if (!apiKey) continue
+
             aiStatus.update(`Solicitando a la IA… consultando ${provider === "groq" ? "Groq" : "Gemini"}.`)
             try {
-                const recommendation = provider === "groq"
-                    ? await recommendWithGroq(text, apiKey, deadline)
-                    : await recommendWithGemini(text, apiKey, deadline)
-                if (recommendation) return recommendation
-                failures.push(`${provider}: la respuesta estaba vacía o no tenía el formato esperado`)
+                return provider === "groq"
+                    ? await requestGroq({ input, apiKey, deadline, instructions, parse, maxTokens })
+                    : await requestGemini({ input, apiKey, deadline, instructions, parse, maxTokens })
             } catch (error) {
                 if (error.invalidKey) {
                     const keyName = provider === "groq" ? GROQ_KEY_STORAGE : GEMINI_KEY_STORAGE
@@ -64,13 +77,10 @@ export async function recommendEnglishSentence(input) {
         aiStatus.end()
     }
 
-    throw new Error(`No se pudo generar la recomendación. ${failures.join(". ")}`)
+    throw new Error(`${failureLabel} ${failures.join(". ")}`)
 }
 
-const RECOMMENDATION_INSTRUCTIONS = `El usuario puede escribir una idea o frase tentativa en español o inglés, incluso con errores gramaticales o de escritura. Interpreta la intención y devuelve una frase en inglés natural, correcta y cotidiana (nivel A2-B1), conservando lo que quiso decir. Después traduce TU frase inglesa recomendada a un español natural. No añadas detalles que el usuario no haya indicado. Devuelve únicamente un objeto JSON con estas dos propiedades de texto:
-{"english":"frase recomendada en inglés","spanish":"traducción natural al español"}`
-
-async function recommendWithGroq(input, apiKey, deadline = Infinity) {
+async function requestGroq({ input, apiKey, deadline, instructions, parse, maxTokens }) {
     for (const model of GROQ_TEXT_MODELS) {
         const remaining = deadline - Date.now()
         if (remaining <= 0) break
@@ -86,29 +96,29 @@ async function recommendWithGroq(input, apiKey, deadline = Infinity) {
                 body: JSON.stringify({
                     model,
                     messages: [
-                        { role: "system", content: RECOMMENDATION_INSTRUCTIONS },
+                        { role: "system", content: instructions },
                         { role: "user", content: input }
                     ],
                     temperature: 0.2,
-                    max_tokens: 400,
+                    max_tokens: maxTokens,
                     response_format: { type: "json_object" }
                 })
             })
             if (response.status === 401) throw invalidKeyError()
             if (!response.ok) continue
             const data = await response.json()
-            const recommendation = parseRecommendation(data.choices?.[0]?.message?.content)
-            if (recommendation) return recommendation
+            const result = parse(data.choices?.[0]?.message?.content)
+            if (result) return result
         } catch (error) {
             if (!request.timedOut) throw error
         } finally {
             request.clear()
         }
     }
-    throw new Error("Groq no respondió a tiempo o no devolvió una recomendación válida.")
+    throw new Error("Groq no respondió a tiempo o no devolvió una respuesta válida.")
 }
 
-async function recommendWithGemini(input, apiKey, deadline = Infinity) {
+async function requestGemini({ input, apiKey, deadline, instructions, parse, maxTokens }) {
     for (const model of GEMINI_TEXT_MODELS) {
         const remaining = deadline - Date.now()
         if (remaining <= 0) break
@@ -121,10 +131,10 @@ async function recommendWithGemini(input, apiKey, deadline = Infinity) {
                 body: JSON.stringify({
                     contents: [{
                         parts: [{
-                            text: `${RECOMMENDATION_INSTRUCTIONS}\n\nIdea o frase del usuario:\n${input}`
+                            text: `${instructions}\n\nEntrada del usuario:\n${input}`
                         }]
                     }],
-                    generationConfig: { temperature: 0.2, maxOutputTokens: 400, responseMimeType: "application/json" }
+                    generationConfig: { temperature: 0.2, maxOutputTokens: maxTokens, responseMimeType: "application/json" }
                 })
             })
             if (response.status === 400 || response.status === 403) {
@@ -133,15 +143,75 @@ async function recommendWithGemini(input, apiKey, deadline = Infinity) {
             }
             if (!response.ok) continue
             const data = await response.json()
-            const recommendation = parseRecommendation(data.candidates?.[0]?.content?.parts?.map(part => part.text || "").join(""))
-            if (recommendation) return recommendation
+            const result = parse(data.candidates?.[0]?.content?.parts?.map(part => part.text || "").join(""))
+            if (result) return result
         } catch (error) {
             if (!request.timedOut) throw error
         } finally {
             request.clear()
         }
     }
-    throw new Error("Gemini no respondió a tiempo o no devolvió una recomendación válida.")
+    throw new Error("Gemini no respondió a tiempo o no devolvió una respuesta válida.")
+}
+
+const RECOMMENDATION_INSTRUCTIONS = `El usuario puede escribir una idea o frase tentativa en español o inglés, incluso con errores gramaticales o de escritura. Interpreta la intención y devuelve una frase en inglés natural, correcta y cotidiana (nivel A2-B1), conservando lo que quiso decir. Después traduce TU frase inglesa recomendada a un español natural. No añadas detalles que el usuario no haya indicado. Devuelve únicamente un objeto JSON con estas dos propiedades de texto:
+{"english":"frase recomendada en inglés","spanish":"traducción natural al español"}`
+
+export async function recommendEnglishSentence(input) {
+    const text = String(input || "").trim()
+    if (!text) throw new Error("Escribe la idea o frase que quieres mejorar.")
+
+    return runAIRequest({
+        input: text,
+        instructions: RECOMMENDATION_INSTRUCTIONS,
+        parse: parseRecommendation,
+        maxTokens: 400,
+        statusMessage: "Solicitando a la IA… corrigiendo la frase y preparando la traducción.",
+        failureLabel: "No se pudo generar la recomendación."
+    })
+}
+
+const SENTENCE_COMPLETION_INSTRUCTIONS = `Eres un profesor bilingüe de inglés y español. El usuario escribe una frase o un patrón gramatical, en inglés o en español, posiblemente con errores. Debes completar una ficha de aprendizaje y devolver SOLO un objeto JSON válido, sin markdown, con esta forma exacta:
+{"english":"...","spanish":"...","pattern":"...","patternSpanish":"...","notes":"..."}
+
+Reglas:
+- "english": la frase final en inglés, natural, correcta y cotidiana (nivel A2-B1). Si la entrada ya es una frase en inglés, corrígela sin cambiar su intención. Si está en español, tradúcela al inglés. Si la entrada es un patrón, escribe una frase de ejemplo natural en inglés que lo use.
+- "spanish": traducción natural al español de "english".
+- "pattern": el patrón gramatical en inglés que se practica, con marcadores claros (por ejemplo "I'd like + noun, please" o "used to + verb"). Si el usuario ya dio un patrón, consérvalo y complétalo si hace falta.
+- "patternSpanish": traducción o explicación breve del patrón en español (por ejemplo "Quisiera + sustantivo, por favor").
+- "notes": notas útiles en español, máximo 600 caracteres, con este formato exacto sin markdown:
+Usos:
+- ...
+Cuándo usarla:
+- ...
+Errores comunes:
+- ...
+- No añadas detalles que el usuario no haya indicado. No dejes ningún campo vacío.
+- Si la entrada es una palabra suelta o un patrón sin contexto, crea un ejemplo sencillo y claro.`
+
+/* Completa la ficha de una frase o de un patrón. Acepta entrada en inglés o
+ * español y devuelve siempre la frase en inglés, su traducción, el patrón en
+ * inglés, su traducción y notas de uso. */
+export async function completeSentenceEntry(input, { pattern = "" } = {}) {
+    const text = String(input || "").trim()
+    const patternText = String(pattern || "").trim()
+    if (!text && !patternText) {
+        throw new Error("Escribe primero una frase o un patrón en inglés o español.")
+    }
+
+    const userContent = [
+        text ? `Frase o idea del usuario: ${text}` : "",
+        patternText ? `Patrón indicado por el usuario: ${patternText}` : ""
+    ].filter(Boolean).join("\n")
+
+    return runAIRequest({
+        input: userContent,
+        instructions: SENTENCE_COMPLETION_INSTRUCTIONS,
+        parse: parseSentenceCompletion,
+        maxTokens: 900,
+        statusMessage: "Solicitando a la IA… completando la frase, el patrón y las notas.",
+        failureLabel: "No se pudo completar la ficha."
+    })
 }
 
 function parseRecommendation(content) {
@@ -152,8 +222,27 @@ function parseRecommendation(content) {
     return english && spanish ? { english, spanish } : null
 }
 
-function invalidKeyError() {
-    const error = new Error("API key inválida.")
-    error.invalidKey = true
-    return error
+function parseSentenceCompletion(content) {
+    const result = parseAIJson(content)
+    if (!result || typeof result !== "object" || Array.isArray(result)) return null
+
+    const text = value => typeof value === "string" ? value.trim() : ""
+    const english = text(result.english)
+    const spanish = text(result.spanish)
+    const pattern = text(result.pattern)
+    const patternSpanish = text(
+        result.patternSpanish ??
+        result.pattern_spanish ??
+        result.patternTranslation ??
+        result.pattern_translation
+    )
+
+    if (!english || !spanish || !pattern || !patternSpanish) return null
+    return {
+        english,
+        spanish,
+        pattern,
+        patternSpanish,
+        notes: text(result.notes)
+    }
 }
