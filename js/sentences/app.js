@@ -317,10 +317,21 @@ function renderReview() {
     reveal.textContent = "Reveal answer"
     reveal.addEventListener("click", () => {
         answerArea.replaceChildren()
+        const answerRow = document.createElement("div")
+        answerRow.className = "review-answer-row"
         const answer = document.createElement("div")
         answer.className = "feedback"
         answer.textContent = sentence.englishText
-        answerArea.append(answer)
+        const playAnswer = document.createElement("button")
+        playAnswer.type = "button"
+        playAnswer.className = "icon-button audio-button review-audio-button"
+        playAnswer.textContent = "🔊"
+        playAnswer.disabled = !window.speechSynthesis
+        playAnswer.title = "Escuchar frase en inglés"
+        playAnswer.setAttribute("aria-label", `Escuchar frase en inglés: ${sentence.englishText}`)
+        playAnswer.addEventListener("click", () => playAudioEnhanced(sentence.englishText, "en"))
+        answerRow.append(answer, playAnswer)
+        answerArea.append(answerRow)
         reveal.classList.add("hidden")
         buttons.classList.remove("hidden")
     })

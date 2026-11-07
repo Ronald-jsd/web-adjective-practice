@@ -50,3 +50,37 @@
 .vocab-example-es{margin:2px 0 0;color:var(--muted);font-size:12px}
 .vocab-notes-wrap,.sentence-notes{margin-top:2px}
 .vocab-notes-label,.sentence-notes-label{margin-bottom:6px;color:var(--muted);font:700 10px "DM Sans",sans-serif;letter-spacing:.09em;text-transform:uppercase}
+.review-answer-row{display:flex;align-items:flex-start;gap:10px}
+.review-answer-row .feedback{min-width:0;flex:1}
+.review-audio-button{margin-top:2px}
+@media(max-width:700px){
+    .mysentences-shell{padding:6px 14px 28px}
+    .tabs{gap:0;margin:0 -14px 18px;padding:0 14px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+    .tabs::-webkit-scrollbar{display:none}
+    .tab{min-height:48px;padding:10px 14px;font-size:13px;white-space:nowrap}
+    #mysentences-section .section-heading{gap:10px}
+    #mysentences-section .list-heading{margin-top:22px;width:100%}
+    #mysentences-section .search{width:100%;font-size:16px}
+    .form-stack input,.form-stack textarea,.form-stack select{font-size:16px}
+    .sentence-item{display:flex;align-items:stretch;flex-direction:column;gap:12px;width:100%;padding:15px 14px;border-radius:12px;background:#fff}
+    .sentence-content{width:100%;min-width:0}
+    .sentence-item-heading{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:flex-start;gap:8px}
+    .sentence-item-heading p{width:auto;min-width:0;margin-bottom:6px;font-size:16px;line-height:1.45}
+    .sentence-meta{gap:5px;font-size:11px;line-height:1.4}
+    .sentence-pattern{margin-top:8px;padding:8px 9px;border-left:3px solid #cfe0d4;border-radius:0 7px 7px 0;background:#f6faf7;font-size:13px}
+    .item-actions{align-self:stretch;justify-content:flex-end;gap:8px;border-top:1px solid var(--line);padding-top:10px}
+    .item-actions .icon-button{min-width:44px;min-height:44px;border:1px solid var(--line);border-radius:9px;background:#fff;font-size:17px}
+    .vocab-item .sentence-content{gap:10px}
+    .vocab-entry-head{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:8px}
+    .vocab-title{align-items:baseline;gap:7px}
+    .vocab-word{font-size:20px}
+    .vocab-pronunciation{white-space:normal}
+    .vocab-meaning{line-height:1.5}
+    .vocab-example{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:10px;background:#f4f9f5}
+    .vocab-example-en{font-size:14px;line-height:1.45}
+    .vocab-example-es{font-size:13px;line-height:1.45}
+    .vocab-notes-wrap,.sentence-notes{margin-top:0}
+    .vocab-note-list,.vocab-note-paragraph{font-size:14px;line-height:1.55}
+    .review-answer-row{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:8px}
+    .icon-button.audio-button.review-audio-button{width:44px;height:44px;margin-top:0}
+}
