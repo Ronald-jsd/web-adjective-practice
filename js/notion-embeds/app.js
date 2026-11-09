@@ -1,6 +1,6 @@
 import { resolveSessionUser } from "../offline/session.js"
 import { createNotionEmbedRepository } from "./repository.js"
-import { normalizeNotionUrl, normalizeTitle } from "./model.js"
+import { normalizeNotionUrl, normalizeTitle, notionEmbedUrlFromUrl } from "./model.js"
 import { loadingMarkup } from "../ui-status.js"
 
 const byId = id => document.getElementById(id)
@@ -83,7 +83,7 @@ function renderEmbeds() {
         return
     }
     if (!embeds.length) {
-        list.append(emptyState("Pega el enlace público de Notion arriba y pulsa «Guardar iframe»."))
+        list.append(emptyState("Pega el enlace público .notion.site arriba y pulsa «Guardar iframe»."))
         return
     }
 
@@ -117,19 +117,39 @@ function renderEmbeds() {
         actions.append(edit, remove)
         header.append(heading, actions)
 
-        const frame = document.createElement("iframe")
-        frame.className = "notion-embed-frame"
-        frame.title = embed.title || `Página de Notion ${index + 1}`
-        frame.src = embed.url
-        frame.loading = "lazy"
-        frame.referrerPolicy = "no-referrer"
-        frame.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox")
+        const embedUrl = notionEmbedUrlFromUrl(embed.url)
+        if (embedUrl) {
+            const frame = document.createElement("iframe")
+            frame.className = "notion-embed-frame"
+            frame.title = embed.title || `Página de Notion ${index + 1}`
+            frame.src = embedUrl
+            frame.loading = "lazy"
+            frame.referrerPolicy = "strict-origin-when-cross-origin"
+            frame.setAttribute("sandbox", "allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox")
 
-        const note = document.createElement("p")
-        note.className = "notion-embed-note"
-        note.textContent = "Si se ve en blanco, revisa que el enlace sea público en Notion («Compartir» → «Publish to web») o pulsa «Abrir en Notion»."
+            const note = document.createElement("p")
+            note.className = "notion-embed-note"
+            note.textContent = "Si se ve en blanco, revisa que el enlace sea público en Notion («Compartir» → «Publish to web») o pulsa «Abrir en Notion»."
 
-        card.append(header, frame, note)
+            card.append(header, frame, note)
+        } else {
+            const blocked = document.createElement("div")
+            blocked.className = "notion-embed-blocked"
+            const blockedTitle = document.createElement("p")
+            blockedTitle.className = "notion-embed-blocked-title"
+            blockedTitle.textContent = "Este enlace no se puede incrustar"
+            const blockedText = document.createElement("p")
+            blockedText.className = "notion-embed-blocked-text"
+            blockedText.textContent = "Notion bloquea los iframes de app.notion.com y notion.so. En la página: «Compartir» → «Publish to web» → Copiar enlace, y guarda el enlace que termina en .notion.site."
+            const blockedOpen = document.createElement("a")
+            blockedOpen.className = "button secondary notion-embed-blocked-button"
+            blockedOpen.href = embed.url
+            blockedOpen.target = "_blank"
+            blockedOpen.rel = "noopener noreferrer"
+            blockedOpen.textContent = "Abrir en Notion ↗"
+            blocked.append(blockedTitle, blockedText, blockedOpen)
+            card.append(header, blocked)
+        }
         list.append(card)
     })
 }

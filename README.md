@@ -57,10 +57,10 @@ Los ids de `user_custom_items` y `verbs` usan secuencias (`serial`), así que ac
 
 ## Páginas de Notion incrustadas
 
-En **Mi aprendizaje → 📒 Notion** puedes pegar enlaces **«Share to web»** de tus páginas de Notion. Cada página guardada se muestra en un `iframe` dentro de la app y se conserva en tu cuenta (`public.user_notion_pages`). Si la página aparece en blanco, revisa que el enlace sea público en Notion o pulsa **Abrir en Notion**.
+En **Mi aprendizaje → 📒 Notion** puedes pegar el enlace público de tus páginas de Notion. Cada página guardada se muestra en un `iframe` dentro de la app y se conserva en tu cuenta (`public.user_notion_pages`). Notion bloquea los iframes habituales de `app.notion.com` y `notion.so`, así que usa el enlace que termina en **`.notion.site`** («Compartir» → «Publish to web» → Copiar enlace). La app usa automáticamente la ruta oficial `/ebd//<id>` para incrustarlo. Si la página aparece en blanco, comprueba que sea pública o pulsa **Abrir en Notion**.
 
 1. En Supabase SQL Editor ejecuta `supabase/notion_embeds.sql`.
-2. Solo se aceptan enlaces HTTPS de `notion.so`, `notion.com` y `notion.site`.
+2. Solo se incrustan enlaces HTTPS de `<workspace>.notion.site`.
 3. La lista se guarda también en IndexedDB para que funcione sin conexión; el contenido de Notion siempre requiere red.
 4. Los enlaces se sincronizan con tu cuenta como el resto de los datos personales.
 
