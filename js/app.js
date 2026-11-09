@@ -11,6 +11,7 @@ import { updateAIButton } from "./ai.js";
 import { initializePractice, setNotionPracticeCategories } from "./practice.js";
 import { initializeBrowserAI } from "./browser-ai.js";
 import { initializeNotionIntegration } from "./notion.js";
+import { initializeNotionEmbeds } from "./notion-embeds/app.js";
 import { toggleFavorite } from "./favorites.js";
 import { showToast } from "./cache.js";
 import { showLoading, hideLoading } from "./ui-status.js";
@@ -177,6 +178,7 @@ async function initApp() {
     await checkUser();
     initializeBrowserAI();
     initializeNotionIntegration(supabase);
+    initializeNotionEmbeds(supabase);
     const data = await loadCategoriesFromSupabase();
     store.categoriesData = data;
     renderCategories(data);

@@ -489,6 +489,7 @@
                     <nav class="tabs" aria-label="Navegación de Mi aprendizaje">
                         <button class="tab active" data-screen="add">＋ Frases</button>
                         <button class="tab" data-screen="vocabulary">📚 Vocabulario</button>
+                        <button class="tab" data-screen="notion">📒 Notion</button>
                         <button class="tab" data-screen="review">↻ Repasar <span id="review-tab-count" class="tab-count">0</span></button>
                     </nav>
                     <div id="notice" class="notice hidden" role="status"></div>
@@ -542,6 +543,18 @@
                         </form>
                         <div class="section-heading list-heading"><div><p class="eyebrow">TU COLECCIÓN</p><h2>Mi vocabulario</h2></div><input id="vocabulary-search-input" class="search" type="search" placeholder="Buscar en mi vocabulario…" aria-label="Buscar vocabulario"></div>
                         <div id="vocabulary-list" class="sentence-list"><div class="empty">Abre esta pestaña para cargar tu vocabulario.</div></div>
+                    </section>
+                    <section id="notion-screen" class="screen">
+                        <div class="section-heading"><div><p class="eyebrow">NOTAS Y MATERIAL</p><h2>Páginas de Notion</h2><p class="muted">Pega enlaces «Share to web» de tus páginas de Notion. Cada página se guarda en tu cuenta y vuelve a aparecer en esta pestaña después de recargar.</p></div></div>
+                        <form id="notion-embed-form" class="panel form-stack notion-embed-form">
+                            <input type="hidden" name="id">
+                            <label>Nombre de la página <span class="optional">Opcional</span><input name="title" type="text" maxlength="120" autocomplete="off" placeholder="Unit 5: Phrasal verbs"><small id="notion-name-hint" class="field-hint">Opcional · Si no escribes nombre, usaremos el título de la página.</small></label>
+                            <label>Enlace público de Notion <span class="required">Obligatorio</span><input id="notion-url-input" name="url" type="url" inputmode="url" autocomplete="off" required maxlength="2048" placeholder="https://tu-area.notion.site/Unit-5-Phrasal-verbs-…"><small class="field-hint">En Notion: «Compartir» → «Publish to web» y copia el enlace. Acepta notion.so, notion.com y notion.site; las páginas privadas seguirán apareciendo en blanco.</small></label>
+                            <small id="notion-embed-status" class="field-hint hidden" aria-live="polite"></small>
+                            <div class="form-actions"><button class="button primary" type="submit">Guardar iframe</button><button class="button secondary hidden" id="cancel-notion-edit" type="button">Cancelar edición</button><span class="save-note">Solo enlaces de Notion.</span></div>
+                        </form>
+                        <div class="section-heading list-heading notion-embed-heading-row"><div><p class="eyebrow">TUS PÁGINAS</p><h2>Iframes guardados</h2></div><span id="notion-embed-count" class="tab-count">0</span></div>
+                        <div id="notion-embed-list" class="notion-embed-list"><div class="empty">Cargando páginas de Notion…</div></div>
                     </section>
                     <section id="review-screen" class="screen">
                         <div class="section-heading"><div><p class="eyebrow">REPETICIÓN ESPACIADA</p><h2>Recuerda antes de mirar</h2><p class="muted">Las frases olvidadas vuelven al primer repaso. Las dominadas regresan cada 30 días.</p></div></div>

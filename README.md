@@ -55,6 +55,15 @@ La app guarda en **IndexedDB** una copia local de categorías, verbos, frases, v
 
 Los ids de `user_custom_items` y `verbs` usan secuencias (`serial`), así que aceptan sin problema los enteros negativos generados en el dispositivo.
 
+## Páginas de Notion incrustadas
+
+En **Mi aprendizaje → 📒 Notion** puedes pegar enlaces **«Share to web»** de tus páginas de Notion. Cada página guardada se muestra en un `iframe` dentro de la app y se conserva en tu cuenta (`public.user_notion_pages`). Si la página aparece en blanco, revisa que el enlace sea público en Notion o pulsa **Abrir en Notion**.
+
+1. En Supabase SQL Editor ejecuta `supabase/notion_embeds.sql`.
+2. Solo se aceptan enlaces HTTPS de `notion.so`, `notion.com` y `notion.site`.
+3. La lista se guarda también en IndexedDB para que funcione sin conexión; el contenido de Notion siempre requiere red.
+4. Los enlaces se sincronizan con tu cuenta como el resto de los datos personales.
+
 ## Práctica temporal desde Notion
 
 La integración usa OAuth y una función Edge de Supabase como intermediaria. El token de Notion se guarda solo en `notion_connections`, tabla sin acceso para `anon` ni `authenticated`; nunca se devuelve al navegador. Las páginas elegidas se recuerdan en el almacenamiento local del navegador y el vocabulario se obtiene de Notion al cargarlo para practicar. Las tarjetas no se insertan en Supabase y solo permanecen en memoria mientras la app está abierta. El progreso específico de estas tarjetas se conserva únicamente en el almacenamiento local del navegador, no en la tabla de progreso de Supabase.
