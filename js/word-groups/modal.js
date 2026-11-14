@@ -32,7 +32,8 @@ const state = {
     activeMemberId: null,
     dirty: false,
     candidates: [],
-    candidateQuery: ""
+    candidateQuery: "",
+    view: "table"
 }
 
 function escapeHtml(value) {
@@ -279,15 +280,6 @@ function renderRelationshipRows() {
 }
 
 function bindEditor() {
-    const titleInput = byId("word-group-title-input")
-    if (titleInput) {
-        titleInput.value = state.draft.title
-        titleInput.addEventListener("input", () => {
-            state.draft = { ...state.draft, title: titleInput.value.trim() || "Grupo de palabras similares" }
-            setDirty(true)
-        })
-    }
-
     const member = currentMember()
     if (!member) return
 
@@ -319,6 +311,149 @@ function bindEditor() {
     })
 }
 
+function selectMember(memberId, view = "detail") {
+    state.activeMemberId = memberId
+    state.candidateQuery = ""
+    state.view = view
+    modalStatus("")
+    renderDialog()
+}
+
+function relationshipSummaryFor(member) {
+    const interchangeable = []
+    const notInterchangeable = []
+    for (const other of state.draft.members) {
+        if (String(other.id) === String(member.id)) continue
+        const status = relationshipWith(state.draft, member.id, other.id)
+        if (status === "interchangeable") interchangeable.push(other.word)
+        else if (status === "not-interchangeable") notInterchangeable.push(other.word)
+    }
+    return { interchangeable, notInterchangeable }
+}
+
+function renderExamplesCell(member) {
+    const cell = el("div", "word-groups-table-examples")
+    if (!member.examples.length) {
+        cell.append(el("p", "word-groups-table-empty", "Sin ejemplos aún."))
+        return cell
+    }
+    member.examples.forEach((example, index) => {
+        const block = el("div", "word-groups-table-example")
+        const en = el("span", "word-groups-table-example-en", `${index + 1}. ${example.en || "Sin ejemplo en inglés."}`)
+        const es = el("span", "word-groups-table-example-es", example.es ? `↳ ${example.es}` : "")
+        const audio = el("button", "word-groups-table-example-audio", "🔊")
+        audio.type = "button"
+        audio.title = "Escuchar ejemplo"
+        audio.setAttribute("aria-label", `Escuchar ejemplo ${index + 1}`)
+        audio.addEventListener("click", event => {
+            event.stopPropagation()
+            playAudioEnhanced(example.en, "en")
+        })
+        block.append(en, es, audio)
+        cell.append(block)
+    })
+    return cell
+}
+
+function renderComparisonTable() {
+    const wrap = el("div", "word-groups-table-wrap")
+    const table = el("table", "word-groups-table")
+    table.setAttribute("aria-label", "Comparación de palabras similares")
+    const thead = el("thead")
+    const headRow = el("tr")
+    const headings = [
+        "Conector y pronunciación",
+        "Diferencia y uso exacto",
+        "¿Con cuáles es intercambiable?",
+        "Posiciones válidas",
+        "Ejemplos y traducción",
+        ""
+    ]
+    for (const heading of headings) {
+        const th = el("th", "", heading)
+        th.scope = "col"
+        headRow.append(th)
+    }
+    thead.append(headRow)
+
+    const tbody = el("tbody")
+    for (const member of state.draft.members) {
+        const row = el("tr", String(member.id) === String(state.activeMemberId) ? "is-active" : "")
+        row.tabIndex = 0
+        row.setAttribute("role", "button")
+        row.setAttribute("aria-label", `Comparar y editar ${member.word}`)
+        row.addEventListener("click", () => selectMember(member.id, "detail"))
+        row.addEventListener("keydown", event => {
+            if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault()
+                selectMember(member.id, "detail")
+            }
+        })
+
+        const wordCell = el("td", "word-groups-table-word-cell")
+        const wordTop = el("div", "word-groups-table-word-top")
+        const wordWrap = el("div", "word-groups-table-word-wrap")
+        const word = el("strong", "word-groups-table-word", member.word || "Palabra")
+        const meta = el("small", "word-groups-table-meta", [
+            member.pronunciation ? member.pronunciation : "",
+            member.spanish ? member.spanish : "",
+            member.partOfSpeech || ""
+        ].filter(Boolean).join(" · "))
+        wordWrap.append(word, meta)
+        const audio = el("button", "word-groups-table-audio", "🔊")
+        audio.type = "button"
+        audio.title = "Escuchar palabra"
+        audio.setAttribute("aria-label", `Escuchar ${member.word}`)
+        audio.addEventListener("click", event => {
+            event.stopPropagation()
+            playAudioEnhanced(member.word, "en")
+        })
+        wordTop.append(wordWrap, audio)
+        wordCell.append(wordTop)
+
+        const differenceCell = el("td", "word-groups-table-cell-wrap")
+        const difference = el("p", "word-groups-table-difference", member.difference || "Sin diferencia registrada.")
+        const uses = el("p", "word-groups-table-uses", member.uses || "Sin usos registrados.")
+        differenceCell.append(difference, uses)
+
+        const relationshipsCell = el("td", "word-groups-table-cell-wrap word-groups-table-relationships")
+        const relations = relationshipSummaryFor(member)
+        if (relations.interchangeable.length) {
+            relationshipsCell.append(el("p", "word-groups-table-relation-yes", `Sí: ${relations.interchangeable.join(", ")}`))
+        }
+        if (relations.notInterchangeable.length) {
+            relationshipsCell.append(el("p", "word-groups-table-relation-no", `No: ${relations.notInterchangeable.join(", ")}`))
+        }
+        if (!relations.interchangeable.length && !relations.notInterchangeable.length) {
+            relationshipsCell.append(el("p", "word-groups-table-empty", "Todos sin marcar."))
+        }
+
+        const positionCell = el("td", "word-groups-table-position", member.position || "En cualquier posición")
+        const examplesCell = el("td")
+        examplesCell.append(renderExamplesCell(member))
+
+        const actionCell = el("td", "word-groups-table-actions")
+        const edit = el("button", "button secondary word-groups-table-edit", "Editar")
+        edit.type = "button"
+        edit.addEventListener("click", event => {
+            event.stopPropagation()
+            selectMember(member.id, "detail")
+        })
+        actionCell.append(edit)
+        wordCell.dataset.label = headings[0]
+        differenceCell.dataset.label = headings[1]
+        relationshipsCell.dataset.label = headings[2]
+        positionCell.dataset.label = headings[3]
+        examplesCell.dataset.label = headings[4]
+        actionCell.dataset.label = headings[5]
+        row.append(wordCell, differenceCell, relationshipsCell, positionCell, examplesCell, actionCell)
+        tbody.append(row)
+    }
+    table.append(thead, tbody)
+    wrap.append(table)
+    return wrap
+}
+
 function renderDialog() {
     const previous = byId("word-groups-dialog")
     if (previous) previous.remove()
@@ -337,14 +472,40 @@ function renderDialog() {
     titleInput.id = "word-group-title-input"
     titleInput.maxLength = 160
     titleInput.autocomplete = "off"
+    titleInput.value = draft.title
+    titleInput.addEventListener("input", () => {
+        state.draft = { ...state.draft, title: titleInput.value.trim() || "Grupo de palabras similares" }
+        setDirty(true)
+    })
     titleBlock.append(titleInput)
+    const viewControls = el("div", "word-groups-view-controls")
+    for (const [view, label] of [["table", "Tabla"], ["detail", "Detalle"]]) {
+        const button = el("button", `word-groups-view-button${state.view === view ? " active" : ""}`, label)
+        button.type = "button"
+        button.setAttribute("aria-pressed", String(state.view === view))
+        button.addEventListener("click", () => {
+            state.view = view
+            renderDialog()
+        })
+        viewControls.append(button)
+    }
+    const addWord = el("button", "button secondary word-groups-add-member", "＋ Agregar")
+    addWord.type = "button"
+    addWord.addEventListener("click", () => {
+        state.view = "detail"
+        state.candidateQuery = ""
+        renderDialog()
+        window.requestAnimationFrame(() => byId("word-groups-dialog")?.querySelector(".word-groups-search")?.focus())
+    })
+    viewControls.append(addWord)
+    titleBlock.append(titleInput, viewControls)
     const close = el("button", "word-groups-close", "✕")
     close.type = "button"
     close.setAttribute("aria-label", "Cerrar ventana")
     close.addEventListener("click", closeDialog)
     header.append(titleBlock, close)
 
-    const body = el("div", "word-groups-body")
+    const body = el("div", `word-groups-body${state.view === "table" ? " word-groups-body-table" : " word-groups-body-detail"}`)
     const members = el("aside", "word-groups-members")
     members.append(el("p", "word-groups-section-label", "Palabras del grupo"))
     const memberList = el("div", "word-groups-member-list")
@@ -366,82 +527,86 @@ function renderDialog() {
     searchArea.append(searchLabel, search, results)
     members.append(searchArea)
 
-    const editor = el("section", "word-groups-editor")
-    if (!member) {
-        editor.append(el("p", "word-groups-empty-state", "No hay palabra seleccionada."))
+    if (state.view === "table") {
+        body.append(renderComparisonTable())
     } else {
-        const wordRow = el("div", "word-groups-word-row")
-        const wordWrap = el("div", "word-groups-word-wrap")
-        wordWrap.append(el("label", "word-groups-field-label", "Palabra"))
-        const wordInput = el("input", "word-groups-word-input")
-        wordInput.id = "word-group-word-input"
-        wordInput.autocomplete = "off"
-        wordInput.maxLength = 300
-        wordWrap.append(wordInput)
-        const audioButton = el("button", "icon-button audio-button word-groups-inline-audio", "🔊")
-        audioButton.id = "word-group-audio-button"
-        audioButton.type = "button"
-        audioButton.title = "Escuchar palabra"
-        audioButton.setAttribute("aria-label", "Escuchar palabra")
-        wordRow.append(wordWrap, audioButton)
+        const editor = el("section", "word-groups-editor")
+        if (!member) {
+            editor.append(el("p", "word-groups-empty-state", "No hay palabra seleccionada."))
+        } else {
+            const wordRow = el("div", "word-groups-word-row")
+            const wordWrap = el("div", "word-groups-word-wrap")
+            wordWrap.append(el("label", "word-groups-field-label", "Palabra"))
+            const wordInput = el("input", "word-groups-word-input")
+            wordInput.id = "word-group-word-input"
+            wordInput.autocomplete = "off"
+            wordInput.maxLength = 300
+            wordWrap.append(wordInput)
+            const audioButton = el("button", "icon-button audio-button word-groups-inline-audio", "🔊")
+            audioButton.id = "word-group-audio-button"
+            audioButton.type = "button"
+            audioButton.title = "Escuchar palabra"
+            audioButton.setAttribute("aria-label", "Escuchar palabra")
+            wordRow.append(wordWrap, audioButton)
 
-        const grid = el("div", "word-groups-grid")
-        const pronunciation = el("input", "word-groups-input")
-        pronunciation.id = "word-group-pronunciation-input"
-        pronunciation.placeholder = "/bɪˈsaɪdz/"
-        const spanish = el("input", "word-groups-input")
-        spanish.id = "word-group-spanish-input"
-        spanish.placeholder = "Traducción"
-        grid.append(pronunciation, spanish)
+            const grid = el("div", "word-groups-grid")
+            const pronunciation = el("input", "word-groups-input")
+            pronunciation.id = "word-group-pronunciation-input"
+            pronunciation.placeholder = "/bɪˈsaɪdz/"
+            const spanish = el("input", "word-groups-input")
+            spanish.id = "word-group-spanish-input"
+            spanish.placeholder = "Traducción"
+            grid.append(pronunciation, spanish)
 
-        const selectGrid = el("div", "word-groups-grid word-groups-select-grid")
-        const part = el("select", "word-groups-select")
-        part.id = "word-group-part-input"
-        part.innerHTML = `<option>Adjetivo</option><option>Verbo</option><option>Sustantivo</option><option>Adverbio</option><option>Preposición</option><option>Conector</option><option>Frase</option><option>Otro</option>`
-        const position = el("select", "word-groups-select")
-        position.id = "word-group-position-input"
-        position.innerHTML = `<option>Inicio</option><option>Medio</option><option>Final</option><option>En cualquier posición</option>`
-        selectGrid.append(part, position)
+            const selectGrid = el("div", "word-groups-grid word-groups-select-grid")
+            const part = el("select", "word-groups-select")
+            part.id = "word-group-part-input"
+            part.innerHTML = `<option>Adjetivo</option><option>Verbo</option><option>Sustantivo</option><option>Adverbio</option><option>Preposición</option><option>Conector</option><option>Frase</option><option>Otro</option>`
+            const position = el("select", "word-groups-select")
+            position.id = "word-group-position-input"
+            position.innerHTML = `<option>Inicio</option><option>Medio</option><option>Final</option><option>En cualquier posición</option>`
+            selectGrid.append(part, position)
 
-        const usesWrap = el("label", "word-groups-field")
-        usesWrap.append(el("span", "word-groups-field-label", "Usos / dónde se coloca"))
-        const uses = el("textarea", "word-groups-textarea")
-        uses.id = "word-group-uses-input"
-        uses.rows = 3
-        uses.placeholder = "Inicio de frase, antes del verbo, después del sujeto…"
-        uses.maxLength = 2000
-        usesWrap.append(uses)
+            const usesWrap = el("label", "word-groups-field")
+            usesWrap.append(el("span", "word-groups-field-label", "Usos / dónde se coloca"))
+            const uses = el("textarea", "word-groups-textarea")
+            uses.id = "word-group-uses-input"
+            uses.rows = 3
+            uses.placeholder = "Inicio de frase, antes del verbo, después del sujeto…"
+            uses.maxLength = 2000
+            usesWrap.append(uses)
 
-        const differenceWrap = el("label", "word-groups-field")
-        differenceWrap.append(el("span", "word-groups-field-label", "Diferencia frente a las otras"))
-        const difference = el("textarea", "word-groups-textarea")
-        difference.id = "word-group-difference-input"
-        difference.rows = 5
-        difference.placeholder = "Explica cuándo usarla y cuándo no…"
-        difference.maxLength = 2000
-        differenceWrap.append(difference)
+            const differenceWrap = el("label", "word-groups-field")
+            differenceWrap.append(el("span", "word-groups-field-label", "Diferencia frente a las otras"))
+            const difference = el("textarea", "word-groups-textarea")
+            difference.id = "word-group-difference-input"
+            difference.rows = 5
+            difference.placeholder = "Explica cuándo usarla y cuándo no…"
+            difference.maxLength = 2000
+            differenceWrap.append(difference)
 
-        const exampleHost = el("div", "word-groups-section")
-        const exampleHeader = el("div", "word-groups-section-header")
-        exampleHeader.append(el("p", "word-groups-section-label", "Ejemplos"))
-        const addExample = el("button", "button secondary word-groups-add-example", "＋ Add example")
-        addExample.id = "word-group-add-example"
-        addExample.type = "button"
-        exampleHeader.append(addExample)
-        const examples = el("div", "word-groups-examples")
-        examples.id = "word-group-examples-list"
-        exampleHost.append(exampleHeader, examples)
+            const exampleHost = el("div", "word-groups-section")
+            const exampleHeader = el("div", "word-groups-section-header")
+            exampleHeader.append(el("p", "word-groups-section-label", "Ejemplos"))
+            const addExample = el("button", "button secondary word-groups-add-example", "＋ Add example")
+            addExample.id = "word-group-add-example"
+            addExample.type = "button"
+            exampleHeader.append(addExample)
+            const examples = el("div", "word-groups-examples")
+            examples.id = "word-group-examples-list"
+            exampleHost.append(exampleHeader, examples)
 
-        const relationshipHost = el("div", "word-groups-section")
-        relationshipHost.append(el("p", "word-groups-section-label", "Intercambiabilidad"))
-        const relationships = el("div", "word-groups-relationships")
-        relationships.id = "word-group-relationships"
-        relationshipHost.append(relationships)
+            const relationshipHost = el("div", "word-groups-section")
+            relationshipHost.append(el("p", "word-groups-section-label", "Intercambiabilidad"))
+            const relationships = el("div", "word-groups-relationships")
+            relationships.id = "word-group-relationships"
+            relationshipHost.append(relationships)
 
-        editor.append(wordRow, grid, selectGrid, usesWrap, differenceWrap, exampleHost, relationshipHost)
+            editor.append(wordRow, grid, selectGrid, usesWrap, differenceWrap, exampleHost, relationshipHost)
+        }
+
+        body.append(members, editor)
     }
-
-    body.append(members, editor)
 
     const footer = el("footer", "word-groups-footer")
     const removeGroup = el("button", "button danger word-groups-delete-group", "Eliminar grupo")
@@ -474,10 +639,12 @@ function renderDialog() {
     dialog.addEventListener("close", () => dialog.remove())
     dialog.showModal()
 
-    bindEditor()
-    renderExamples()
-    renderRelationshipRows()
-    renderCandidates()
+    if (state.view === "detail") {
+        bindEditor()
+        renderExamples()
+        renderRelationshipRows()
+        renderCandidates()
+    }
 }
 
 function closeDialog() {
