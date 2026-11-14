@@ -9,6 +9,7 @@ import {
 import { renderVerbPagination } from './verbs-pagination.js'
 import { sortVerbs } from './verbs-sort.js'
 import { getFavoriteKey } from '../favorites.js'
+import { renderGroupWordButton } from '../word-groups/modal.js'
 
 let showOnlyFavoriteVerbs = false
 
@@ -93,6 +94,23 @@ export function buildVerbCell(v, f) {
     const value = v[f.key] || ''
     const escaped = String(value).replace(/"/g, '&quot;').replace(/'/g, '&#39;')
     const lang = SPANISH_FIELDS.has(f.key) ? 'es-ES' : 'en-US'
+
+    if (f.key === 'verb') {
+        const payload = {
+            source: 'verb',
+            itemId: v.id ? String(v.id) : null,
+            word: v.verb || '',
+            pronunciation: v.pronunciation || '',
+            spanish: v.translation || '',
+            partOfSpeech: 'Verbo',
+            position: 'En cualquier posición',
+            uses: v.usage || '',
+            difference: v.notes || '',
+            examples: v.example_base ? [{ id: `example-verb-${v.id}-0`, en: v.example_base || '', es: '' }] : [],
+            context: [v.category || '', v.type || ''].filter(Boolean).join(' · ')
+        }
+        return `<td class="editable-cell border-b px-4 py-3 hover:bg-gray-50 cursor-pointer text-sm" data-verb-id="${v.id}" data-field="${f.key}" data-audio-text="${escaped}" ondblclick="window.editVerbCell(this, '${f.key}', ${v.id})"><div class="verb-cell-content">${renderGroupWordButton(v.verb || '', payload)}</div></td>`
+    }
 
     return `<td
         class="editable-cell border-b px-4 py-3 hover:bg-gray-50 cursor-pointer text-sm"

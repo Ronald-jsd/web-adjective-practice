@@ -177,5 +177,6 @@ export const TABLES = {
     favorites: "user_vocabulary_favorites",
     practiceProgress: "vocabulary_practice_progress",
     aiQueries: "user_ai_queries",
-    notionPages: "user_notion_pages"
+    notionPages: "user_notion_pages",
+    wordGroups: "user_word_groups"
 };

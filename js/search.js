@@ -1,5 +1,6 @@
 import { store } from './config.js'
 import { makeClickableText } from './audio.js'
+import { renderGroupWordButton } from './word-groups/modal.js'
 import { renderCategories } from './data.js'
 import { editCell, getStatusBadge } from './editing.js'
 import { getFavoriteKey } from './favorites.js'
@@ -166,7 +167,22 @@ function renderSearchResults() {
             `
         } else {
             tbody.innerHTML = pageResults.map(r => {
-                const wordWithAudio = makeClickableText(r.word, 'en')
+                const groupSource = r.isCustom ? "custom" : "catalog"
+                const groupItemId = r.isCustom ? (String(r.id).includes("custom_") ? String(r.id).slice("custom_".length) : r.id) : String(r.id).startsWith("temp_") ? null : r.id
+                const groupPayload = {
+                    source: String(r.id).startsWith("temp_") ? "inline" : groupSource,
+                    itemId: String(r.id).startsWith("temp_") ? null : groupItemId,
+                    word: r.word || "",
+                    pronunciation: r.pronunciation || "",
+                    spanish: r.spanish || "",
+                    partOfSpeech: "Otro",
+                    position: "En cualquier posición",
+                    uses: "",
+                    difference: "",
+                    examples: r.example_en ? [{ id: `example-${r.id}-0`, en: r.example_en || "", es: r.example_es || "" }] : [],
+                    context: [r.category || "", r.subcategory || ""].filter(Boolean).join(" · ")
+                }
+                const wordWithAudio = renderGroupWordButton(r.word || "", groupPayload)
                 const spanishWithAudio = makeClickableText(r.spanish, 'es')
                 const exampleWithAudio = makeClickableText(r.example_en, 'en')
                 const exampleEsWithAudio = makeClickableText(r.example_es || '', 'es')

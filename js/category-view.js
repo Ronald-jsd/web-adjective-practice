@@ -4,6 +4,7 @@ import { editCell, getStatusBadge } from "./editing.js";
 import { loadUserCustomItems } from "./auth.js";
 import { initDragAndDrop } from "./drag-drop.js";
 import { makeClickableText } from "./audio.js";
+import { renderGroupWordButton } from "./word-groups/modal.js";
 import { getFavoriteKey } from "./favorites.js";
 
 const SUBCAT_PAGE_SIZE_OPTIONS = [10, 15, 25, 50, 100];
@@ -242,7 +243,23 @@ function openCategoryView(data) {
                     categoryId: data.id
                 };
 
-                const wordEn = makeClickableText(item[0], 'en');
+                const groupSource = isCustom ? "custom" : (itemId && String(itemId).startsWith("temp_") ? "inline" : "catalog")
+                const groupItemId = groupSource === "inline" ? null : (groupSource === "custom" ? customId : itemId)
+                const groupPayload = {
+                    source: groupSource,
+                    itemId: groupItemId,
+                    word: item[0] || "",
+                    pronunciation: item[1] || "",
+                    spanish: item[2] || "",
+                    partOfSpeech: "Otro",
+                    position: "En cualquier posición",
+                    uses: "",
+                    difference: "",
+                    examples: item[3] ? [{ id: `example-${groupSource}-${groupItemId || item[0]}-0`, en: item[3] || "", es: item[4] || "" }] : [],
+                    context: `${data.title || ""}${sub.title ? ` · ${sub.title}` : ""}`
+                }
+
+                const wordEn = renderGroupWordButton(item[0] || "", groupPayload)
                 const wordEs = makeClickableText(item[2], 'es');
                 const exampleEn = makeClickableText(item[3], 'en');
                 const exampleEs = makeClickableText(item[4], 'es');

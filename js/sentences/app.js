@@ -7,6 +7,7 @@ import { createSentenceRepository } from "./repository.js"
 import { resolveSessionUser } from "../offline/session.js"
 import { createNotesView } from "./notes.js"
 import { filterVocabulary } from "./vocabulary-search.js"
+import { renderGroupWordButton } from "../word-groups/modal.js"
 import { showLoading, hideLoading } from "../ui-status.js"
 
 const repository = createSentenceRepository(supabase)
@@ -188,25 +189,27 @@ function renderVocabularyList() {
         head.className = "vocab-entry-head"
         const title = document.createElement("div")
         title.className = "vocab-title"
-        const word = document.createElement("p")
-        word.className = "vocab-word"
-        word.textContent = vocabulary.word
-        title.append(word)
+        const groupPayload = {
+            source: "custom",
+            itemId: vocabulary.id ? String(vocabulary.id) : null,
+            word: vocabulary.word || "",
+            pronunciation: vocabulary.pronunciation || "",
+            spanish: vocabulary.spanish || "",
+            partOfSpeech: "Otro",
+            position: "En cualquier posición",
+            uses: "",
+            difference: vocabulary.notes || "",
+            examples: vocabulary.example_en ? [{ id: `example-custom-${vocabulary.id}-0`, en: vocabulary.example_en || "", es: vocabulary.example_es || "" }] : [],
+            context: [vocabulary.category || "", vocabulary.subcategory || ""].filter(Boolean).join(" · ")
+        }
+        title.innerHTML = renderGroupWordButton(vocabulary.word || "", groupPayload, "vocab-word-trigger")
         if (vocabulary.pronunciation) {
             const pronunciation = document.createElement("span")
             pronunciation.className = "vocab-pronunciation"
             pronunciation.textContent = vocabulary.pronunciation
             title.append(pronunciation)
         }
-        const playWord = document.createElement("button")
-        playWord.type = "button"
-        playWord.className = "icon-button audio-button"
-        playWord.textContent = "🔊"
-        playWord.disabled = !window.speechSynthesis
-        playWord.title = "Escuchar palabra"
-        playWord.setAttribute("aria-label", `Escuchar ${vocabulary.word}`)
-        playWord.addEventListener("click", () => playAudioEnhanced(vocabulary.word, "en"))
-        head.append(title, playWord)
+        head.append(title)
         content.append(head)
 
         if (vocabulary.spanish) {

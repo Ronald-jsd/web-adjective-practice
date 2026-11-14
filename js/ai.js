@@ -20,6 +20,7 @@ import { cacheRow, TABLES } from './offline/cache.js'
 import { queueChange, isOnline } from './offline/sync.js'
 import { generateLocalIntegerId } from './offline/ids.js'
 import { buildVisionInstruction } from './ai-images.js'
+import { renderGroupWordButton } from './word-groups/modal.js'
 
 // La guía crea hasta 20 tarjetas, así que necesita más margen que una ficha.
 const GUIDE_MODEL_TIMEOUT_MS = 45000
@@ -880,6 +881,20 @@ window.useAIForWord = async function () {
         const providerLabel = aiData.provider === 'groq'
             ? '<span class="inline-block px-2 py-0.5 bg-orange-100 text-orange-700 rounded text-xs font-bold">⚡ Groq (Ultra rápido)</span>'
             : '<span class="inline-block px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-bold">🤖 Gemini</span>'
+        const aiWordPayload = {
+            source: 'inline',
+            itemId: null,
+            word: aiData.word || '',
+            pronunciation: aiData.pronunciation || '',
+            spanish: aiData.spanish || '',
+            partOfSpeech: aiData.type || 'Otro',
+            position: 'En cualquier posición',
+            uses: aiData.example_en || '',
+            difference: aiData.notes || '',
+            examples: aiData.example_en ? [{ id: `example-inline-${Date.now().toString(36)}`, en: aiData.example_en || '', es: aiData.example_es || '' }] : [],
+            context: 'Generado con IA'
+        }
+        const aiWordControl = renderGroupWordButton(aiData.word || '', aiWordPayload, 'ai-word-group')
 
         const categoryOptions = buildCategoryOptions(aiData.category)
         const subcategoryOptions = buildSubcategoryOptions(aiData.category, aiData.subcategory)
@@ -891,9 +906,9 @@ window.useAIForWord = async function () {
             </h4>
             
             <div class="space-y-2 text-sm bg-white p-3 rounded-lg border border-blue-100">
-                <div class="flex items-center gap-2">
+                    <div class="flex items-center gap-2">
                     <span class="text-gray-500 w-28 flex-shrink-0">Palabra:</span>
-                    <strong class="text-gray-900">${aiData.word}</strong>
+                    <span class="text-gray-900">${aiWordControl}</span>
                 </div>
                 <div class="flex items-center gap-2">
                     <span class="text-gray-500 w-28 flex-shrink-0">Pronunciación:</span>

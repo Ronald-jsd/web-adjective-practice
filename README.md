@@ -64,6 +64,19 @@ En **Mi aprendizaje → 📒 Notion** puedes pegar el enlace público de tus pá
 3. La lista se guarda también en IndexedDB para que funcione sin conexión; el contenido de Notion siempre requiere red.
 4. Los enlaces se sincronizan con tu cuenta como el resto de los datos personales.
 
+## Grupos de palabras similares
+
+En Adjetivos, Verbos, búsqueda, vocabulario personal y resultados de IA puedes tocar el propio término (por ejemplo, *in addition*, *besides* o *as well*) para abrir una ventana flotante con la comparación del grupo.
+
+- Puedes editar nombre del grupo, palabra, pronunciación, traducción, posición, usos y diferencia.
+- La sección **Intercambiabilidad** marca cada palabra como intercambiable o no con las demás del grupo.
+- Puedes agregar o quitar palabras desde todas las colecciones locales.
+- También puedes agregar ejemplos con **Add example** y reproducir la palabra o cada ejemplo.
+- Los grupos se sincronizan con la cuenta en `public.user_word_groups` y se guardan en IndexedDB para consulta offline.
+
+1. En Supabase SQL Editor ejecuta `supabase/word_groups.sql`.
+2. Los cambios quedan locales primero y se sincronizan mediante la cola offline.
+
 ## Práctica temporal desde Notion
 
 La integración usa OAuth y una función Edge de Supabase como intermediaria. El token de Notion se guarda solo en `notion_connections`, tabla sin acceso para `anon` ni `authenticated`; nunca se devuelve al navegador. Las páginas elegidas se recuerdan en el almacenamiento local del navegador y el vocabulario se obtiene de Notion al cargarlo para practicar. Las tarjetas no se insertan en Supabase y solo permanecen en memoria mientras la app está abierta. El progreso específico de estas tarjetas se conserva únicamente en el almacenamiento local del navegador, no en la tabla de progreso de Supabase.
