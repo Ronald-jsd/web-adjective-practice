@@ -1,7 +1,7 @@
 import { showToast } from "./cache.js";
 import { store } from "./config.js";
 import { cacheRowsPreservingPending, cacheRow, removeCachedRow, readCachedRows, TABLES } from "./offline/cache.js";
-import { queueChange } from "./offline/sync.js";
+import { queueChange, isOnline } from "./offline/sync.js";
 
 export function getFavoriteKey(itemType, itemId) {
     return `${itemType}:${String(itemId)}`;
@@ -15,31 +15,37 @@ function favoriteCacheId(userId, itemType, itemId) {
     return `${userId}|${itemType}|${itemId}`;
 }
 
-export async function loadUserFavorites(supabase, userId) {
+export async function loadUserFavorites(supabase, userId, options = {}) {
     store.favoriteSet.clear();
     if (!userId) return;
 
     let rows = null;
+    const preferCache = options.preferCache || !isOnline();
 
-    try {
-        const { data, error } = await supabase
-            .from("user_vocabulary_favorites")
-            .select("item_type, item_id")
-            .eq("user_id", userId);
-        if (error) throw error;
+    if (!preferCache) {
+        try {
+            const { data, error } = await supabase
+                .from("user_vocabulary_favorites")
+                .select("item_type, item_id")
+                .eq("user_id", userId);
+            if (error) throw error;
 
-        rows = data || [];
-        rows = await cacheRowsPreservingPending(
-            TABLES.favorites,
-            rows.map((row) => ({
-                ...row,
-                user_id: userId,
-                cache_id: favoriteCacheId(userId, row.item_type, row.item_id)
-            })),
-            "cache_id"
-        );
-    } catch (error) {
-        console.warn("Sin conexión: usando tus favoritos guardados en el dispositivo.", error);
+            rows = data || [];
+            rows = await cacheRowsPreservingPending(
+                TABLES.favorites,
+                rows.map((row) => ({
+                    ...row,
+                    user_id: userId,
+                    cache_id: favoriteCacheId(userId, row.item_type, row.item_id)
+                })),
+                "cache_id"
+            );
+        } catch (error) {
+            console.warn("Sin conexión: usando tus favoritos guardados en el dispositivo.", error);
+        }
+    }
+
+    if (!rows) {
         rows = await readCachedRows(TABLES.favorites, (row) => row.user_id === userId);
     }
 

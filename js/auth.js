@@ -67,9 +67,12 @@ async function checkUser() {
 
     updateAuthUI()
     if (user) {
-        await loadUserWordStatus()
-        await loadUserCustomItems()
-        await loadUserFavorites(supabase, user.id)
+        const preferCache = !isOnline()
+        await Promise.all([
+            loadUserWordStatus({ preferCache }),
+            loadUserCustomItems({ preferCache }),
+            loadUserFavorites(supabase, user.id, { preferCache })
+        ])
     } else {
         store.favoriteSet.clear()
     }
@@ -151,28 +154,34 @@ export function initAuthSession() {
     })
 }
 
-async function loadUserWordStatus() {
+async function loadUserWordStatus(options = {}) {
     if (!store.currentUser) return
 
     const userId = store.currentUser.id
+    const preferCache = options.preferCache || !isOnline()
     let rows = null
     let fromNetwork = false
 
-    try {
-        const { data, error } = await supabase
-            .from('user_word_status')
-            .select('id,item_id, status')
-            .eq('user_id', userId)
-        if (error) throw error
-        rows = data || []
-        fromNetwork = true
-        rows = await cacheRowsPreservingPending(
-            TABLES.wordStatus,
-            rows.map(row => ({ ...row, user_id: userId, cache_id: `${userId}|${row.item_id}` })),
-            'cache_id'
-        )
-    } catch (error) {
-        console.warn('Sin conexión: usando estados guardados en el dispositivo.', error)
+    if (!preferCache) {
+        try {
+            const { data, error } = await supabase
+                .from('user_word_status')
+                .select('id,item_id, status')
+                .eq('user_id', userId)
+            if (error) throw error
+            rows = data || []
+            fromNetwork = true
+            rows = await cacheRowsPreservingPending(
+                TABLES.wordStatus,
+                rows.map(row => ({ ...row, user_id: userId, cache_id: `${userId}|${row.item_id}` })),
+                'cache_id'
+            )
+        } catch (error) {
+            console.warn('Sin conexión: usando estados guardados en el dispositivo.', error)
+        }
+    }
+
+    if (!rows) {
         rows = await readCachedRows(TABLES.wordStatus, row => row.user_id === userId)
     }
 
@@ -216,7 +225,8 @@ async function loadUserCustomItems(options = {}) {
     const userId = store.currentUser.id
     let data = null
 
-    if (!options.preferCache) {
+    const preferCache = options.preferCache || !isOnline()
+    if (!preferCache) {
         try {
             const result = await supabase
                 .from('user_custom_items')

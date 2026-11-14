@@ -186,7 +186,11 @@ async function initApp() {
     // ahora que los datos están disponibles.
     if (store.lastSearchQuery?.trim()) performSearch(store.lastSearchQuery);
     refreshCategoriesInBackground();
-    await initializePractice(data, { supabase, userId: store.currentUser?.id });
+    // La práctica se prepara en segundo plano para que la app quede usable cuanto antes.
+    initializePractice(data, { supabase, userId: store.currentUser?.id }).catch(error => {
+        console.error("No se pudo preparar la práctica:", error);
+        showToast("No se pudo preparar la práctica. Puedes seguir usando el resto de la app.", "warning");
+    });
     window.refreshPracticeCategories = async function (options = {}) {
         await initializePractice(store.categoriesData, {
             supabase,

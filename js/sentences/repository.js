@@ -41,6 +41,10 @@ export function createSentenceRepository(supabase) {
 
     return {
         async list(userId) {
+            if (!isOnline()) {
+                const cached = await readCachedRows(TABLES.sentences, row => row.user_id === userId)
+                return sortByCreatedAtDesc(cached).map(normalizeSentence)
+            }
             try {
                 const rows = await checked(
                     supabase.from(SENTENCES_TABLE)
@@ -62,6 +66,13 @@ export function createSentenceRepository(supabase) {
         },
 
         async listVocabulary(userId) {
+            if (!isOnline()) {
+                const cached = await readCachedRows(
+                    TABLES.customItems,
+                    row => row.user_id === userId && row.subcategory === "Mi vocabulario"
+                )
+                return sortByCreatedAtDesc(cached)
+            }
             try {
                 const rows = await checked(
                     supabase.from(VOCABULARY_TABLE)

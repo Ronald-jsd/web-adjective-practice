@@ -670,29 +670,44 @@ async function initializePractice(categories = [], options = {}) {
     );
     if (options.supabase && (practiceVerbsCache === null || options.refreshVerbs || practiceVerbsUserId !== userId)) {
         try {
-            const verbs = [];
-            const pageSize = 1000;
-            for (let start = 0; ; start += pageSize) {
-                const { data, error } = await options.supabase
-                    .from("verbs")
-                    .select("id, verb, pronunciation, translation, example_base, past_simple, pronunciation_ps, translation_ps, example_ps, past_participle, pronunciation_pp, translation_pp, example_pp")
-                    .order("verb")
-                    .range(start, start + pageSize - 1);
-                if (error) throw error;
-                verbs.push(...(data || []));
-                if (!data || data.length < pageSize) break;
+            let finalRows = null
+            if (!isOnline()) {
+                const cached = await readCachedRows(TABLES.verbs)
+                if (cached.length) {
+                    practiceVerbsCache = cached
+                    practiceVerbsUserId = userId
+                    practiceVerbCategoryCache = createVerbPracticeCategory(cached)
+                    finalRows = cached
+                    showToast("Mostrando los verbos guardados en el dispositivo.", "info")
+                } else {
+                    practiceVerbsCache = []
+                    practiceVerbsUserId = userId
+                    practiceVerbCategoryCache = createVerbPracticeCategory([])
+                }
+            } else {
+                const verbs = []
+                const pageSize = 1000
+                for (let start = 0; ; start += pageSize) {
+                    const { data, error } = await options.supabase
+                        .from("verbs")
+                        .select("id, verb, pronunciation, translation, example_base, past_simple, pronunciation_ps, translation_ps, example_ps, past_participle, pronunciation_pp, translation_pp, example_pp")
+                        .order("verb")
+                        .range(start, start + pageSize - 1);
+                    if (error) throw error;
+                    verbs.push(...(data || []));
+                    if (!data || data.length < pageSize) break;
+                }
+
+                // Mezcla con la copia completa para no perder columnas que esta
+                // consulta no pide (categoría, notas, etc.).
+                const cachedRows = await readCachedRows(TABLES.verbs);
+                const cachedById = new Map(cachedRows.map(row => [String(row.id), row]));
+                const merged = verbs.map(verb => ({ ...(cachedById.get(String(verb.id)) || {}), ...verb }));
+                finalRows = await cacheRowsPreservingPending(TABLES.verbs, merged);
+                practiceVerbsCache = finalRows;
+                practiceVerbsUserId = userId;
+                practiceVerbCategoryCache = createVerbPracticeCategory(finalRows);
             }
-
-            // Mezcla con la copia completa para no perder columnas que esta
-            // consulta no pide (categoría, notas, etc.).
-            const cachedRows = await readCachedRows(TABLES.verbs);
-            const cachedById = new Map(cachedRows.map(row => [String(row.id), row]));
-            const merged = verbs.map(verb => ({ ...(cachedById.get(String(verb.id)) || {}), ...verb }));
-            const finalRows = await cacheRowsPreservingPending(TABLES.verbs, merged);
-
-            practiceVerbsCache = finalRows;
-            practiceVerbsUserId = userId;
-            practiceVerbCategoryCache = createVerbPracticeCategory(finalRows);
         } catch (error) {
             console.error("No se pudieron cargar los verbos para practicar:", error);
             const cached = await readCachedRows(TABLES.verbs);
@@ -815,24 +830,34 @@ async function initializePractice(categories = [], options = {}) {
     if (options.supabase && userId
         && (practiceVocabularyCache === null || options.refreshPersonalVocabulary || practiceVocabularyUserId !== userId)) {
         try {
-            const { data, error } = await options.supabase
-                .from("user_custom_items")
-                .select("*")
-                .eq("user_id", userId)
-                .eq("subcategory", "Mi vocabulario")
-                .order("created_at", { ascending: false });
-            if (error) throw error;
-            const withUser = (data || []).map(row => ({ ...row, user_id: userId }));
-            const finalRows = await cacheRowsPreservingPending(
-                TABLES.customItems,
-                withUser,
-                "id",
-                { replace: false }
-            );
-            practiceVocabularyCache = finalRows.filter(
-                row => row.user_id === userId && row.subcategory === "Mi vocabulario"
-            );
-            practiceVocabularyUserId = userId;
+            if (!isOnline()) {
+                const cached = await readCachedRows(
+                    TABLES.customItems,
+                    row => row.user_id === userId && row.subcategory === "Mi vocabulario"
+                )
+                practiceVocabularyCache = cached
+                practiceVocabularyUserId = userId
+                if (cached.length) showToast("Mostrando tu vocabulario guardado en el dispositivo.", "info")
+            } else {
+                const { data, error } = await options.supabase
+                    .from("user_custom_items")
+                    .select("*")
+                    .eq("user_id", userId)
+                    .eq("subcategory", "Mi vocabulario")
+                    .order("created_at", { ascending: false });
+                if (error) throw error;
+                const withUser = (data || []).map(row => ({ ...row, user_id: userId }));
+                const finalRows = await cacheRowsPreservingPending(
+                    TABLES.customItems,
+                    withUser,
+                    "id",
+                    { replace: false }
+                );
+                practiceVocabularyCache = finalRows.filter(
+                    row => row.user_id === userId && row.subcategory === "Mi vocabulario"
+                );
+                practiceVocabularyUserId = userId;
+            }
         } catch (error) {
             console.error("No se pudo cargar tu vocabulario personal para practicar:", error);
             const cached = await readCachedRows(
@@ -873,15 +898,22 @@ async function initializePractice(categories = [], options = {}) {
     if (options.supabase && userId
         && (practiceSentencesCache === null || options.refreshSentences || practiceSentencesUserId !== userId)) {
         try {
-            const { data, error } = await options.supabase
-                .from("my_sentences")
-                .select("id,english_text,spanish_translation,topic_tags,reason_for_saving,grammar_pattern,grammar_pattern_translation,notes,review_box,next_review_at,total_attempts,total_failures,consecutive_successes,last_reviewed_at,created_at,updated_at")
-                .eq("user_id", userId)
-                .order("created_at", { ascending: false });
-            if (error) throw error;
-            const withUser = (data || []).map(row => ({ ...row, user_id: userId }));
-            practiceSentencesCache = await cacheRowsPreservingPending(TABLES.sentences, withUser);
-            practiceSentencesUserId = userId;
+            if (!isOnline()) {
+                const cached = await readCachedRows(TABLES.sentences, row => row.user_id === userId)
+                practiceSentencesCache = cached
+                practiceSentencesUserId = userId
+                if (cached.length) showToast("Mostrando tus frases guardadas en el dispositivo.", "info")
+            } else {
+                const { data, error } = await options.supabase
+                    .from("my_sentences")
+                    .select("id,english_text,spanish_translation,topic_tags,reason_for_saving,grammar_pattern,grammar_pattern_translation,notes,review_box,next_review_at,total_attempts,total_failures,consecutive_successes,last_reviewed_at,created_at,updated_at")
+                    .eq("user_id", userId)
+                    .order("created_at", { ascending: false });
+                if (error) throw error;
+                const withUser = (data || []).map(row => ({ ...row, user_id: userId }));
+                practiceSentencesCache = await cacheRowsPreservingPending(TABLES.sentences, withUser);
+                practiceSentencesUserId = userId;
+            }
         } catch (error) {
             console.error("No se pudieron cargar tus frases guardadas para practicar:", error);
             const cached = await readCachedRows(TABLES.sentences, row => row.user_id === userId);

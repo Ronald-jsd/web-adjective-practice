@@ -97,17 +97,21 @@ function mergeCustomItemsIntoCategories(categories, customItems, options = {}) {
     return categories
 }
 
-async function withLocalCustomItems(categories) {
+async function withLocalCustomItems(categories, { persist = true } = {}) {
     if (!categories || !store.currentUser) return categories
-    const customItems = await readCachedRows(
-        TABLES.customItems,
-        row => row.user_id === store.currentUser.id
-    )
+    const customItems = Array.isArray(store.userCustomItems) && store.userCustomItems.length
+        ? store.userCustomItems.filter(row => row?.user_id === store.currentUser.id || !row?.user_id)
+        : await readCachedRows(
+            TABLES.customItems,
+            row => row.user_id === store.currentUser.id
+        )
     if (!customItems.length) return categories
 
     mergeCustomItemsIntoCategories(categories, customItems, { replace: false })
-    saveToCache(categories)
-    await cacheSnapshot('categories', categories)
+    if (persist) {
+        saveToCache(categories)
+        await cacheSnapshot('categories', categories)
+    }
     return categories
 }
 
@@ -118,7 +122,7 @@ async function loadCategoriesFromSupabase(forceRefresh = false, options = {}) {
         const snapshot = await readSnapshot('categories')
         if (snapshot) {
             console.log('Usando copia local actualizada')
-            return withLocalCustomItems(snapshot)
+            return withLocalCustomItems(snapshot, { persist: false })
         }
     }
 
@@ -126,7 +130,7 @@ async function loadCategoriesFromSupabase(forceRefresh = false, options = {}) {
         const cachedData = loadFromCache()
         if (cachedData) {
             console.log('Usando caché')
-            return withLocalCustomItems(cachedData)
+            return withLocalCustomItems(cachedData, { persist: false })
         }
 
         // Sin caché reciente se usa la copia persistente para no bloquear la
@@ -134,7 +138,7 @@ async function loadCategoriesFromSupabase(forceRefresh = false, options = {}) {
         const snapshot = await readSnapshot('categories')
         if (snapshot) {
             console.log('Usando copia local')
-            return withLocalCustomItems(snapshot)
+            return withLocalCustomItems(snapshot, { persist: false })
         }
     }
 
@@ -254,7 +258,7 @@ async function loadCategoriesFromSupabase(forceRefresh = false, options = {}) {
         const cachedData = await readLocalCategories()
         if (cachedData) {
             if (!options.silent) showToast('Usando datos locales (sin conexión)', 'info')
-            return withLocalCustomItems(cachedData)
+            return withLocalCustomItems(cachedData, { persist: false })
         }
         return []
     } finally {
