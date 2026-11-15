@@ -21,7 +21,7 @@ function performSearch(query) {
     const results = []
 
     const matchesSearch = (text) => {
-        const lowerText = text.toLowerCase()
+        const lowerText = String(text || '').toLowerCase()
         if (searchMode === 'exact') {
             const words = lowerText.split(/\s+/)
             return words.some(word => word === query)
@@ -30,9 +30,14 @@ function performSearch(query) {
         }
     }
 
+    // Las tarjetas personales ya se agregan por separado más abajo; evitar
+    // mostrar la misma copia una vez como «DB» y otra como «Personalizadas».
+    const isCustomItemId = value => String(value ?? '').startsWith('custom_')
+
     ;(store.categoriesData || []).forEach(cat => {
         ;(cat.subcategories || []).forEach(sub => {
             ;(sub.items || []).forEach(item => {
+                if (isCustomItemId(item[5])) return
                 const wordMatch = matchesSearch(item[0])
                 const spanishMatch = matchesSearch(item[2])
 
@@ -63,9 +68,9 @@ function performSearch(query) {
 
             if (wordMatch || spanishMatch) {
                 results.push({
-                    category: '📝 Mis Expresiones',
+                    category: customItem.category || '📝 Mis Expresiones',
                     categoryId: null,
-                    subcategory: 'Personalizadas',
+                    subcategory: customItem.subcategory || 'Personalizadas',
                     subcategoryId: null,
                     word: customItem.word,
                     pronunciation: customItem.pronunciation || '',
