@@ -3,6 +3,7 @@ import { resolveSessionUser } from "../offline/session.js"
 import { playAudioEnhanced } from "../audio.js"
 import { showToast } from "../cache.js"
 import { collectWordCandidates, filterCandidates } from "./candidates.js"
+import { missingTranslationCandidates } from "./similarity.js"
 import {
     addMember,
     createDraftGroup,
@@ -76,6 +77,34 @@ function currentMember() {
 
 function cloneGroup(group) {
     return normalizeGroup(JSON.parse(JSON.stringify(group)))
+}
+
+function ensureCandidates() {
+    if (!state.candidates.length) state.candidates = collectWordCandidates()
+    return state.candidates
+}
+
+/* Agrega como miembros los términos con al menos una traducción equivalente.
+ * Las palabras ya presentes o idénticas se omiten. */
+function autoAddTranslationMatches(group, target) {
+    if (!group || !target) return { group, added: 0 }
+    const candidates = ensureCandidates()
+    const missing = missingTranslationCandidates(candidates, target, group)
+    let next = group
+    let added = 0
+    for (const candidate of missing) {
+        const result = addMember(next, candidate)
+        if (result.added) {
+            next = result.group
+            added += 1
+        }
+    }
+    return { group: next, added }
+}
+
+function countMissingTranslationMatches(group, target) {
+    if (!group || !target) return 0
+    return missingTranslationCandidates(ensureCandidates(), target, group).length
 }
 
 function findMemberForPayload(group, payload) {
@@ -458,9 +487,10 @@ function renderDialog() {
     const previous = byId("word-groups-dialog")
     if (previous) previous.remove()
 
-    state.candidates = collectWordCandidates()
+    ensureCandidates()
     const draft = state.draft
     const member = currentMember()
+    const missingByTranslation = member ? countMissingTranslationMatches(draft, member) : 0
     const dialog = el("dialog", "word-groups-dialog")
     dialog.id = "word-groups-dialog"
 
@@ -497,7 +527,27 @@ function renderDialog() {
         renderDialog()
         window.requestAnimationFrame(() => byId("word-groups-dialog")?.querySelector(".word-groups-search")?.focus())
     })
-    viewControls.append(addWord)
+    const autoButton = el("button", "button secondary word-groups-add-member word-groups-auto-button", missingByTranslation ? `＋ Autos ${missingByTranslation}` : "＋ Autos")
+    autoButton.type = "button"
+    autoButton.disabled = !missingByTranslation
+    autoButton.title = missingByTranslation
+        ? `Agregar ${missingByTranslation} términos con traducción equivalente`
+        : "No hay coincidencias pendientes con esta traducción"
+    autoButton.setAttribute("aria-label", autoButton.title)
+    autoButton.addEventListener("click", () => {
+        const target = currentMember()
+        const result = autoAddTranslationMatches(state.draft, target)
+        state.draft = result.group
+        if (result.added) {
+            state.activeMemberId = target?.id || state.activeMemberId
+            setDirty(true)
+            renderDialog()
+            modalStatus(`Se agregaron ${result.added} términos con traducción equivalente.`)
+        } else {
+            modalStatus("No hay coincidencias pendientes con esta traducción.", true)
+        }
+    })
+    viewControls.append(autoButton, addWord)
     titleBlock.append(titleInput, viewControls)
     const close = el("button", "word-groups-close", "✕")
     close.type = "button"
@@ -726,19 +776,25 @@ export async function openWordGroup(payload) {
     await ensureLoaded()
     if (!payload?.word) return
     const matches = relatedGroups(payload).sort((left, right) => new Date(right.updatedAt || right.updated_at || 0) - new Date(left.updatedAt || left.updated_at || 0))
+    let autoIncluded = 0
     if (matches.length) {
         const group = cloneGroup(matches[0])
         const member = findMemberForPayload(group, payload) || group.members[0]
         state.draft = group
         state.activeMemberId = member?.id || group.members[0]?.id || null
     } else {
-        const draft = createDraftGroup(payload)
-        state.draft = draft
-        state.activeMemberId = draft.members[0]?.id || null
+        const created = createDraftGroup(payload)
+        const result = autoAddTranslationMatches(created, created.members[0])
+        state.draft = result.group
+        state.activeMemberId = result.group.members[0]?.id || null
+        autoIncluded = result.added
     }
     state.dirty = false
     state.candidateQuery = ""
     renderDialog()
+    if (autoIncluded) {
+        modalStatus(`Se incluyeron ${autoIncluded} términos con traducción equivalente.`)
+    }
 }
 
 async function handleDelegatedClick(event) {

@@ -68,6 +68,8 @@ En **Mi aprendizaje → 📒 Notion** puedes pegar el enlace público de tus pá
 
 En Adjetivos, Verbos, búsqueda, vocabulario personal y resultados de IA puedes tocar el propio término (por ejemplo, *in addition*, *besides* o *as well*) para abrir una ventana flotante con la comparación del grupo.
 
+- Puedes tocar **＋ Autos** para agregar todos los términos con al menos una traducción equivalente; al abrir un grupo nuevo se incluyen automáticamente.
+- Al detectar equivalencias, se normalizan tildes, mayúsculas, puntuación, paréntesis, listas y rellenos como «de eso/esto»; por ejemplo, *besides*, *in addition* y *furthermore* se reconocen como equivalentes si sus traducciones son «además» o «además de eso».
 - Puedes editar nombre del grupo, palabra, pronunciación, traducción, posición, usos y diferencia.
 - La sección **Intercambiabilidad** marca cada palabra como intercambiable o no con las demás del grupo.
 - Puedes agregar o quitar palabras desde todas las colecciones locales.
