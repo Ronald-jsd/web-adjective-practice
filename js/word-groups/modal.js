@@ -137,10 +137,22 @@ async function ensureLoaded() {
     return state.loadPromise
 }
 
-export function renderGroupWordButton(text, payload, className = "") {
+function renderInlineWordEditButton(text, item) {
+    if (!item || typeof item !== "object") return ""
+    if (String(item.id ?? "").startsWith("temp_")) return ""
+    const encoded = encodeURIComponent(JSON.stringify({
+        field: "word",
+        current: String(text || ""),
+        item
+    }))
+    return `<button type="button" class="icon-button word-edit-button" onclick="event.stopPropagation(); window.editWordInline(decodeURIComponent('${encoded}'))" title="Editar palabra" aria-label="Editar palabra ${escapeHtml(text)}">✏️</button>`
+}
+
+export function renderGroupWordButton(text, payload, className = "", editItem = null) {
     const encoded = encodeURIComponent(JSON.stringify(payload || {}))
     const extra = className ? ` ${className}` : ""
-    return `<button type="button" class="word-group-trigger${extra}" data-word-group-open="true" data-word-group-payload="${escapeAttr(encoded)}" title="Ver palabras similares y diferencias" aria-label="Ver palabras similares a ${escapeHtml(text)}"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false"><path fill="currentColor" d="M10.8 6.2l4.5 4.5-4.5 4.5-1.4-1.4 3.1-3.1-3.1-3.1 1.4-1.4zm5.2 1.4l1.4 1.4-2.9 2.9 2.9 2.9-1.4 1.4-4.3-4.3 4.3-4.3z"/></svg><span>${escapeHtml(text)}</span></button><button type="button" class="icon-button audio-button word-group-audio" onclick="window.playAudioFromGlobal('${String(text || "").replace(/'/g, "\\'").replace(/"/g, '&quot;')}', 'en')" title="Escuchar palabra" aria-label="Escuchar ${escapeHtml(text)}">🔊</button>`
+    const editButton = renderInlineWordEditButton(text, editItem)
+    return `<button type="button" class="word-group-trigger${extra}" data-word-group-open="true" data-word-group-payload="${escapeAttr(encoded)}" title="Ver palabras similares y diferencias" aria-label="Ver palabras similares a ${escapeHtml(text)}"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false"><path fill="currentColor" d="M10.8 6.2l4.5 4.5-4.5 4.5-1.4-1.4 3.1-3.1-3.1-3.1 1.4-1.4zm5.2 1.4l1.4 1.4-2.9 2.9 2.9 2.9-1.4 1.4-4.3-4.3 4.3-4.3z"/></svg><span>${escapeHtml(text)}</span></button>${editButton}<button type="button" class="icon-button audio-button word-group-audio" onclick="window.playAudioFromGlobal('${String(text || "").replace(/'/g, "\\'").replace(/"/g, '&quot;')}', 'en')" title="Escuchar palabra" aria-label="Escuchar ${escapeHtml(text)}">🔊</button>`
 }
 
 export function renderSpeakerButton(text, lang = "en", label = "Escuchar") {

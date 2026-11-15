@@ -187,15 +187,6 @@ function renderSearchResults() {
                     examples: r.example_en ? [{ id: `example-${r.id}-0`, en: r.example_en || "", es: r.example_es || "" }] : [],
                     context: [r.category || "", r.subcategory || ""].filter(Boolean).join(" · ")
                 }
-                const wordWithAudio = renderGroupWordButton(r.word || "", groupPayload)
-                const spanishWithAudio = makeClickableText(r.spanish, 'es')
-                const exampleWithAudio = makeClickableText(r.example_en, 'en')
-                const exampleEsWithAudio = makeClickableText(r.example_es || '', 'es')
-
-                const status = store.wordStatusMap.get(r.id.toString()) || 0
-                const statusBadge = getStatusBadge(status)
-                const favorite = store.favoriteSet.has(getFavoriteKey('adjective', r.id))
-
                 const itemObj = {
                     id: r.isCustom ? r.customData?.id : r.id,
                     word: r.word,
@@ -207,6 +198,14 @@ function renderSearchResults() {
                     subcategoryId: r.subcategoryId,
                     categoryId: r.categoryId
                 }
+                const wordWithAudio = renderGroupWordButton(r.word || "", groupPayload, "", String(r.id).startsWith('temp_') ? null : itemObj)
+                const spanishWithAudio = makeClickableText(r.spanish, 'es')
+                const exampleWithAudio = makeClickableText(r.example_en, 'en')
+                const exampleEsWithAudio = makeClickableText(r.example_es || '', 'es')
+
+                const status = store.wordStatusMap.get(r.id.toString()) || 0
+                const statusBadge = getStatusBadge(status)
+                const favorite = store.favoriteSet.has(getFavoriteKey('adjective', r.id))
 
                 const itemObjStr = JSON.stringify(itemObj).replace(/"/g, '&quot;')
                 const escapedWord = r.word.replace(/'/g, "\\'")

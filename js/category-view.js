@@ -259,7 +259,7 @@ function openCategoryView(data) {
                     context: `${data.title || ""}${sub.title ? ` · ${sub.title}` : ""}`
                 }
 
-                const wordEn = renderGroupWordButton(item[0] || "", groupPayload)
+                const wordEn = renderGroupWordButton(item[0] || "", groupPayload, "", isTemporalId ? null : itemObj)
                 const wordEs = makeClickableText(item[2], 'es');
                 const exampleEn = makeClickableText(item[3], 'en');
                 const exampleEs = makeClickableText(item[4], 'es');

@@ -70,6 +70,82 @@ async function refreshCategoryViewFromLocalCopy() {
     return newData
 }
 
+function openInlineEditor(fieldName, currentValue, field) {
+    return new Promise((resolve, reject) => {
+        const multiline = field === 'example_en' || field === 'example_es' || field === 'spanish'
+        const dialog = document.createElement('dialog')
+        dialog.className = 'inline-edit-dialog'
+
+        const shell = document.createElement('form')
+        shell.method = 'dialog'
+        shell.className = 'inline-edit-shell'
+
+        const header = document.createElement('header')
+        header.className = 'inline-edit-header'
+        const title = document.createElement('h3')
+        title.className = 'inline-edit-title'
+        title.textContent = `Editar ${fieldName}`
+        header.append(title)
+
+        const body = document.createElement('div')
+        body.className = 'inline-edit-body'
+        const label = document.createElement('label')
+        label.className = 'inline-edit-label'
+        label.textContent = fieldName
+        const input = document.createElement(multiline ? 'textarea' : 'input')
+        input.className = 'inline-edit-input'
+        input.value = String(currentValue ?? '')
+        input.maxLength = 2000
+        if (multiline) {
+            input.rows = 4
+            input.wrap = 'soft'
+        }
+        input.setAttribute('aria-label', `Editar ${fieldName}`)
+        label.append(input)
+        body.append(label)
+
+        const footer = document.createElement('footer')
+        footer.className = 'inline-edit-footer'
+        const cancel = document.createElement('button')
+        cancel.type = 'button'
+        cancel.className = 'button secondary'
+        cancel.textContent = 'Cancelar'
+        const save = document.createElement('button')
+        save.type = 'submit'
+        save.className = 'button primary'
+        save.textContent = 'Guardar'
+        footer.append(cancel, save)
+
+        const cleanup = result => {
+            dialog.removeEventListener('cancel', onCancel)
+            dialog.remove()
+            resolve(result)
+        }
+        const onCancel = event => {
+            event.preventDefault()
+            cleanup(null)
+        }
+        cancel.addEventListener('click', () => cleanup(null))
+        dialog.addEventListener('cancel', onCancel)
+        shell.addEventListener('submit', event => {
+            event.preventDefault()
+            cleanup(input.value)
+        })
+
+        shell.append(header, body, footer)
+        dialog.append(shell)
+        document.body.append(dialog)
+        try {
+            dialog.showModal()
+            input.focus()
+            input.select()
+        } catch (error) {
+            dialog.remove()
+            reject(error)
+        }
+    })
+}
+
 async function editCell(field, currentValue, item) {
     if (store.isEditing) return
     store.isEditing = true
@@ -79,7 +155,15 @@ async function editCell(field, currentValue, item) {
         example_en: 'ejemplo en inglés', example_es: 'ejemplo en español'
     }
     const fieldName = fieldNames[field] || field
-    const newValue = prompt(`Editar ${fieldName}:`, currentValue)
+    let newValue
+    try {
+        newValue = await openInlineEditor(fieldName, currentValue, field)
+    } catch (error) {
+        console.error('No se pudo abrir el editor:', error)
+        store.isEditing = false
+        showToast(`No se pudo abrir el editor: ${error.message}`, 'error')
+        return
+    }
 
     if (newValue === null || newValue === currentValue) {
         store.isEditing = false
@@ -322,3 +406,14 @@ export { editCell, deleteAdjectiveRow, getStatusBadge, updateWordStatus }
 window.editCell = editCell
 window.deleteAdjectiveRow = deleteAdjectiveRow
 window.updateWordStatus = updateWordStatus
+window.editWordInline = function (encoded) {
+    try {
+        const data = JSON.parse(decodeURIComponent(encoded || ''))
+        if (!data || !data.field) return Promise.resolve(false)
+        return editCell(data.field, data.current, data.item)
+    } catch (error) {
+        console.error('No se pudo preparar la edición:', error)
+        showToast('No se pudo preparar la edición.', 'error')
+        return Promise.resolve(false)
+    }
+}
