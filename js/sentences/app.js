@@ -2,7 +2,7 @@ import { store } from "../config.js"
 import { supabase } from "../app.js"
 import { playAudioEnhanced } from "../audio.js"
 import { REASONS, TOPICS, suggestGrammarPattern, validateSentence } from "./model.js"
-import { isDue, scheduleReview } from "./scheduler.js"
+import { isDue, scheduleReview, sortReviewQueue, previewReview, reviewStateLabel } from "./scheduler.js"
 import { createSentenceRepository } from "./repository.js"
 import { resolveSessionUser } from "../offline/session.js"
 import { createNotesView } from "./notes.js"
@@ -11,7 +11,7 @@ import { renderGroupWordButton } from "../word-groups/modal.js"
 import { showLoading, hideLoading } from "../ui-status.js"
 
 const repository = createSentenceRepository(supabase)
-const state = { user: null, sentences: [], vocabulary: null, review: null }
+const state = { user: null, sentences: [], vocabulary: null, review: null, reviewLogs: [] }
 const byId = id => document.getElementById(id)
 const VOCABULARY_AI_HINT = "Escribe la palabra en español y la IA completará el inglés, la pronunciación, el significado y los ejemplos. Puedes elegir si también completa las notas."
 
@@ -33,24 +33,37 @@ function storageErrorMessage(error, action) {
     return `${action} Detalle de Supabase: ${detail}`
 }
 
-function boxName(box) {
-    return box === "mastered" ? "Mastered · 30 days" : `Box ${box} · ${box === 1 ? "daily" : box === 2 ? "3 days" : "7 days"}`
-}
-
 function getDue() {
     const now = new Date()
-    return state.sentences.filter(sentence => isDue(sentence, now))
+    return state.sentences.filter(sentence => isDue(sentence, now)).sort(sortReviewQueue)
+}
+
+function todayReviewLogs() {
+    const today = new Date().toDateString()
+    return state.reviewLogs.filter(log => new Date(log.reviewedAt).toDateString() === today)
+}
+
+function getCompletionSummary() {
+    const logs = todayReviewLogs()
+    const correct = logs.filter(log => log.grade !== "again").length
+    const attempts = logs.length
+    return { attempts, correct, accuracy: attempts ? Math.round(correct / attempts * 100) : 0 }
 }
 
 function updateStats() {
     const due = getDue()
-    const today = new Date().toDateString()
-    const reviewedToday = state.sentences.filter(sentence => sentence.lastReviewedAt && new Date(sentence.lastReviewedAt).toDateString() === today).length
-    const attempts = state.sentences.reduce((sum, sentence) => sum + sentence.totalAttempts, 0)
-    const failures = state.sentences.reduce((sum, sentence) => sum + sentence.totalFailures, 0)
+    const summary = getCompletionSummary()
     byId("due-count").textContent = due.length
-    byId("daily-count").textContent = reviewedToday
-    byId("accuracy").textContent = attempts ? `${Math.round((attempts - failures) / attempts * 100)}%` : "—"
+    byId("daily-count").textContent = summary.attempts
+    byId("accuracy").textContent = summary.attempts ? `${summary.accuracy}%` : "—"
+    const details = byId("review-details")
+    if (details) {
+        const learning = due.filter(item => item.memoryState === "learning" || item.memoryState === "relearning").length
+        const newCards = due.filter(item => item.memoryState === "new").length
+        details.textContent = due.length
+            ? `${newCards} nuevas · ${due.length - newCards - learning} en repaso · ${learning} en aprendizaje/reaprendizaje`
+            : "Nada pendiente. Tu cola está al día."
+    }
     byId("review-tab-count").textContent = due.length
 }
 
@@ -112,7 +125,7 @@ function renderSentenceList(items = state.sentences) {
         }
         const box = document.createElement("span")
         box.className = "box-label"
-        box.textContent = boxName(sentence.reviewBox)
+        box.textContent = `${reviewStateLabel(sentence)}${sentence.intervalDays ? ` · ${Math.max(1, Math.round(sentence.intervalDays))}d` : ''}`
         meta.append(box)
         if (sentence.spanishTranslation) {
             const translation = document.createElement("span")
@@ -298,17 +311,23 @@ function renderReview() {
     const due = getDue()
     state.review = due[0] || null
     host.replaceChildren()
+    const summary = getCompletionSummary()
+
     if (!state.review) {
         const empty = document.createElement("div")
         empty.className = "empty"
-        empty.textContent = state.sentences.length ? "No sentences due right now. Great work — come back when it's time." : "Add your first sentence to start a review habit."
+        empty.textContent = state.sentences.length
+            ? `¡Cola limpia! Hoy repasaste ${summary.attempts} ${summary.attempts === 1 ? "vez" : "veces"}${summary.attempts ? ` · ${summary.accuracy}% de aciertos` : ""}.`
+            : "Add your first sentence to start a review habit."
         host.append(empty)
         return
     }
     const sentence = state.review
+    const stateLabel = reviewStateLabel(sentence)
+    const previews = previewReview(sentence)
     const kicker = document.createElement("div")
     kicker.className = "exercise-kicker"
-    kicker.textContent = `${sentence.topicTags.join(" · ")}  /  ${boxName(sentence.reviewBox)}  /  ${due.length} due`
+    kicker.textContent = `${sentence.topicTags.join(" · ")}  /  ${stateLabel}  /  ${due.length} due`
     const prompt = document.createElement("div")
     prompt.className = "exercise-prompt"
     prompt.textContent = sentence.spanishTranslation || `Recall your saved sentence. Think of the situation where you heard it${sentence.topicTags[0] ? ` (${sentence.topicTags[0].toLowerCase()})` : ""}.`
@@ -339,27 +358,44 @@ function renderReview() {
         buttons.classList.remove("hidden")
     })
     const buttons = document.createElement("div")
-    buttons.className = "exercise-actions hidden"
-    const remembered = document.createElement("button")
-    remembered.type = "button"
-    remembered.className = "button primary"
-    remembered.textContent = "I remembered it"
-    remembered.addEventListener("click", () => submitReview(sentence, true))
-    const forgotten = document.createElement("button")
-    forgotten.type = "button"
-    forgotten.className = "button secondary"
-    forgotten.textContent = "I forgot / made a mistake"
-    forgotten.addEventListener("click", () => submitReview(sentence, false))
-    buttons.append(remembered, forgotten)
+    buttons.className = "exercise-actions review-rating-actions hidden"
+    const ratings = [
+        ["again", "Otra vez", "button secondary review-rating-button"],
+        ["hard", "Difícil", "button secondary review-rating-button"],
+        ["good", "Bien", "button primary review-rating-button"],
+        ["easy", "Fácil", "button secondary review-rating-button"]
+    ]
+    for (const [grade, label, className] of ratings) {
+        const button = document.createElement("button")
+        button.type = "button"
+        button.className = className
+        button.innerHTML = `<span>${label}</span><small>${previews[grade]}</small>`
+        button.setAttribute("aria-label", `${label}. Próximo repaso en ${previews[grade]}`)
+        button.addEventListener("click", () => submitReview(sentence, grade))
+        buttons.append(button)
+    }
     host.append(kicker, prompt, reveal, answerArea, buttons)
 }
 
-async function submitReview(sentence, remembered) {
+async function submitReview(sentence, grade) {
     try {
-        const stateUpdate = scheduleReview(sentence, remembered)
+        const stateUpdate = scheduleReview(sentence, grade)
         const updated = await repository.updateReview(state.user.id, sentence.id, stateUpdate)
+        await repository.appendReviewLog(state.user.id, sentence, grade, updated)
         state.sentences = state.sentences.map(item => item.id === updated.id ? updated : item)
-        showNotice(remembered ? "Saved — the next review is scheduled." : "Saved — this sentence is back in Box 1.")
+        const nextState = updated.memoryState === "relearning" ? "registro para reaprender" : "repaso programado"
+        showNotice(`Guardado — ${nextState}.`)
+        state.reviewLogs.unshift({
+            id: `local-${Date.now()}`,
+            sentenceId: sentence.id,
+            grade,
+            reviewedAt: updated.lastReviewedAt,
+            previousState: sentence.memoryState,
+            nextState: updated.memoryState,
+            nextIntervalDays: updated.intervalDays,
+            totalAttempts: updated.totalAttempts,
+            totalFailures: updated.totalFailures
+        })
         renderAll()
     } catch (error) {
         console.error("Unable to save review result", error)
@@ -464,7 +500,15 @@ async function deleteSentence(sentence) {
 async function loadData() {
     showLoading("sentences-loading-indicator", "Cargando tus frases…")
     try {
-        state.sentences = await repository.list(state.user.id)
+        const [sentences, logs] = await Promise.all([
+            repository.list(state.user.id),
+            repository.listReviewLogs(state.user.id).catch(error => {
+                console.warn("[sentences] No se pudo cargar el historial de repasos:", error)
+                return []
+            })
+        ])
+        state.sentences = sentences
+        state.reviewLogs = logs
         byId("auth-panel").classList.add("hidden")
         byId("app-panel").classList.remove("hidden")
         renderAll()

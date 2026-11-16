@@ -1,7 +1,7 @@
 import test from "node:test"
 import assert from "node:assert/strict"
 import { validateSentence } from "../js/sentences/model.js"
-import { DEFAULT_REVIEW_INTERVALS, isDue, scheduleReview } from "../js/sentences/scheduler.js"
+import { isDue, scheduleReview, previewReview, sortReviewQueue, reviewStateLabel } from "../js/sentences/scheduler.js"
 import { checkFillBlank, createFillBlank } from "../js/sentences/exercises.js"
 import { createSentenceRepository } from "../js/sentences/repository.js"
 import { AI_PROVIDER_STORAGE, GROQ_KEY_STORAGE } from "../js/config.js"
@@ -36,34 +36,44 @@ test("rejects isolated words and accepts complete sentences or useful expression
     assert.equal(validateSentence("I am hungry").valid, true)
 })
 
-test("a remembered review advances through configured intervals to mastered", () => {
+test("a new card graduates from learning to review after two Easy/Good ratings", () => {
     const now = new Date("2026-01-01T10:00:00.000Z")
-    const box1 = scheduleReview({ reviewBox: 1, totalAttempts: 0, totalFailures: 0, consecutiveSuccesses: 0 }, true, now)
-    assert.equal(box1.reviewBox, 2)
-    assert.equal(new Date(box1.nextReviewAt).getTime(), now.getTime() + DEFAULT_REVIEW_INTERVALS[2] * day)
+    const newCard = scheduleReview({ memoryState: "new", reviewBox: "1", totalAttempts: 0, totalFailures: 0, consecutiveSuccesses: 0 }, "good", now)
+    assert.equal(newCard.memoryState, "learning")
+    assert.equal(newCard.learningStep, 1)
+    assert.equal(newCard.nextReviewAt, new Date(now.getTime() + 10 * 60 * 1000).toISOString())
 
-    const box2 = scheduleReview({ ...box1, reviewBox: 2 }, true, now)
-    assert.equal(box2.reviewBox, 3)
-    assert.equal(new Date(box2.nextReviewAt).getTime(), now.getTime() + DEFAULT_REVIEW_INTERVALS[3] * day)
-
-    const mastered = scheduleReview({ ...box2, reviewBox: 3 }, true, now)
-    assert.equal(mastered.reviewBox, "mastered")
-    assert.equal(new Date(mastered.nextReviewAt).getTime(), now.getTime() + DEFAULT_REVIEW_INTERVALS.mastered * day)
-    const retained = scheduleReview(mastered, true, now)
-    assert.equal(retained.reviewBox, "mastered")
-    assert.equal(new Date(retained.nextReviewAt).getTime(), now.getTime() + 30 * day)
+    const graduated = scheduleReview(newCard, "good", new Date(now.getTime() + 10 * 60 * 1000))
+    assert.equal(graduated.memoryState, "review")
+    assert.equal(graduated.intervalDays, 1)
+    assert.equal(graduated.repetitions, 1)
+    assert.equal(new Date(graduated.nextReviewAt).getTime(), new Date(now.getTime() + 10 * 60 * 1000).getTime() + day)
 })
 
-test("a failed review returns to Box 1 and resets consecutive successes", () => {
-    const now = new Date("2026-01-04T10:00:00.000Z")
-    const result = scheduleReview({
-        reviewBox: 3, totalAttempts: 4, totalFailures: 1, consecutiveSuccesses: 2
-    }, false, now)
-    assert.equal(result.reviewBox, 1)
-    assert.equal(result.totalAttempts, 5)
-    assert.equal(result.totalFailures, 2)
-    assert.equal(result.consecutiveSuccesses, 0)
-    assert.equal(new Date(result.nextReviewAt).getTime(), now.getTime() + day)
+test("a review card uses Anki-like ease and lapse relearning", () => {
+    const now = new Date("2026-01-02T10:00:00.000Z")
+    const reviewed = scheduleReview({ memoryState: "review", intervalDays: 3, easeFactor: 2.5, repetitions: 2, lapses: 0, learningStep: 0, totalAttempts: 2, totalFailures: 0 }, "good", now)
+    assert.equal(reviewed.memoryState, "review")
+    assert.equal(reviewed.intervalDays, 8) // round(3 * 2.5)
+
+    const again = scheduleReview({ ...reviewed, intervalDays: 8, easeFactor: 2.5, repetitions: 3, lapses: 0, learningStep: 0 }, "again", now)
+    assert.equal(again.memoryState, "relearning")
+    assert.equal(again.lapses, 1)
+    assert.equal(again.totalFailures, 0)
+    assert.equal(again.learningStep, 0)
+    assert.ok(new Date(again.nextReviewAt).getTime() <= now.getTime() + 5 * 60 * 1000)
+
+    const relearned = scheduleReview(again, "good", new Date(now.getTime() + 10 * 60 * 1000))
+    assert.equal(relearned.memoryState, "review")
+    assert.equal(relearned.intervalDays, 4) // max(8 * 0.5, 1)
+})
+
+test("review previews are available for every grade", () => {
+    const now = new Date("2026-01-01T10:00:00.000Z")
+    const previews = previewReview({ memoryState: "review", intervalDays: 6, easeFactor: 2.5, repetitions: 2, lapses: 0, learningStep: 0, totalAttempts: 2, totalFailures: 0 }, now)
+    assert.deepEqual(Object.keys(previews), ["again", "hard", "good", "easy"])
+    assert.equal(previews.again, "1 min")
+    assert.equal(previews.good, "15d")
 })
 
 test("due checks honor the scheduled timestamp", () => {
