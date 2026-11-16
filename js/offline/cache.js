@@ -179,6 +179,7 @@ export const TABLES = {
     aiQueries: "user_ai_queries",
     reviewLogs: "my_sentence_review_logs",
     reviewCards: "my_sentence_review_cards",
+    shadowingLessons: "user_shadowing_lessons",
     notionPages: "user_notion_pages",
     wordGroups: "user_word_groups"
 };

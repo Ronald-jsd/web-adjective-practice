@@ -246,3 +246,69 @@ function parseSentenceCompletion(content) {
         notes: text(result.notes)
     }
 }
+
+const SENTENCE_TRANSLATION_INSTRUCTIONS = `Traduce del inglés al español de forma natural, respetando el contexto y el nivel A2-B1. Devuelve únicamente un objeto JSON con una propiedad:
+{"spanish":"traducción de la frase"}`
+
+export async function translateEnglishSentence(sentence) {
+    const text = String(sentence || "").trim()
+    if (!text) throw new Error("Elige una frase para traducir.")
+
+    return runAIRequest({
+        input: text,
+        instructions: SENTENCE_TRANSLATION_INSTRUCTIONS,
+        parse: parseSentenceTranslation,
+        maxTokens: 500,
+        statusMessage: "Solicitando a la IA… traduciendo la frase.",
+        failureLabel: "No se pudo traducir la frase."
+    })
+}
+
+const WORD_LOOKUP_INSTRUCTIONS = `Eres un diccionario bilingüe inglés-español. Define la palabra o expresión en inglés solicitada, con explicaciones sencillas. Devuelve únicamente un objeto JSON con esta forma exacta:
+{"phonetic":"pronunciación IPA o vacía","translation":"traducción al español","definitions":[{"partOfSpeech":"sustantivo|verbo|adjetivo|adverbio|preposición|frase","definition":"significado en español"}],"synonyms":["sinónimo en inglés","sinónimo en inglés"]}
+Máximo 3 acepciones. No devuelvas markdown.`
+
+export async function lookupEnglishWord(word, context = "") {
+    const term = String(word || "").trim()
+    if (!term) throw new Error("Selecciona una palabra.")
+    const contextText = String(context || "").trim()
+
+    return runAIRequest({
+        input: [
+            `Palabra o expresión: ${term}`,
+            contextText ? `Frase donde aparece: ${contextText}` : ""
+        ].filter(Boolean).join("\n"),
+        instructions: WORD_LOOKUP_INSTRUCTIONS,
+        parse: parseWordLookup,
+        maxTokens: 650,
+        statusMessage: "Solicitando a la IA… buscando la palabra.",
+        failureLabel: "No se pudo buscar la palabra."
+    })
+}
+
+function parseSentenceTranslation(content) {
+    const result = parseAIJson(content)
+    if (!result || typeof result !== "object" || Array.isArray(result)) return null
+    const spanish = typeof result.spanish === "string" ? result.spanish.trim() : ""
+    return spanish ? { spanish } : null
+}
+
+function parseWordLookup(content) {
+    const result = parseAIJson(content)
+    if (!result || typeof result !== "object" || Array.isArray(result)) return null
+    const text = value => typeof value === "string" ? value.trim() : ""
+    const definitions = Array.isArray(result.definitions)
+        ? result.definitions.map(definition => ({
+            partOfSpeech: text(definition?.partOfSpeech || definition?.part_of_speech) || "palabra",
+            definition: text(definition?.definition)
+        })).filter(definition => definition.definition).slice(0, 3)
+        : []
+    const translation = text(result.translation || result.spanish || result.meaning)
+    if (!translation && !definitions.length) return null
+    return {
+        phonetic: text(result.phonetic || result.pronunciation),
+        translation: translation || definitions[0]?.definition || "",
+        definitions: definitions.length ? definitions : [{ partOfSpeech: "palabra", definition: translation }],
+        synonyms: Array.isArray(result.synonyms) ? result.synonyms.map(text).filter(Boolean).slice(0, 4) : []
+    }
+}

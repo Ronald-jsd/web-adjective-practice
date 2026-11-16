@@ -64,6 +64,26 @@ En **Mi aprendizaje → 📒 Notion** puedes pegar el enlace público de tus pá
 3. La lista se guarda también en IndexedDB para que funcione sin conexión; el contenido de Notion siempre requiere red.
 4. Los enlaces se sincronizan con tu cuenta como el resto de los datos personales.
 
+## Shadowing práctico con YouTube
+
+En **Practicar → Shadowing** puedes crear una lección desde un enlace de YouTube recomendado, o pegar el texto/transcripción manual cuando YouTube no provea subtítulos reutilizables. La app:
+
+- carga el video y lo controla desde la app (reproducir, detener/saltar, velocidad y bucle);
+- divide el audio en frases;
+- resalta cada palabra;
+- permite traducir frases y consultar definiciones en español;
+- agrega una palabra a **Mi vocabulario** o una frase a **Repasar**;
+- guarda la lección para reutilizarla offline/sin conexión como el resto de tus datos.
+
+Para usarla:
+
+1. Pega el enlace de YouTube.
+2. Pulsa **Crear lección**.
+3. Si YouTube bloquea/subtítulos no disponibles, pulsa **Pégala aquí** e ingresa SRT, VTT o texto plano.
+4. Graba tu frase y toca cualquier palabra para ver su traducción.
+
+La sincronización es como la de tus datos personales; el contenido de YouTube requiere internet.
+
 ## Grupos de palabras similares
 
 En Adjetivos, Verbos, búsqueda, vocabulario personal y resultados de IA puedes tocar el propio término (por ejemplo, *in addition*, *besides* o *as well*) para abrir una ventana flotante con la comparación del grupo.
