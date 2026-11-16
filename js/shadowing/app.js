@@ -509,6 +509,7 @@ async function startRecording() {
     const button = byId("shadowing-record")
     if (state.mediaRecorder) {
         state.mediaRecorder.stop()
+        stopSpeechAssessment()
         return
     }
     if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
@@ -541,6 +542,7 @@ async function startRecording() {
             renderRecording()
         })
         recorder.start()
+        startSpeechAssessment(state.current?.transcript?.[state.currentIndex]?.text || "")
         if (button) {
             button.dataset.recording = "true"
             button.textContent = "■ Detener"
@@ -557,41 +559,104 @@ function playLastRecording() {
     if (!recordings?.url) return
     const audio = new Audio(recordings.url)
     audio.play().catch(error => console.warn("[shadowing] No se pudo reproducir la grabación:", error))
-    if (state.recognizer) assessSpeech(state.current?.transcript?.[state.currentIndex]?.text || "")
 }
 
-function wordAccuracy(target, hypothesis) {
-    const normalize = text => String(text || "").toLowerCase().replace(/[^a-z0-9]+/g, " ").split(/\s+/).filter(Boolean)
-    const reference = normalize(target)
-    const spoken = normalize(hypothesis)
-    if (!reference.length) return 0
-    const remaining = [...spoken]
-    let matched = 0
-    for (const word of reference) {
-        const index = remaining.indexOf(word)
-        if (index >= 0) {
-            matched += 1
-            remaining.splice(index, 1)
+function normalizedWords(text) {
+    return String(text || "").toLowerCase().replace(/[^a-z0-9']+/g, " ").split(/\s+/).filter(Boolean)
+}
+
+function editDistance(left, right) {
+    const rows = left.length + 1
+    const columns = right.length + 1
+    const matrix = Array.from({ length: rows }, () => Array(columns).fill(0))
+    for (let leftIndex = 0; leftIndex < rows; leftIndex += 1) matrix[leftIndex][0] = leftIndex
+    for (let rightIndex = 0; rightIndex < columns; rightIndex += 1) matrix[0][rightIndex] = rightIndex
+    for (let leftIndex = 1; leftIndex < rows; leftIndex += 1) {
+        for (let rightIndex = 1; rightIndex < columns; rightIndex += 1) {
+            const cost = left[leftIndex - 1] === right[rightIndex - 1] ? 0 : 1
+            matrix[leftIndex][rightIndex] = Math.min(matrix[leftIndex - 1][rightIndex] + 1, matrix[leftIndex][rightIndex - 1] + 1, matrix[leftIndex - 1][rightIndex - 1] + cost)
         }
     }
-    return Math.round((matched / reference.length) * 100)
+    return matrix[rows - 1][columns - 1]
+}
+
+/* Mínimo Levenshtein realizado por el navegador con la transcripción hablada;
+ * es una aproximación, pero permite colorear palabra por palabra. */
+function compareWords(target, spoken) {
+    const targetWords = normalizedWords(target)
+    const spokenWords = [...normalizedWords(spoken)]
+    let spokenCursor = 0
+    let matched = 0
+    let close = 0
+    const result = []
+    for (const referenceWord of targetWords) {
+        const lookAhead = spokenWords.slice(spokenCursor, spokenCursor + 4)
+        const exact = lookAhead.findIndex(word => word === referenceWord)
+        if (exact >= 0) {
+            const spokenWord = lookAhead[exact]
+            spokenCursor += exact + 1
+            matched += 1
+            result.push({ text: referenceWord, status: "match", spoken: spokenWord })
+            continue
+        }
+        const near = lookAhead.findIndex(word => editDistance(word, referenceWord) <= Math.max(1, Math.floor(referenceWord.length / 3)))
+        if (near >= 0) {
+            const spokenWord = lookAhead[near]
+            spokenCursor += near + 1
+            matched += 1
+            close += 1
+            result.push({ text: referenceWord, status: "near", spoken: spokenWord })
+            continue
+        }
+        result.push({ text: referenceWord, status: "miss", spoken: null })
+    }
+    return { result, matched, close, total: targetWords.length, spoken: spokenWords.length }
+}
+
+function renderScoreCard(target, hypothesis) {
+    const container = byId("shadowing-score")
+    const status = byId("shadowing-recording-status")
+    if (!container) return
+    const comparison = compareWords(target, hypothesis)
+    const completeness = comparison.total ? Math.round(((comparison.matched - comparison.close * 0.5) / comparison.total) * 100) : 0
+    const accuracy = comparison.spoken ? Math.round(((comparison.matched - comparison.close * 0.5) / comparison.spoken) * 100) : 0
+    const fluency = Math.max(0, Math.min(100, Math.round((completeness * 0.75) + (accuracy * 0.25))))
+    const renderPanel = (value, label, tone) => `<div class="shadowing-score-panel ${tone || value >= 90 ? "good" : value >= 70 ? "warn" : "bad"}"><span>${label}</span><strong>${value}%</strong></div>`
+    const words = comparison.result.map(item => `<span class="shadowing-${item.status}">${item.text}${item.status === "near" && item.spoken ? `<small>≈ ${item.spoken}</small>` : ""}</span>`).join(" ")
+    container.innerHTML = `<section class="shadowing-score-card" aria-label="Análisis de pronunciación"><h4><span>SOUND BY SOUND CHECK</span><small>${Math.max(0, comparison.matched - comparison.close) + comparison.close}/${comparison.total} words clear</small></h4><div class="shadowing-score-grid">${renderPanel(Math.max(0, accuracy), "Accuracy")}${renderPanel(fluency, "Fluency")}${renderPanel(completeness, "Completeness")}</div><div class="shadowing-you-said"><label>YOU SAID</label><div class="shadowing-comparison">${words || "<em>No se detectaron palabras.</em>"}</div></div><small class="shadowing-comparison">Green = clear · amber = similar · red = unclear. La calificación es aproximada basada en el reconocimiento de voz.</small></section>`
+    if (status) {
+        status.textContent = `Resultado: ${completeness}% de la frase.`
+        status.classList.remove("error")
+    }
+}
+
+function startSpeechAssessment(target) {
+    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!Recognition) {
+        if (byId("shadowing-recording-status")) byId("shadowing-recording-status").textContent = "Grabación lista. Este navegador no puede puntuación automática."
+        return
+    }
+    stopSpeechAssessment()
+    const recognizer = new Recognition()
+    state.recognizer = recognizer
+    recognizer.lang = "en-US"
+    recognizer.continuous = false
+    recognizer.interimResults = false
+    recognizer.addEventListener("result", event => {
+        const transcript = Array.from(event.results).map(result => result[0]?.transcript || "").join(" ")
+        renderScoreCard(target, transcript)
+    })
+    try { recognizer.start() } catch { /* mic unavailable */ }
+}
+
+function stopSpeechAssessment() {
+    if (!state.recognizer) return
+    try { state.recognizer.stop() } catch { /* already stopped */ }
+    state.recognizer = null
 }
 
 function assessSpeech(target) {
-    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition
-    if (!Recognition) return
-    state.recognizer = new Recognition()
-    state.recognizer.lang = "en-US"
-    state.recognizer.continuous = false
-    state.recognizer.interimResults = false
-    state.recognizer.addEventListener("result", event => {
-        const transcript = Array.from(event.results).map(result => result[0]?.transcript || "").join(" ")
-        const score = wordAccuracy(target, transcript)
-        state.recordings.set(state.currentIndex, { ...(state.recordings.get(state.currentIndex) || {}), score })
-        if (byId("shadowing-score")) byId("shadowing-score").textContent = `Tu pronunciación coincidió un ${score}% con la frase.`
-        if (byId("shadowing-recording-status")) byId("shadowing-recording-status").textContent = `Resultado: ${score}% de palabras correctas.`
-    })
-    try { state.recognizer.start() } catch { /* sin reconocimiento */ }
+    // Compatibility shim kept for previous call sites.
 }
 
 async function saveCurrentLesson() {
