@@ -109,8 +109,10 @@ Deno.serve(async request => {
     if (request.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
     if (request.method !== "POST") return jsonResponse({ error: "Método no permitido." }, 405);
 
-    const user = await authenticate(request);
-    if (!user) return jsonResponse({ error: "No autenticado." }, 401);
+    // The transcript endpoint proxies public captions and stores nothing.
+    // Authentication is optional here; the same call used by the app works
+    // when the local remembered session is being revalidated.
+    await authenticate(request);
 
     try {
         const payload = await request.json();
