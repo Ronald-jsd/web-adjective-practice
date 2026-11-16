@@ -30,6 +30,7 @@ import { isOnline } from "./offline/sync.js";
 const PROGRESS_STORAGE_KEY = "vocabulary_practice_progress_v1";
 const CATEGORY_SELECTION_STORAGE_KEY = "practice_selected_categories_v1";
 const AUDIO_FILTER_STORAGE_KEY = "practice_audio_course_filter_v1";
+const EXERCISE_STATS_STORAGE_KEY = "vocabulary_practice_exercise_stats_v1";
 const DAY_IN_MS = 24 * 60 * 60 * 1000;
 
 let practiceItems = [];
@@ -55,6 +56,8 @@ let progressSync = null;
 let progressWriteQueue = Promise.resolve();
 let audioCourse = null;
 let audioCourseFilter = "all";
+let exerciseStats = loadExerciseStats();
+let buildState = { available: [], chosen: [] };
 let practiceVerbsCache = null;
 let practiceVerbsUserId = null;
 let practiceVerbCategoryCache = null;
@@ -134,6 +137,48 @@ function stopAudioCourse(preserveProgress = false) {
     audioCourse?.stop(preserveProgress);
 }
 
+function loadExerciseStats() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(EXERCISE_STATS_STORAGE_KEY) || "{}");
+        return saved && typeof saved === "object" && !Array.isArray(saved) ? saved : {};
+    } catch {
+        return {};
+    }
+}
+
+function saveExerciseStats() {
+    try {
+        localStorage.setItem(EXERCISE_STATS_STORAGE_KEY, JSON.stringify(exerciseStats));
+    } catch (error) {
+        console.warn("No se pudieron guardar las estadísticas de ejercicios:", error);
+    }
+}
+
+function recordExerciseOutcome(type, isCorrect) {
+    const current = exerciseStats[type] || { attempts: 0, correct: 0 };
+    current.attempts += 1;
+    if (isCorrect) current.correct += 1;
+    exerciseStats[type] = current;
+    saveExerciseStats();
+    updateExerciseStats();
+}
+
+function exerciseTypeAccuracy(type) {
+    const stats = exerciseStats[type];
+    return stats?.attempts ? stats.correct / stats.attempts : null;
+}
+
+function updateExerciseStats() {
+    const target = document.getElementById("practice-exercise-stats");
+    if (!target) return;
+    const icons = { listening: "🎧", translation: "↔", choice: "☑", fill: "✍", build: "🧩", "dictation-choice": "🎙" };
+    const entries = Object.entries(exerciseStats)
+        .filter(([, value]) => value.attempts > 0)
+        .map(([type, value]) => `${icons[type] || "📝"} ${value.correct}/${value.attempts}${value.attempts >= 4 ? ` · ${Math.round((value.correct / value.attempts) * 100)}%` : ""}`);
+    target.textContent = entries.length ? `Tus ejercicios: ${entries.join("  ·  ")}` : "";
+    target.classList.toggle("hidden", !entries.length);
+}
+
 function loadProgress() {
     try {
         const savedProgress = JSON.parse(localStorage.getItem(PROGRESS_STORAGE_KEY) || "{}");
@@ -187,6 +232,7 @@ function getPracticeItems(categories) {
 function updateScore() {
     const score = document.getElementById("practice-score");
     if (score) score.textContent = `${correctAnswers} correctas · ${answeredQuestions} respondidas`;
+    updateExerciseStats();
     updateReviewSummary();
 }
 
@@ -223,17 +269,63 @@ function normalizeAnswer(value) {
     return value.trim().toLocaleLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
 }
 
+function phraseTokens(value) {
+    return normalizeAnswer(value)
+        .replace(/[^a-z0-9\s]/g, " ")
+        .replace(/\s+/g, " ")
+        .trim()
+        .split(" ")
+        .filter(Boolean);
+}
+
+function isCorrectAnswer(value) {
+    if (currentExerciseType === "build") {
+        return phraseTokens(value).join(" ") === phraseTokens(currentItem.example || "").join(" ");
+    }
+    return normalizeAnswer(value) === normalizeAnswer(currentItem.word);
+}
+
+function canMultipleChoice() {
+    const words = new Set(getSelectedItems().map(item => normalizeAnswer(item.word)));
+    return words.size >= 4;
+}
+
+function practiceTypeWeight(type) {
+    const accuracy = exerciseTypeAccuracy(type);
+    return accuracy === null ? 1 : 1 + Math.max(0, (1 - accuracy) * 2);
+}
+
+function weightedExerciseChoice(types) {
+    const weights = types.map(practiceTypeWeight);
+    const total = weights.reduce((sum, weight) => sum + weight, 0);
+    let target = Math.random() * total;
+    for (let index = 0; index < types.length; index += 1) {
+        target -= weights[index];
+        if (target <= 0) return types[index];
+    }
+    return types.at(-1);
+}
+
 function chooseExerciseType() {
-    if (selectedExerciseType === "mixed" && currentItem?.categoryId === AI_PRACTICE_CATEGORY_ID) return "fill";
+    const mcOption = canMultipleChoice() ? ["choice"] : [];
+    if (selectedExerciseType === "build" || selectedExerciseType === "dictation-choice" || selectedExerciseType === "choice") {
+        if (selectedExerciseType === "build" && !currentItem?.example) return "fill";
+        if (!mcOption.length && selectedExerciseType !== "build") return "listening";
+        return selectedExerciseType;
+    }
     if (selectedExerciseType !== "mixed") return selectedExerciseType;
-    const exerciseTypes = ["listening", "translation", "choice", "fill"];
-    return exerciseTypes[Math.floor(Math.random() * exerciseTypes.length)];
+
+    const exerciseTypes = ["listening", "translation", "fill", ...mcOption, "dictation-choice"];
+    if (currentItem?.example) exerciseTypes.push("build");
+    return weightedExerciseChoice(exerciseTypes);
 }
 
 function getPromptText() {
     if (currentExerciseType === "listening") return "Escucha y escribe la palabra en inglés";
+    if (currentExerciseType === "dictation-choice") return "Escucha la palabra y elige la correcta";
     if (currentExerciseType === "translation") return `Traduce: ${currentItem.spanish}`;
     if (currentExerciseType === "choice") return `¿Qué palabra corresponde a “${currentItem.spanish}”?`;
+    if (currentExerciseType === "build") return "Ordena las palabras para formar la frase";
 
     if (currentItem.categoryId === AI_PRACTICE_CATEGORY_ID) {
         return createAIExamplePrompt(currentItem.word, currentItem.example, currentItem.exampleSpanish);
@@ -247,6 +339,93 @@ function getPromptText() {
         }
     }
     return `Completa con la palabra en inglés: ${currentItem.spanish}`;
+}
+
+function createBuildTokens(example) {
+    const tokens = phraseTokens(example).map((text, index) => ({ text, id: `${index}-${Math.random().toString(36).slice(2, 10)}` }));
+    const original = tokens.map(token => token.text).join(" ");
+    for (let attempt = 0; attempt < 12 && tokens.length > 5; attempt += 1) {
+        for (let index = tokens.length - 1; index > 0; index -= 1) {
+            const target = Math.floor(Math.random() * (index + 1));
+            [tokens[index], tokens[target]] = [tokens[target], tokens[index]];
+        }
+        if (tokens.map(token => token.text).join(" ") !== original) break;
+    }
+    return tokens;
+}
+
+function renderBuildBoard() {
+    const host = document.getElementById("practice-choice-options");
+    if (!host || !currentItem) return;
+    host.replaceChildren();
+    host.classList.remove("hidden");
+    if (!buildState.available.length && !buildState.chosen.length) {
+        const available = createBuildTokens(currentItem.example || currentItem.word);
+        buildState = { available, chosen: [] };
+    }
+
+    const board = document.createElement("div");
+    board.className = `practice-build-board${isAnswered ? " answered" : ""} ${isAnswered && isCorrectAnswer(buildState.chosen.map(token => token.text).join(" ")) ? "is-correct" : isAnswered ? "is-incorrect" : ""}`;
+
+    const selected = document.createElement("div");
+    selected.className = "practice-build-zone practice-build-zone--selected";
+    selected.setAttribute("aria-label", "Frase construida");
+    buildState.chosen.forEach(token => selected.append(createBuildTokenButton(token, true)));
+    if (!buildState.chosen.length) {
+        const placeholder = document.createElement("span");
+        placeholder.className = "practice-build-zone--placeholder";
+        placeholder.textContent = "Toca las palabras en orden…";
+        selected.append(placeholder);
+    }
+
+    const available = document.createElement("div");
+    available.className = "practice-build-zone";
+    available.setAttribute("aria-label", "Palabras disponibles");
+    buildState.available.forEach(token => available.append(createBuildTokenButton(token, false)));
+
+    const footer = document.createElement("div");
+    footer.className = "practice-build-footer";
+    const clear = document.createElement("button");
+    clear.type = "button";
+    clear.className = "practice-build-clear";
+    clear.textContent = "Limpiar";
+    clear.disabled = isAnswered;
+    clear.addEventListener("click", () => {
+        buildState = { available: [...buildState.available, ...buildState.chosen], chosen: [] };
+        renderBuildBoard();
+    });
+    const verify = document.createElement("button");
+    verify.type = "button";
+    verify.textContent = "Comprobar";
+    verify.disabled = isAnswered || buildState.chosen.length === 0;
+    verify.addEventListener("click", () => recordAnswer(buildState.chosen.map(token => token.text).join(" "), null));
+    footer.append(clear, verify);
+    board.append(selected, available, footer);
+    host.append(board);
+}
+
+function createBuildTokenButton(token, selected) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "practice-build-token";
+    button.textContent = token.text;
+    button.disabled = isAnswered;
+    button.dataset.tokenId = token.id;
+    button.setAttribute("aria-label", selected ? `Quitar ${token.text}` : `Elegir ${token.text}`);
+    button.addEventListener("click", () => {
+        if (isAnswered) return;
+        const offset = selected ? buildState.chosen.findIndex(item => item.id === token.id) : buildState.available.findIndex(item => item.id === token.id);
+        if (offset < 0) return;
+        if (selected) {
+            const [moved] = buildState.chosen.splice(offset, 1);
+            buildState.available.push(moved);
+        } else {
+            const [moved] = buildState.available.splice(offset, 1);
+            buildState.chosen.push(moved);
+        }
+        renderBuildBoard();
+    });
+    return button;
 }
 
 function renderChoiceOptions() {
@@ -306,11 +485,13 @@ function renderQuestion() {
         listening: "Listening",
         translation: "Traducción",
         choice: "Opción múltiple",
-        fill: "Completar frase"
+        fill: "Completar frase",
+        build: "Construir frase",
+        "dictation-choice": "Escuchar y elegir"
     };
     prompt.textContent = getPromptText();
     if (meaning) {
-        const showHint = currentExerciseType === "fill";
+        const showHint = currentExerciseType === "fill" || currentExerciseType === "build";
         meaning.textContent = showHint
             ? getPracticeFillHint(currentItem.spanish, currentItem.exampleSpanish)
             : "";
@@ -320,18 +501,25 @@ function renderQuestion() {
     if (hint) {
         hint.textContent = currentExerciseType === "listening"
             ? "Escucha la palabra en inglés y escríbela. Puedes reproducirla otra vez."
-            : currentExerciseType === "fill"
-                ? "Completa el espacio con la palabra que falta."
-                : currentExerciseType === "choice"
-                    ? "Elige la palabra correcta."
-                    : "Lee la traducción y escribe la palabra en inglés.";
+            : currentExerciseType === "dictation-choice"
+                ? "Reproduce el audio y elige la palabra que escuchas."
+                : currentExerciseType === "fill"
+                    ? "Completa el espacio con la palabra que falta."
+                    : currentExerciseType === "build"
+                        ? "Toca las palabras en el orden correcto."
+                        : currentExerciseType === "choice"
+                            ? "Elige la palabra correcta."
+                            : "Lee la traducción y escribe la palabra en inglés.";
     }
+    const showAudio = currentExerciseType === "listening" || currentExerciseType === "dictation-choice";
     if (listenButton) {
-        listenButton.classList.toggle("hidden", currentExerciseType !== "listening");
+        listenButton.classList.toggle("hidden", !showAudio);
         listenButton.disabled = isAnswered || !window.speechSynthesis;
     }
-    if (answerForm) answerForm.classList.toggle("hidden", currentExerciseType === "choice");
-    if (choices) choices.classList.toggle("hidden", currentExerciseType !== "choice");
+    if (answerForm) answerForm.classList.toggle("hidden", currentExerciseType === "choice" || currentExerciseType === "dictation-choice" || currentExerciseType === "build");
+    if (choices) {
+        choices.classList.toggle("hidden", currentExerciseType !== "choice" && currentExerciseType !== "dictation-choice" && currentExerciseType !== "build");
+    }
     if (answer) {
         answer.disabled = isAnswered;
         answer.placeholder = currentExerciseType === "listening"
@@ -341,6 +529,14 @@ function renderQuestion() {
                 : "Escribe la traducción...";
     }
     if (submit) submit.disabled = isAnswered;
+    if (currentExerciseType === "build") renderBuildBoard();
+    else if (currentExerciseType !== "choice" && currentExerciseType !== "dictation-choice") {
+        buildState = { available: [], chosen: [] };
+        if (choices) choices.replaceChildren();
+    }
+    else {
+        buildState = { available: [], chosen: [] };
+    }
 }
 
 function clearFeedback() {
@@ -447,6 +643,7 @@ function onSelectionChanged() {
     stopAudioCourse(true);
     currentItem = null;
     isAnswered = false;
+    buildState = { available: [], chosen: [] };
     questionHistory = [];
     questionHistoryIndex = -1;
     forgottenQueue = forgottenQueue.filter(id => getSelectedItems().some(item => item.id === id));
@@ -495,6 +692,7 @@ function nextQuestion() {
     currentItem = nextItem;
     currentExerciseType = chooseExerciseType();
     isAnswered = false;
+    buildState = { available: [], chosen: [] };
     questionHistory = questionHistory.slice(0, questionHistoryIndex + 1);
     questionHistory.push({ item: currentItem, exerciseType: currentExerciseType, answered: false });
     questionHistoryIndex = questionHistory.length - 1;
@@ -503,10 +701,11 @@ function nextQuestion() {
     if (answer) answer.value = "";
     document.getElementById("practice-start")?.classList.add("hidden");
     document.getElementById("practice-next")?.classList.remove("hidden");
-    if (currentExerciseType === "choice") renderChoiceOptions();
+    if (currentExerciseType === "choice" || currentExerciseType === "dictation-choice") renderChoiceOptions();
     else document.getElementById("practice-choice-options")?.replaceChildren();
     renderQuestion();
-    if (currentExerciseType !== "choice") answer?.focus();
+    if (currentExerciseType !== "choice" && currentExerciseType !== "dictation-choice") answer?.focus();
+    if ((currentExerciseType === "listening" || currentExerciseType === "dictation-choice") && currentItem) playAudioEnhanced(currentItem.word, "en");
     updatePreviousButton();
 }
 
@@ -522,12 +721,13 @@ function previousQuestion() {
     currentItem = previous.item;
     currentExerciseType = previous.exerciseType;
     isAnswered = previous.answered;
+    buildState = { available: [], chosen: [] };
     clearFeedback();
     const answer = document.getElementById("practice-answer");
     if (answer) answer.value = "";
     document.getElementById("practice-next")?.classList.remove("hidden");
     document.getElementById("practice-start")?.classList.add("hidden");
-    if (currentExerciseType === "choice") renderChoiceOptions();
+    if (currentExerciseType === "choice" || currentExerciseType === "dictation-choice") renderChoiceOptions();
     else document.getElementById("practice-choice-options")?.replaceChildren();
     renderQuestion();
     updatePreviousButton();
@@ -536,7 +736,7 @@ function previousQuestion() {
 function recordAnswer(submittedAnswer, selectedButton = null) {
     if (!currentItem || isAnswered) return;
 
-    const isCorrect = normalizeAnswer(submittedAnswer) === normalizeAnswer(currentItem.word);
+    const isCorrect = isCorrectAnswer(submittedAnswer);
     isAnswered = true;
     if (questionHistory[questionHistoryIndex]) {
         questionHistory[questionHistoryIndex].answered = true;
@@ -569,6 +769,7 @@ function recordAnswer(submittedAnswer, selectedButton = null) {
     }
     progressByItem[currentItem.id] = progress;
     saveProgress();
+    recordExerciseOutcome(currentExerciseType, isCorrect);
     if (progressSync && !isTemporaryNotionItem(currentItem.id)) {
         const itemId = currentItem.id;
         const savedProgress = { ...progress };

@@ -945,6 +945,20 @@
     .practice-choice-button:disabled { cursor: default; }
     .practice-choice-button.is-correct { border-color: #24835f; background: #e2f3e9; color: #176647; }
     .practice-choice-button.is-incorrect { border-color: #b95743; background: #fff0ec; color: #a04432; }
+    .practice-build-board { display: grid; gap: 12px; max-width: 520px; margin: 0 auto 16px; }
+    .practice-build-zone { min-height: 52px; display: flex; flex-wrap: wrap; align-items: center; gap: 7px; padding: 8px; border: 1px dashed #cbd7ce; border-radius: 8px; background: #fafcfa; }
+    .practice-build-zone--selected { min-height: 58px; border-style: solid; background: #f2f7f1; }
+    .practice-build-zone--placeholder { color: #8a978d; font-size: 0.82rem; }
+    .practice-build-token { min-height: 40px; padding: 8px 12px; border: 1px solid #d5dfd8; border-radius: 7px; background: #fff; color: #304238; cursor: pointer; font-size: 0.88rem; font-weight: 650; overflow-wrap: anywhere; }
+    .practice-build-token:hover:not(:disabled) { border-color: #28745a; background: #edf5ef; }
+    .practice-build-token:disabled { cursor: default; }
+    .practice-build-board.is-correct .practice-build-token { border-color: #24835f; background: #e2f3e9; }
+    .practice-build-board.is-incorrect .practice-build-token { border-color: #b95743; background: #fff0ec; }
+    .practice-build-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .practice-build-clear { border: 0; background: none; color: #647168; cursor: pointer; font-weight: 700; padding: 7px 8px; }
+    .practice-build-footer button:last-child { min-height: 40px; padding: 8px 18px; border: 0; border-radius: 5px; background: #28745a; color: #fff; cursor: pointer; font-weight: 700; }
+    .practice-build-footer button:last-child:disabled { opacity: 0.45; cursor: not-allowed; }
+    .practice-exercise-stats { max-width: 520px; margin: 8px auto 0; padding: 7px 10px; border-radius: 999px; background: #eef4ee; color: #3f5d4d; font-size: 0.76rem; line-height: 1.4; text-align: center; }
 
     .practice-listen-button, .practice-next-button, #practice-submit {
         display: inline-flex;
