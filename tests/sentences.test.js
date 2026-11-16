@@ -2,6 +2,7 @@ import test from "node:test"
 import assert from "node:assert/strict"
 import { validateSentence } from "../js/sentences/model.js"
 import { isDue, scheduleReview, previewReview, sortReviewQueue, reviewStateLabel } from "../js/sentences/scheduler.js"
+import { DEFAULT_REVIEW_SETTINGS, normalizeReviewSettings, normalizeLearningSteps } from "../js/sentences/review-settings.js"
 import { checkFillBlank, createFillBlank } from "../js/sentences/exercises.js"
 import { createSentenceRepository } from "../js/sentences/repository.js"
 import { AI_PROVIDER_STORAGE, GROQ_KEY_STORAGE } from "../js/config.js"
@@ -66,6 +67,19 @@ test("a review card uses Anki-like ease and lapse relearning", () => {
     const relearned = scheduleReview(again, "good", new Date(now.getTime() + 10 * 60 * 1000))
     assert.equal(relearned.memoryState, "review")
     assert.equal(relearned.intervalDays, 4) // max(8 * 0.5, 1)
+})
+
+test("review settings normalize direction, limits and spaced-repetition steps", () => {
+    assert.deepEqual(normalizeReviewSettings({ newCardLimit: 0, reviewLimit: 9999, learningSteps: "", cardDirection: "sideways", autoplayAudio: false }), {
+        newCardLimit: 1,
+        reviewLimit: 1000,
+        learningSteps: "1,10",
+        autoplayAudio: false,
+        cardDirection: "both"
+    })
+    assert.deepEqual(normalizeLearningSteps("2, 15, 60"), [2, 15, 60])
+    assert.deepEqual(normalizeLearningSteps("bad"), [1, 10])
+    assert.equal(DEFAULT_REVIEW_SETTINGS.cardDirection, "both")
 })
 
 test("review previews are available for every grade", () => {

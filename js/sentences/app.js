@@ -3,6 +3,7 @@ import { supabase } from "../app.js"
 import { playAudioEnhanced } from "../audio.js"
 import { REASONS, TOPICS, suggestGrammarPattern, validateSentence } from "./model.js"
 import { isDue, scheduleReview, sortReviewQueue, previewReview, reviewStateLabel } from "./scheduler.js"
+import { loadReviewSettings, saveReviewSettings, normalizeReviewSettings, normalizeLearningSteps, formatReviewSettings, DEFAULT_REVIEW_SETTINGS } from "./review-settings.js"
 import { createSentenceRepository } from "./repository.js"
 import { resolveSessionUser } from "../offline/session.js"
 import { createNotesView } from "./notes.js"
@@ -11,7 +12,7 @@ import { renderGroupWordButton } from "../word-groups/modal.js"
 import { showLoading, hideLoading } from "../ui-status.js"
 
 const repository = createSentenceRepository(supabase)
-const state = { user: null, sentences: [], vocabulary: null, review: null, reviewLogs: [] }
+const state = { user: null, sentences: [], vocabulary: null, review: null, reviewLogs: [], reviewCards: [], settings: loadReviewSettings() }
 const byId = id => document.getElementById(id)
 const VOCABULARY_AI_HINT = "Escribe la palabra en español y la IA completará el inglés, la pronunciación, el significado y los ejemplos. Puedes elegir si también completa las notas."
 
@@ -33,14 +34,46 @@ function storageErrorMessage(error, action) {
     return `${action} Detalle de Supabase: ${detail}`
 }
 
-function getDue() {
-    const now = new Date()
-    return state.sentences.filter(sentence => isDue(sentence, now)).sort(sortReviewQueue)
+function enabledCardDirections() {
+    return state.settings.cardDirection === "both" ? ["forward", "reverse"] : [state.settings.cardDirection]
 }
 
 function todayReviewLogs() {
     const today = new Date().toDateString()
-    return state.reviewLogs.filter(log => new Date(log.reviewedAt).toDateString() === today)
+    const directions = enabledCardDirections()
+    return state.reviewLogs.filter(log => new Date(log.reviewedAt).toDateString() === today && directions.includes(log.direction || "forward"))
+}
+
+function todayReviewedCardIds(type) {
+    return new Set(todayReviewLogs()
+        .filter(log => type === "new" ? log.previousState === "new" : log.previousState !== "new")
+        .map(log => log.cardId || log.sentenceId))
+}
+
+function getDue() {
+    const now = new Date()
+    const enabled = enabledCardDirections()
+    state.dailyLimitReached = false
+    const due = state.reviewCards
+        .filter(card => enabled.includes(card.direction) && isDue(card, now))
+        .sort(sortReviewQueue)
+    state.allDue = due.length
+    let newUsed = todayReviewedCardIds("new").size
+    let reviewUsed = todayReviewedCardIds("review").size
+    const allowed = []
+    for (const card of due) {
+        if (card.memoryState === "new") {
+            if (newUsed >= state.settings.newCardLimit) continue
+            newUsed += 1
+        } else if (reviewUsed >= state.settings.reviewLimit) {
+            continue
+        } else {
+            reviewUsed += 1
+        }
+        allowed.push(card)
+    }
+    state.dailyLimitReached = allowed.length < due.length
+    return allowed
 }
 
 function getCompletionSummary() {
@@ -61,10 +94,36 @@ function updateStats() {
         const learning = due.filter(item => item.memoryState === "learning" || item.memoryState === "relearning").length
         const newCards = due.filter(item => item.memoryState === "new").length
         details.textContent = due.length
-            ? `${newCards} nuevas · ${due.length - newCards - learning} en repaso · ${learning} en aprendizaje/reaprendizaje`
-            : "Nada pendiente. Tu cola está al día."
+            ? `${newCards} nuevas · ${due.length - newCards - learning} en repaso · ${learning} en aprendizaje/reaprendizaje${state.dailyLimitReached ? ` · límite diario alcanzado en ${state.allDue} pendientes` : ''}`
+            : state.dailyLimitReached
+                ? `Límite diario alcanzado · ${state.allDue} pendientes esperando mañana.`
+                : "Nada pendiente. Tu cola está al día."
     }
     byId("review-tab-count").textContent = due.length
+}
+
+function renderReviewSettings() {
+    const form = byId("review-settings-form")
+    if (!form) return
+    form.elements.newCardLimit.value = String(state.settings.newCardLimit)
+    form.elements.reviewLimit.value = String(state.settings.reviewLimit)
+    form.elements.learningSteps.value = state.settings.learningSteps
+    form.elements.cardDirection.value = state.settings.cardDirection
+    form.elements.autoplayAudio.value = String(state.settings.autoplayAudio)
+    byId("review-settings-status").textContent = `Ajustes actuales: ${formatReviewSettings(state.settings)}`
+    byId("review-settings-status").classList.remove("error")
+}
+
+function applyReviewSettings(settings, message = "Ajustes guardados.") {
+    state.settings = normalizeReviewSettings(settings)
+    renderReviewSettings()
+    updateStats()
+    renderReview()
+    const status = byId("review-settings-status")
+    if (status) {
+        status.textContent = message
+        status.classList.remove("error")
+    }
 }
 
 function renderTopics() {
@@ -323,14 +382,18 @@ function renderReview() {
         return
     }
     const sentence = state.review
+    const directionLabel = sentence.direction === "reverse" ? "Inglés → Español" : "Español → Inglés"
     const stateLabel = reviewStateLabel(sentence)
-    const previews = previewReview(sentence)
+    const previews = previewReview(sentence, new Date(), { learningSteps: normalizeLearningSteps(state.settings.learningSteps) })
     const kicker = document.createElement("div")
     kicker.className = "exercise-kicker"
-    kicker.textContent = `${sentence.topicTags.join(" · ")}  /  ${stateLabel}  /  ${due.length} due`
+    kicker.textContent = `${sentence.topicTags.join(" · ")}  /  ${stateLabel}  /  ${directionLabel}  /  ${due.length} due`
     const prompt = document.createElement("div")
     prompt.className = "exercise-prompt"
-    prompt.textContent = sentence.spanishTranslation || `Recall your saved sentence. Think of the situation where you heard it${sentence.topicTags[0] ? ` (${sentence.topicTags[0].toLowerCase()})` : ""}.`
+    prompt.setAttribute("lang", sentence.direction === "reverse" ? "en" : "es")
+    prompt.textContent = sentence.direction === "reverse"
+        ? sentence.englishText
+        : (sentence.spanishTranslation || `Recall your saved sentence. Think of the situation where you heard it${sentence.topicTags[0] ? ` (${sentence.topicTags[0].toLowerCase()})` : ""}.`)
     const answerArea = document.createElement("div")
     answerArea.id = "review-answer"
     const reveal = document.createElement("button")
@@ -343,7 +406,7 @@ function renderReview() {
         answerRow.className = "review-answer-row"
         const answer = document.createElement("div")
         answer.className = "feedback"
-        answer.textContent = sentence.englishText
+        answer.textContent = sentence.direction === "reverse" ? sentence.spanishTranslation : sentence.englishText
         const playAnswer = document.createElement("button")
         playAnswer.type = "button"
         playAnswer.className = "icon-button audio-button review-audio-button"
@@ -356,6 +419,9 @@ function renderReview() {
         answerArea.append(answerRow)
         reveal.classList.add("hidden")
         buttons.classList.remove("hidden")
+        if (state.settings.autoplayAudio) {
+            playAudioEnhanced(sentence.englishText, "en")
+        }
     })
     const buttons = document.createElement("div")
     buttons.className = "exercise-actions review-rating-actions hidden"
@@ -379,10 +445,10 @@ function renderReview() {
 
 async function submitReview(sentence, grade) {
     try {
-        const stateUpdate = scheduleReview(sentence, grade)
-        const updated = await repository.updateReview(state.user.id, sentence.id, stateUpdate)
+        const stateUpdate = scheduleReview(sentence, grade, new Date(), { learningSteps: normalizeLearningSteps(state.settings.learningSteps) })
+        const updated = await repository.updateReviewCard(state.user.id, sentence.id, stateUpdate)
         await repository.appendReviewLog(state.user.id, sentence, grade, updated)
-        state.sentences = state.sentences.map(item => item.id === updated.id ? updated : item)
+        state.reviewCards = state.reviewCards.map(item => item.id === updated.id ? updated : item)
         const nextState = updated.memoryState === "relearning" ? "registro para reaprender" : "repaso programado"
         showNotice(`Guardado — ${nextState}.`)
         state.reviewLogs.unshift({
@@ -488,6 +554,8 @@ async function deleteSentence(sentence) {
     try {
         await repository.remove(state.user.id, sentence.id)
         state.sentences = state.sentences.filter(item => item.id !== sentence.id)
+        state.reviewCards = state.reviewCards.filter(item => item.sentenceId !== sentence.id)
+        state.reviewLogs = state.reviewLogs.filter(item => item.sentenceId !== sentence.id)
         showNotice("Sentence deleted.")
         renderAll()
         window.dispatchEvent(new CustomEvent("personal-sentences-changed"))
@@ -500,15 +568,17 @@ async function deleteSentence(sentence) {
 async function loadData() {
     showLoading("sentences-loading-indicator", "Cargando tus frases…")
     try {
-        const [sentences, logs] = await Promise.all([
-            repository.list(state.user.id),
+        const sentences = await repository.list(state.user.id)
+        const [logs, cards] = await Promise.all([
             repository.listReviewLogs(state.user.id).catch(error => {
                 console.warn("[sentences] No se pudo cargar el historial de repasos:", error)
                 return []
-            })
+            }),
+            repository.listReviewCards(state.user.id, sentences)
         ])
         state.sentences = sentences
         state.reviewLogs = logs
+        state.reviewCards = cards
         byId("auth-panel").classList.add("hidden")
         byId("app-panel").classList.remove("hidden")
         renderAll()
@@ -532,6 +602,21 @@ function switchScreen(name) {
 function setupEvents() {
     renderTopics()
     document.querySelectorAll(".tab").forEach(tab => tab.addEventListener("click", () => switchScreen(tab.dataset.screen)))
+    byId("toggle-review-settings")?.addEventListener("click", () => byId("review-settings-form")?.classList.toggle("hidden"))
+    byId("review-settings-form")?.addEventListener("submit", event => {
+        event.preventDefault()
+        const data = new FormData(event.currentTarget)
+        applyReviewSettings({
+            newCardLimit: data.get("newCardLimit"),
+            reviewLimit: data.get("reviewLimit"),
+            learningSteps: data.get("learningSteps"),
+            cardDirection: data.get("cardDirection"),
+            autoplayAudio: data.get("autoplayAudio") === "true"
+        })
+    })
+    byId("reset-review-settings")?.addEventListener("click", () => {
+        applyReviewSettings({ ...DEFAULT_REVIEW_SETTINGS }, "Ajustes restablecidos.")
+    })
     byId("cancel-edit").addEventListener("click", resetForm)
     byId("search-input").addEventListener("input", () => renderSentenceList(filteredSentences()))
     byId("vocabulary-search-input").addEventListener("input", renderVocabularyList)
@@ -557,6 +642,7 @@ function setupEvents() {
             const saved = await repository.save(state.user.id, sentence, form.elements.id.value || null)
             if (form.elements.id.value) state.sentences = state.sentences.map(item => item.id === saved.id ? saved : item)
             else state.sentences.unshift(saved)
+            state.reviewCards = await repository.listReviewCards(state.user.id, state.sentences)
             resetForm()
             showNotice("Sentence saved.")
             renderAll()
@@ -704,6 +790,7 @@ export async function initializeSentencesApp() {
     if (initialized) return
     initialized = true
     setupEvents()
+    renderReviewSettings()
     showLoading("sentences-loading-indicator", "Cargando tu aprendizaje…")
     try {
         let user = await resolveSessionUser(supabase)

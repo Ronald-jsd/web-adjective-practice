@@ -178,6 +178,7 @@ export const TABLES = {
     practiceProgress: "vocabulary_practice_progress",
     aiQueries: "user_ai_queries",
     reviewLogs: "my_sentence_review_logs",
+    reviewCards: "my_sentence_review_cards",
     notionPages: "user_notion_pages",
     wordGroups: "user_word_groups"
 };

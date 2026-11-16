@@ -562,7 +562,13 @@
                         <div id="notion-embed-list" class="notion-embed-list"><div class="empty">Cargando páginas de Notion…</div></div>
                     </section>
                     <section id="review-screen" class="screen">
-                        <div class="section-heading"><div><p class="eyebrow">REPETICIÓN ESPACIADA</p><h2>Recuerda antes de mirar</h2><p class="muted">Anki recupera intervalos, pasos de aprendizaje y reaprendizaje: Again/Otra vez, Hard/Difícil, Good/Bien y Easy/Fácil.</p><p id="review-details" class="review-details">Nada pendiente. Tu cola está al día.</p></div></div>
+                        <div class="section-heading"><div><p class="eyebrow">REPETICIÓN ESPACIADA</p><h2>Recuerda antes de mirar</h2><p class="muted">Anki gestiona pasos de aprendizaje, reaprendizaje, tarjetas delantera/inversa y límites diarios configurables.</p><p id="review-details" class="review-details">Nada pendiente. Tu cola está al día.</p></div><button class="button secondary review-settings-toggle" id="toggle-review-settings" type="button">⚙️ Ajustes</button></div>
+                        <form id="review-settings-form" class="panel form-stack review-settings hidden">
+                            <div class="form-grid"><label>Nuevas al día<input name="newCardLimit" type="number" min="1" max="100" required></label><label>Repasos al día<input name="reviewLimit" type="number" min="1" max="1000" required></label></div>
+                            <label>Pasos de aprendizaje (minutos)<input name="learningSteps" type="text" placeholder="1,10" pattern="[0-9, ]+" inputmode="numeric" autocomplete="off"></label>
+                            <div class="form-grid"><label>Dirección predeterminada<select name="cardDirection"><option value="both">Español y reverso</option><option value="forward">Solo Español → Inglés</option><option value="reverse">Solo Inglés → Español</option></select></label><label>Reproducción automática<select name="autoplayAudio"><option value="true">Activada</option><option value="false">Desactivada</option></select></label></div>
+                            <p class="field-hint">Los cambios se guardan en este dispositivo. Para cambiar el orden visible, elige la dirección; la configuración se recuerda aunque cierres sesión.</p><small id="review-settings-status" class="field-hint" role="status" aria-live="polite"></small><div class="form-actions"><button class="button primary" type="submit">Guardar ajustes</button><button class="button secondary" id="reset-review-settings" type="button">Restablecer</button></div>
+                        </form>
                         <div id="review-card" class="exercise-card panel"></div>
                     </section>
                 </section>

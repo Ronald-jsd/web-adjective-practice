@@ -81,7 +81,14 @@ function graduated(sentence, grade, next) {
 
 /* Escribe el mismo calendario que Anki: nuevas en learningsteps, revisadas
  * con SM-2 modificado y lapsos que vuelven a relearning. */
-export function scheduleReview(sentence, grade, now = new Date()) {
+function getLearningSteps(options = {}) {
+    const candidate = Array.isArray(options.learningSteps) ? options.learningSteps : DEFAULT_LEARNING_STEPS
+    const steps = candidate.map(value => Number(value)).filter(value => Number.isFinite(value) && value > 0 && value <= 1440)
+    return steps.length ? steps.slice(0, 8) : [...DEFAULT_LEARNING_STEPS]
+}
+
+export function scheduleReview(sentence, grade, now = new Date(), options = {}) {
+    const learningSteps = getLearningSteps(options)
     const rawGrade = typeof grade === 'boolean' ? (grade ? 'good' : 'again') : String(grade || '').toLowerCase()
     const normalizedGrade = rawGrade === 'remembered' || rawGrade === 'good' ? 'good'
         : rawGrade === 'forgotten' || rawGrade === 'again' ? 'again'
@@ -102,7 +109,7 @@ export function scheduleReview(sentence, grade, now = new Date()) {
                 repetitions: 0,
                 lapses: source.lapses,
                 learningStep: 0,
-                nextReviewAt: addMinutes(now, DEFAULT_LEARNING_STEPS[0]).toISOString(),
+                nextReviewAt: addMinutes(now, learningSteps[0]).toISOString(),
                 totalFailures: source.totalFailures || 0,
                 lastGrade: id
             })
@@ -140,7 +147,7 @@ export function scheduleReview(sentence, grade, now = new Date()) {
                 intervalDays: 0,
                 repetitions: 1,
                 learningStep: 1,
-                nextReviewAt: addMinutes(now, DEFAULT_LEARNING_STEPS[1]).toISOString(),
+                nextReviewAt: addMinutes(now, learningSteps[1] ?? learningSteps[0]).toISOString(),
                 lastGrade: id,
                 totalFailures: source.totalFailures || 0
             })
@@ -167,7 +174,7 @@ export function scheduleReview(sentence, grade, now = new Date()) {
                 lapses: source.lapses + 1,
                 learningStep: 0,
                 intervalDays: source.intervalDays,
-                nextReviewAt: addMinutes(now, DEFAULT_LEARNING_STEPS[0]).toISOString(),
+                nextReviewAt: addMinutes(now, learningSteps[0]).toISOString(),
                 totalFailures: source.totalFailures || 0,
                 lastGrade: id
             })
@@ -178,7 +185,7 @@ export function scheduleReview(sentence, grade, now = new Date()) {
                 memoryState: 'relearning',
                 learningStep: Math.max(1, source.learningStep),
                 intervalDays: source.intervalDays,
-                nextReviewAt: addMinutes(now, DEFAULT_LEARNING_STEPS[1]).toISOString(),
+                nextReviewAt: addMinutes(now, learningSteps[1] ?? learningSteps[0]).toISOString(),
                 lastGrade: id,
                 totalFailures: source.totalFailures || 0
             })
@@ -217,7 +224,7 @@ export function scheduleReview(sentence, grade, now = new Date()) {
             lapses: source.lapses + 1,
             learningStep: 0,
             intervalDays: source.intervalDays,
-            nextReviewAt: addMinutes(now, DEFAULT_LEARNING_STEPS[0]).toISOString(),
+            nextReviewAt: addMinutes(now, learningSteps[0]).toISOString(),
             totalFailures: source.totalFailures || 0,
             lastGrade: id
         })
@@ -265,9 +272,9 @@ export function scheduleReview(sentence, grade, now = new Date()) {
 
 /* Devuelve una previsualización inocua para cada botón, como el intervalo
  * que aparece en Anki bajo Again/Hard/Good/Easy. */
-export function previewReview(sentence, now = new Date()) {
+export function previewReview(sentence, now = new Date(), options = {}) {
     return Object.fromEntries(['again', 'hard', 'good', 'easy'].map(grade => {
-        const preview = scheduleReview(sentence, grade, now)
+        const preview = scheduleReview(sentence, grade, now, options)
         const delay = new Date(preview.nextReviewAt).getTime() - new Date(now).getTime()
         return [grade, formatInterval(delay)]
     }))

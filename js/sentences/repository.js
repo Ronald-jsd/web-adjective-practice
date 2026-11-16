@@ -14,12 +14,38 @@ import { generateLocalIntegerId, generateUuid, isLocalIntegerId } from "../offli
 const SENTENCES_TABLE = "my_sentences"
 const VOCABULARY_TABLE = "user_custom_items"
 const REVIEW_LOG_TABLE = "my_sentence_review_logs"
+const REVIEW_CARD_TABLE = "my_sentence_review_cards"
 
 const SENTENCE_COLUMNS = "id,english_text,spanish_translation,topic_tags,reason_for_saving,grammar_pattern,grammar_pattern_translation,notes,review_box,memory_state,interval_days,ease_factor,repetitions,lapses,learning_step,last_grade,next_review_at,total_attempts,total_failures,consecutive_successes,last_reviewed_at,created_at,updated_at"
-const REVIEW_LOG_COLUMNS = "id,user_id,my_sentence_id,grade,reviewed_at,previous_state,next_state,previous_interval_days,next_interval_days,total_attempts,total_failures"
+const REVIEW_CARD_COLUMNS = "id,user_id,my_sentence_id,direction,memory_state,interval_days,ease_factor,repetitions,lapses,learning_step,last_grade,total_attempts,total_failures,next_review_at,consecutive_successes,last_reviewed_at,created_at,updated_at"
+const REVIEW_LOG_COLUMNS = "id,user_id,my_sentence_id,card_id,direction,grade,reviewed_at,previous_state,next_state,previous_interval_days,next_interval_days,total_attempts,total_failures"
 const VOCABULARY_COLUMNS = "id,word,pronunciation,spanish,example_en,example_es,notes,category,subcategory,created_at"
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000
+
+function normalizeReviewCardRecord(card, sentence) {
+    const base = sentence || {}
+    return {
+        ...base,
+        id: card.id,
+        sentenceId: card.my_sentence_id || card.sentenceId,
+        direction: card.direction,
+        memoryState: card.memory_state || base.memoryState || "new",
+        intervalDays: Number(card.interval_days ?? base.intervalDays ?? 0),
+        easeFactor: Number(card.ease_factor ?? base.easeFactor ?? 2.5),
+        repetitions: Number(card.repetitions ?? base.repetitions ?? 0),
+        lapses: Number(card.lapses ?? base.lapses ?? 0),
+        learningStep: Number(card.learning_step ?? base.learningStep ?? 0),
+        lastGrade: card.last_grade || base.lastGrade || null,
+        nextReviewAt: card.next_review_at || base.nextReviewAt,
+        totalAttempts: Number(card.total_attempts ?? base.totalAttempts ?? 0),
+        totalFailures: Number(card.total_failures ?? base.totalFailures ?? 0),
+        consecutiveSuccesses: Number(card.consecutive_successes ?? base.consecutiveSuccesses ?? 0),
+        lastReviewedAt: card.last_reviewed_at || base.lastReviewedAt || null,
+        createdAt: card.created_at || base.createdAt || null,
+        updatedAt: card.updated_at || base.updatedAt || null
+    }
+}
 
 function numericId(value) {
     const number = Number(value)
@@ -299,6 +325,10 @@ export function createSentenceRepository(supabase) {
 
         async remove(userId, id) {
             await removeCachedRow(TABLES.sentences, id)
+            const cards = await readCachedRows(TABLES.reviewCards, row => row && String(row.my_sentence_id || row.mySentenceId || "") === String(id))
+            for (const card of cards) await removeCachedRow(TABLES.reviewCards, card.id)
+            const logs = await readCachedRows(TABLES.reviewLogs, row => row && String(row.my_sentence_id || row.mySentenceId || row.sentenceId || "") === String(id))
+            for (const log of logs) await removeCachedRow(TABLES.reviewLogs, log.id)
             await queueChange({
                 table: TABLES.sentences,
                 action: "delete",
@@ -372,10 +402,12 @@ export function createSentenceRepository(supabase) {
             const normalizeLog = row => row && ({
                 id: row.id,
                 sentenceId: row.my_sentence_id || row.sentenceId,
+                cardId: row.card_id || row.cardId || null,
+                direction: row.direction || "forward",
                 grade: row.grade,
                 reviewedAt: row.reviewed_at || row.reviewedAt,
                 previousState: row.previous_state || row.previousState || "new",
-                nextState: row.next_state || row.nextState || row.next_state || "learning",
+                nextState: row.next_state || row.nextState || "learning",
                 previousIntervalDays: Number(row.previous_interval_days || row.previousIntervalDays || 0),
                 nextIntervalDays: Number(row.next_interval_days || row.nextIntervalDays || 0),
                 totalAttempts: Number(row.total_attempts || row.totalAttempts || 1),
@@ -410,7 +442,9 @@ export function createSentenceRepository(supabase) {
             const row = {
                 id: generateUuid(),
                 user_id: userId,
-                my_sentence_id: sentence.id,
+                my_sentence_id: sentence.sentenceId || sentence.id,
+                card_id: sentence.cardId || sentence.id,
+                direction: sentence.direction || "forward",
                 grade,
                 reviewed_at: now,
                 previous_state: sentence.memoryState || "new",
@@ -432,6 +466,8 @@ export function createSentenceRepository(supabase) {
             return {
                 id: row.id,
                 sentenceId: row.my_sentence_id,
+                cardId: row.card_id,
+                direction: row.direction,
                 grade: row.grade,
                 reviewedAt: row.reviewed_at,
                 previousState: row.previous_state,
@@ -440,6 +476,107 @@ export function createSentenceRepository(supabase) {
                 nextIntervalDays: row.next_interval_days,
                 totalAttempts: row.total_attempts,
                 totalFailures: row.total_failures
+            }
+        },
+
+        async listReviewCards(userId, sentences) {
+            const bySentence = new Map((sentences || []).map(sentence => [String(sentence.id), sentence]))
+            const cached = await readCachedRows(TABLES.reviewCards, row => row && row.user_id === userId)
+            let rows = cached
+            if (isOnline()) {
+                try {
+                    const { data, error } = await supabase
+                        .from(REVIEW_CARD_TABLE)
+                        .select(REVIEW_CARD_COLUMNS)
+                        .eq("user_id", userId)
+                        .order("created_at", { ascending: true })
+                    if (error) throw error
+                    const withUser = (data || []).map(row => ({ ...row, user_id: row.user_id || userId }))
+                    rows = await cacheRowsPreservingPending(TABLES.reviewCards, withUser)
+                } catch (error) {
+                    console.warn("[offline] Tarjetas de repaso cargadas desde el dispositivo:", error?.message || error)
+                }
+            }
+
+            const existing = new Set(rows.map(row => `${row.my_sentence_id}:${row.direction}`))
+            for (const sentence of sentences || []) {
+                for (const direction of ["forward", "reverse"]) {
+                    if (existing.has(`${sentence.id}:${direction}`)) continue
+                    const now = new Date().toISOString()
+                    const row = {
+                        id: generateUuid(),
+                        user_id: userId,
+                        my_sentence_id: sentence.id,
+                        direction,
+                        memory_state: direction === "forward" ? (sentence.memoryState || "new") : "new",
+                        interval_days: direction === "forward" ? Number(sentence.intervalDays || 0) : 0,
+                        ease_factor: direction === "forward" ? Number(sentence.easeFactor || 2.5) : 2.5,
+                        repetitions: direction === "forward" ? Number(sentence.repetitions || 0) : 0,
+                        lapses: direction === "forward" ? Number(sentence.lapses || 0) : 0,
+                        learning_step: direction === "forward" ? Number(sentence.learningStep || 0) : 0,
+                        last_grade: direction === "forward" ? (sentence.lastGrade || null) : null,
+                        total_attempts: direction === "forward" ? Number(sentence.totalAttempts || 0) : 0,
+                        total_failures: direction === "forward" ? Number(sentence.totalFailures || 0) : 0,
+                        next_review_at: direction === "forward" ? (sentence.nextReviewAt || now) : now,
+                        consecutive_successes: direction === "forward" ? Number(sentence.consecutiveSuccesses || 0) : 0,
+                        last_reviewed_at: direction === "forward" ? (sentence.lastReviewedAt || null) : null,
+                        created_at: now,
+                        updated_at: now
+                    }
+                    await cacheRow(TABLES.reviewCards, row.id, row)
+                    await queueChange({ table: TABLES.reviewCards, action: "upsert", payload: row, conflict: "id", localId: row.id, description: "Crear tarjeta de repaso" })
+                    rows.push(row)
+                    existing.add(`${sentence.id}:${direction}`)
+                }
+            }
+
+            return rows
+                .filter(row => row && row.user_id === userId && bySentence.has(String(row.my_sentence_id)))
+                .map(row => normalizeReviewCardRecord(row, bySentence.get(String(row.my_sentence_id))))
+        },
+
+        async updateReviewCard(userId, id, state) {
+            const values = {
+                memory_state: state.memoryState,
+                interval_days: state.intervalDays,
+                ease_factor: state.easeFactor,
+                repetitions: state.repetitions,
+                lapses: state.lapses,
+                learning_step: state.learningStep,
+                last_grade: state.lastGrade,
+                next_review_at: state.nextReviewAt,
+                total_attempts: state.totalAttempts,
+                total_failures: state.totalFailures,
+                consecutive_successes: state.consecutiveSuccesses,
+                last_reviewed_at: state.lastReviewedAt
+            }
+            const now = new Date().toISOString()
+            const cached = await readCachedRow(TABLES.reviewCards, id)
+
+            if (cached) {
+                const merged = { ...cached, ...values, id: cached.id ?? id, updated_at: now }
+                await cacheRow(TABLES.reviewCards, id, merged)
+                await queueChange({ table: TABLES.reviewCards, action: "update", payload: values, match: { id, user_id: userId }, localId: id, description: "Guardar repaso" })
+                const sentences = await readCachedRows(TABLES.sentences, row => row && row.user_id === userId)
+                return normalizeReviewCardRecord(merged, sentences.find(row => String(row.id) === String(merged.my_sentence_id)))
+            }
+
+            try {
+                const row = await checked(
+                    supabase.from(REVIEW_CARD_TABLE)
+                        .update(values)
+                        .eq("id", id)
+                        .eq("user_id", userId)
+                        .select(REVIEW_CARD_COLUMNS)
+                        .single()
+                )
+                const withUser = { ...row, user_id: userId }
+                await cacheRow(TABLES.reviewCards, id, withUser)
+                const sentences = await readCachedRows(TABLES.sentences, row => row && row.user_id === userId)
+                return normalizeReviewCardRecord(withUser, sentences.find(item => String(item.id) === String(withUser.my_sentence_id)))
+            } catch (error) {
+                await queueChange({ table: TABLES.reviewCards, action: "update", payload: values, match: { id, user_id: userId }, localId: id, description: "Guardar repaso" })
+                return normalizeReviewCardRecord({ ...values, id, user_id: userId, updated_at: now }, null)
             }
         }
     }

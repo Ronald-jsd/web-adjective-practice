@@ -6,7 +6,7 @@
  *  - Supabase, IA y Notion: siempre red (nunca se cachean datos privados).
  * Sube VERSION cuando cambies archivos para forzar la actualización.
  */
-const VERSION = "v1.2.31";
+const VERSION = "v1.2.33";
 const SHELL_CACHE = `vg-shell-${VERSION}`;
 const RUNTIME_CACHE = `vg-runtime-${VERSION}`;
 
@@ -68,6 +68,7 @@ const CORE_ASSETS = [
     "./js/sentences/model.js",
     "./js/sentences/notes.js",
     "./js/sentences/repository.js",
+    "./js/sentences/review-settings.js",
     "./js/sentences/scheduler.js",
     "./js/sentences/vocabulary-search.js",
     "./js/verbs/verbs-ai.js",
