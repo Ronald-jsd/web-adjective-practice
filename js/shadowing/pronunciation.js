@@ -6,9 +6,6 @@ import { playAudioEnhanced } from "../audio.js"
 
 const PRONUNCIATION_CACHE = "shadowing_pronunciation_v2"
 
-let playbackGeneration = 0
-let currentAudio = null
-
 function readCache() {
     try {
         return JSON.parse(localStorage.getItem(PRONUNCIATION_CACHE) || "{}") || {}
@@ -30,8 +27,6 @@ function remember(term, data) {
 }
 
 export function speakPhrase(text, lang = "en") {
-    playbackGeneration += 1
-    stopCurrentAudio()
     return playAudioEnhanced(text, lang)
 }
 
@@ -74,41 +69,39 @@ export async function getPronunciation(word) {
     return null
 }
 
-/* Reproduce la palabra al instante con la voz del dispositivo. Si el
- * diccionario público tiene audio real, sustituye la voz sintética.
- * Un contador evita que una respuesta tardía de una palabra anterior corte
- * la palabra que el usuario acaba de tocar. */
-function stopCurrentAudio() {
-    if (!currentAudio) return
-    try {
-        currentAudio.pause()
-        currentAudio.currentTime = 0
-    } catch (error) { /* ya terminó */ }
-    currentAudio = null
-}
-
+/* Reproduce una palabra garantizando una sola fuente de sonido:
+ * si ya tenemos el audio real del diccionario, se usa él; si no, la voz del
+ * dispositivo. Nunca se cancela una voz que acaba de empezar ( eso era lo
+ * que dejaba mudas a algunas palabras). */
 export async function playWordPronunciation(word) {
     const term = String(word || "").trim()
     if (!term) return false
-    const generation = ++playbackGeneration
-    stopCurrentAudio()
-    speakWordInstant(term)
+    const cached = readCache()[term.toLowerCase()]
+    const url = typeof cached === "object" ? cached?.audio : cached
+    if (url && await playAudioUrl(url)) return true
+    return Boolean(speakWordInstant(term))
+}
 
-    const data = await getPronunciation(term)
-    if (generation !== playbackGeneration) return false
-    const url = data?.audio || ""
-    if (!url) return true
-
-    try {
-        window.speechSynthesis?.cancel()
-        const audio = new Audio(url.startsWith("//") ? `https:${url}` : url)
-        currentAudio = audio
-        await audio.play()
-        if (generation !== playbackGeneration && currentAudio === audio) stopCurrentAudio()
-        return true
-    } catch (error) {
-        // El audio del diccionario falló: se oye la voz del dispositivo.
-        if (generation === playbackGeneration) speakWordInstant(term)
-        return false
-    }
+function playAudioUrl(url) {
+    return new Promise(resolve => {
+        try {
+            const audio = new Audio(url.startsWith("//") ? `https:${url}` : url)
+            const done = result => {
+                clearTimeout(timer)
+                resolve(result)
+            }
+            const timer = setTimeout(() => {
+                try { audio.pause() } catch { /* ignore */ }
+                done(false)
+            }, 900)
+            audio.addEventListener("canplay", () => {
+                audio.play().then(() => done(true)).catch(() => done(false))
+            }, { once: true })
+            audio.addEventListener("error", () => done(false), { once: true })
+            audio.preload = "auto"
+            audio.load()
+        } catch (error) {
+            resolve(false)
+        }
+    })
 }
