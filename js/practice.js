@@ -8,6 +8,7 @@ import {
     selectPracticeDistractors
 } from "./practice-utils.js";
 import { createPracticeAudioPlayer } from "./practice-audio.js";
+import { updateMediaSession } from "./media-session.js";
 import { store } from "./config.js";
 import {
     createAIPracticeCategory,
@@ -130,6 +131,19 @@ function renderAudioCourseState(state) {
             ? `${selectedItemCount} elementos en esta selección · ${canResume ? "puedes reanudar donde lo dejaste." : "se reproducen en orden aleatorio."}`
             : "No hay elementos para este filtro en las categorías elegidas.";
         current.classList.add("hidden");
+    }
+
+    if (state.status === "playing" || state.status === "paused") {
+        updateMediaSession({
+            title: state.item ? `${state.item.word} — ${state.item.spanish}` : "Escucha continua",
+            artist: state.segmentLabel || "Práctica de escucha",
+            album: "PowerLearn",
+            state: state.status,
+            onPlay: () => audioCourse?.start(getAudioCourseItems(), getAudioSessionScope()),
+            onPause: () => audioCourse?.pause(),
+            onNext: () => audioCourse?.skip(),
+            onStop: () => stopAudioCourse()
+        });
     }
 }
 

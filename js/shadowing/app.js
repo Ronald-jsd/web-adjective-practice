@@ -14,6 +14,7 @@ import { resolveSavedLessonId } from "./lesson-dedupe.js"
 import { cacheRow, TABLES } from "../offline/cache.js"
 import { queueChange, isOnline } from "../offline/sync.js"
 import { generateLocalIntegerId } from "../offline/ids.js"
+import { updateMediaSession, clearMediaSession } from "../media-session.js"
 
 let initialized = false
 let supabaseClient = null
@@ -710,6 +711,7 @@ function playPhrase(index = state.currentIndex) {
     state.phraseStartedAt = startedAt
     state.phraseTimer = setTimeout(() => watchPhraseEnd(segment, startedAt), 40)
     updatePlayButton()
+    syncMediaSession("playing")
 }
 
 function pollShadowing() {
@@ -760,6 +762,44 @@ function updatePlayButton() {
         : (running ? "Detener la reproducción" : "Reproducir la frase actual")
 }
 
+/* El reproductor del sistema (notificación / bloqueo) debe reflejar la frase
+ * que suena y permitir play/pause y cambio de frase desde fuera de la app. */
+function syncMediaSession(playbackState = "playing") {
+    const segment = state.current?.transcript?.[state.currentIndex]
+    if (!segment) return
+    updateMediaSession({
+        title: segment.text,
+        artist: state.current.title || "Shadowing",
+        album: "Práctica de shadowing",
+        state: playbackState,
+        onPlay: () => {
+            if (state.practiceMode === "auto") {
+                if (!state.autoActive) startAutoPractice()
+            } else if (!state.phraseTimer) {
+                playPhrase(state.currentIndex)
+            }
+        },
+        onPause: () => {
+            if (state.practiceMode === "auto") stopAutoPractice("Práctica detenida.")
+            else {
+                stopPhraseTimer()
+                state.player?.pauseVideo?.()
+                syncMediaSession("paused")
+            }
+        },
+        onNext: () => seekToLine(state.currentIndex + 1, true),
+        onPrev: () => seekToLine(state.currentIndex - 1, true),
+        onStop: () => {
+            if (state.practiceMode === "auto") stopAutoPractice("Práctica detenida.")
+            else {
+                stopPhraseTimer()
+                state.player?.pauseVideo?.()
+            }
+            syncMediaSession("paused")
+        }
+    })
+}
+
 function stopAutoPractice(message = "") {
     if (state.autoTimer) {
         clearTimeout(state.autoTimer)
@@ -772,6 +812,7 @@ function stopAutoPractice(message = "") {
     state.player?.pauseVideo?.()
     updatePlayButton()
     setPracticeStatus(message)
+    syncMediaSession("paused")
 }
 
 function startAutoPractice() {
@@ -1760,6 +1801,7 @@ function wireEvents() {
             stopPhraseTimer()
             state.player?.pauseVideo?.()
             setPracticeStatus("Reproducción detenida.")
+            syncMediaSession("paused")
             return
         }
         playPhrase(state.currentIndex)
@@ -1864,9 +1906,20 @@ function setupPracticePaneTabs() {
         })
         generalParts.forEach(part => part?.classList.toggle("hidden", name !== "general"))
         if (audioPane) audioPane.hidden = name !== "audio"
-        if (shadowingPane) shadowingPane.hidden = name !== "shadowing"
+        // El iframe de YouTube se mantiene montado para que el audio siga al
+        // cambiar de pestaña: se saca de pantalla, no se oculta con display:none.
+        if (shadowingPane) {
+            shadowingPane.hidden = false
+            shadowingPane.classList.toggle("shadowing-pane--background", name !== "shadowing")
+            shadowingPane.setAttribute("aria-hidden", String(name !== "shadowing"))
+        }
         if (controls) controls.classList.toggle("hidden", name === "shadowing")
         practiceSection?.classList.toggle("practice-section--audio", name === "audio")
+    }
+    if (shadowingPane?.hidden) {
+        shadowingPane.hidden = false
+        shadowingPane.classList.add("shadowing-pane--background")
+        shadowingPane.setAttribute("aria-hidden", "true")
     }
     tabs.forEach(tab => tab.addEventListener("click", () => switchPane(tab.dataset.practicePane)))
 }

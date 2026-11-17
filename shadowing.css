@@ -32,6 +32,18 @@
     min-width: 0;
     overflow-anchor: none;
 }
+/* Fuera de pantalla pero renderizado: el iframe sigue sonando al cambiar de
+ * pestaña dentro de la app (display:none sí detiene la reproducción). */
+.shadowing-pane.shadowing-pane--background {
+    position: fixed;
+    top: 0;
+    left: -10000px;
+    width: 400px;
+    height: 300px;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
 
 /* Pestañas */
 .practice-pane-tabs {
