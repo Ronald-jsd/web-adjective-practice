@@ -20,100 +20,97 @@ window.editVerbCell = function (cell, field, verbId) {
     setIsVerbEditing(true)
 
     const currentValue = cell.getAttribute('data-audio-text') || ''
-    const content = cell.querySelector('.verb-cell-content')
+    let activeCell = cell
+    let content = activeCell.querySelector('.verb-cell-content')
 
-    // Se edita solo el texto: el botón para abrir la ventana flotante queda
-    // fuera del área editable para que no se pueda borrar por accidente.
+    const fieldMap = {
+        verb: 'verb', pronunciation: 'pronunciation', translation: 'translation',
+        exampleBase: 'example_base', example_base: 'example_base', usage: 'usage',
+        pastSimple: 'past_simple', past_simple: 'past_simple',
+        pronunciationPs: 'pronunciation_ps', pronunciation_ps: 'pronunciation_ps',
+        translationPs: 'translation_ps', translation_ps: 'translation_ps',
+        examplePs: 'example_ps', example_ps: 'example_ps',
+        pastParticiple: 'past_participle', past_participle: 'past_participle',
+        pronunciationPp: 'pronunciation_pp', pronunciation_ps_pp: 'pronunciation_ps_pp',
+        pronunciation_pp: 'pronunciation_pp', translationPp: 'translation_pp',
+        translation_pp: 'translation_pp', examplePp: 'example_pp', example_pp: 'example_pp',
+        adjective: 'adjective', pronunciationAdj: 'pronunciation_adj',
+        pronunciation_adj: 'pronunciation_adj', translationAdj: 'translation_adj',
+        translation_adj: 'translation_adj', exampleAdj: 'example_adj',
+        example_adj: 'example_adj', example_adj_translation: 'example_adj_translation',
+        adverb: 'adverb', pronunciationAdv: 'pronunciation_adv',
+        pronunciation_adv: 'pronunciation_adv', translationAdv: 'translation_adv',
+        translation_adv: 'translation_adv', exampleAdv: 'example_adv',
+        example_adv: 'example_adv', example_adv_translation: 'example_adv_translation',
+        noun: 'noun', pronunciationNoun: 'pronunciation_noun',
+        pronunciation_noun: 'pronunciation_noun', translationNoun: 'translation_noun',
+        translation_noun: 'translation_noun', exampleNoun: 'example_noun',
+        example_noun: 'example_noun', example_noun_translation: 'example_noun_translation',
+        translationExampleNoun: 'translation_example_noun',
+        translation_example_noun: 'translation_example_noun', notes: 'notes'
+    }
+    const dbField = fieldMap[field] || field
+
+    // Se edita solo el texto plano: los botones de audio y de grupo se dejan
+    // fuera del área editable y se reconstruyen al terminar, para que nunca
+    // se guarden dentro de la palabra ni desaparezcan.
     if (content) {
+        content.textContent = currentValue || '—'
         content.contentEditable = 'true'
         content.focus()
     } else {
-        cell.contentEditable = true
-        cell.focus()
+        activeCell.contentEditable = true
+        activeCell.focus()
     }
-    cell.classList.add('editing')
+    activeCell.classList.add('editing')
 
     const range = document.createRange()
-    range.selectNodeContents(content || cell)
+    range.selectNodeContents(content || activeCell)
     const selection = window.getSelection()
     selection.removeAllRanges()
     selection.addRange(range)
 
+    const rebuildCell = async value => {
+        try {
+            const { buildVerbCell, decorateVerbCells } = await import('./verbs-render.js')
+            const base = verbsData.find(item => String(item.id) === String(verbId))
+                || (await readCachedRow(TABLES.verbs, verbId))
+                || { id: verbId }
+            const source = { ...base, [field]: value, [dbField]: value }
+            const holder = document.createElement('tbody')
+            holder.innerHTML = buildVerbCell(source, { key: field })
+            const fresh = holder.firstElementChild
+            if (!fresh) return
+            activeCell.replaceWith(fresh)
+            activeCell = fresh
+            content = fresh.querySelector('.verb-cell-content')
+            decorateVerbCells(fresh)
+        } catch (error) {
+            console.warn('[verbs] No se pudo reconstruir la celda:', error)
+        }
+    }
+
     const saveEdit = async () => {
         if (!isVerbEditing) return
         if (content) content.contentEditable = 'false'
-        cell.contentEditable = false
-        cell.classList.remove('editing')
+        activeCell.contentEditable = false
+        activeCell.classList.remove('editing')
         setIsVerbEditing(false)
 
-        const rawValue = (content?.innerText ?? cell.innerText).trim()
+        const rawValue = (content?.innerText ?? activeCell.innerText).trim()
         const newValue = rawValue === '—' ? '' : rawValue
         if (newValue === currentValue) {
-            if (content) content.textContent = currentValue || '—'
+            await rebuildCell(currentValue)
             showToast('⚠️ Sin cambios para guardar', 'info')
             return
         }
 
         // Al salir de la celda no se guarda por sorpresa: primero se confirma.
         if (!window.confirm('¿Guardar los cambios en este campo?')) {
-            if (content) content.textContent = currentValue || '—'
-            cell.setAttribute('data-audio-text', currentValue)
+            await rebuildCell(currentValue)
             return
         }
 
-        const fieldMap = {
-            verb: 'verb',
-            pronunciation: 'pronunciation',
-            translation: 'translation',
-            exampleBase: 'example_base',
-            example_base: 'example_base',
-            usage: 'usage',
-            pastSimple: 'past_simple',
-            past_simple: 'past_simple',
-            pronunciationPs: 'pronunciation_ps',
-            pronunciation_ps: 'pronunciation_ps',
-            translationPs: 'translation_ps',
-            translation_ps: 'translation_ps',
-            examplePs: 'example_ps',
-            example_ps: 'example_ps',
-            pastParticiple: 'past_participle',
-            past_participle: 'past_participle',
-            pronunciationPp: 'pronunciation_pp',
-            pronunciation_pp: 'pronunciation_pp',
-            translationPp: 'translation_pp',
-            translation_pp: 'translation_pp',
-            examplePp: 'example_pp',
-            example_pp: 'example_pp',
-            adjective: 'adjective',
-            pronunciationAdj: 'pronunciation_adj',
-            pronunciation_adj: 'pronunciation_adj',
-            translationAdj: 'translation_adj',
-            translation_adj: 'translation_adj',
-            exampleAdj: 'example_adj',
-            example_adj: 'example_adj',
-            example_adj_translation: 'example_adj_translation',
-            adverb: 'adverb',
-            pronunciationAdv: 'pronunciation_adv',
-            pronunciation_adv: 'pronunciation_adv',
-            translationAdv: 'translation_adv',
-            translation_adv: 'translation_adv',
-            exampleAdv: 'example_adv',
-            example_adv: 'example_adv',
-            example_adv_translation: 'example_adv_translation',
-            noun: 'noun',
-            pronunciationNoun: 'pronunciation_noun',
-            pronunciation_noun: 'pronunciation_noun',
-            translationNoun: 'translation_noun',
-            translation_noun: 'translation_noun',
-            exampleNoun: 'example_noun',
-            example_noun: 'example_noun',
-            example_noun_translation: 'example_noun_translation',
-            translationExampleNoun: 'translation_example_noun',
-            translation_example_noun: 'translation_example_noun',
-            notes: 'notes'
-        }
-
-        const dbField = fieldMap[field] || field
         const update = { [dbField]: newValue || null }
         const verb = verbsData.find(v => String(v.id) === String(verbId))
 
@@ -141,32 +138,30 @@ window.editVerbCell = function (cell, field, verbId) {
                     : 'Guardado en el dispositivo; se sincronizará al volver la conexión.',
                 'success'
             )
-            cell.setAttribute('data-audio-text', newValue)
-            if (content) {
-                content.textContent = newValue || '—'
-                cell.classList.toggle('is-truncated', newValue.length > 110)
-            }
             if (verb) {
                 verb[field] = newValue
                 verb[dbField] = newValue
             }
+            // Se vuelve a dibujar la celda: así el botón de audio vuelve a
+            // estar fuera del texto guardado.
+            await rebuildCell(newValue)
         } catch (error) {
             showToast('Error al guardar: ' + error.message, 'error')
-            if (content) content.textContent = currentValue || '—'
+            await rebuildCell(currentValue)
         }
     }
 
     const cancelEdit = () => {
         if (!isVerbEditing) return
         if (content) content.contentEditable = 'false'
-        cell.contentEditable = false
-        cell.classList.remove('editing')
+        activeCell.contentEditable = false
+        activeCell.classList.remove('editing')
         setIsVerbEditing(false)
-        if (content) content.textContent = currentValue || '—'
+        rebuildCell(currentValue)
     }
 
-    ;(content || cell).addEventListener('blur', saveEdit, { once: true })
-    cell.addEventListener('keydown', (e) => {
+    ;(content || activeCell).addEventListener('blur', saveEdit, { once: true })
+    activeCell.addEventListener('keydown', (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault()
             saveEdit()

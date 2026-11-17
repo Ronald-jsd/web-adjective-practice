@@ -339,36 +339,45 @@
                 </section>
 
                 <section class="practice-audio-course" aria-label="Escucha continua">
-                    <div>
-                        <p class="practice-eyebrow">MODO ESCUCHA CONTINUA</p>
-                        <h3>Estudiar las categorías seleccionadas</h3>
-                        <p id="practice-audio-course-status" class="practice-audio-course-status" aria-live="polite">Prioriza palabras falladas o pendientes y permite reanudar la escucha donde la dejaste.</p>
-                    </div>
+                    <header class="practice-audio-course-head">
+                        <span class="practice-audio-course-icon" aria-hidden="true">🎧</span>
+                        <div class="practice-audio-course-titles">
+                            <p class="practice-eyebrow">MODO ESCUCHA CONTINUA</p>
+                            <h3>Estudiar las categorías seleccionadas</h3>
+                            <p id="practice-audio-course-status" class="practice-audio-course-status" aria-live="polite">Prioriza palabras falladas o pendientes y permite reanudar la escucha donde la dejaste.</p>
+                        </div>
+                    </header>
                     <div id="practice-audio-course-current" class="practice-audio-course-current hidden" aria-live="polite"></div>
                     <div class="practice-audio-course-controls">
-                        <label class="practice-audio-course-speed" for="practice-audio-course-filter">
-                            Contenido
-                            <select id="practice-audio-course-filter">
-                                <option value="all" selected>Todos</option>
-                                <option value="new">Solo nuevas</option>
-                                <option value="review">Solo falladas o pendientes</option>
-                            </select>
-                        </label>
-                        <label class="practice-audio-course-speed" for="practice-audio-course-rate">
-                            Velocidad
-                            <select id="practice-audio-course-rate">
-                                <option value="1" selected>100%</option>
-                                <option value="0.9">90%</option>
-                                <option value="0.85">85%</option>
-                                <option value="0.8">80%</option>
-                                <option value="0.75">75%</option>
-                            </select>
-                            <span>Se aplica a la siguiente frase.</span>
-                        </label>
-                        <button id="practice-audio-course-start" type="button">▶ Empezar</button>
-                        <button id="practice-audio-course-pause" type="button" disabled>⏸ Pausar</button>
-                        <button id="practice-audio-course-skip" type="button" disabled>⏭ Siguiente</button>
-                        <button id="practice-audio-course-stop" type="button" disabled>⏹ Detener</button>
+                        <div class="practice-audio-course-settings">
+                            <label class="practice-audio-course-speed" for="practice-audio-course-filter">
+                                <span>Contenido</span>
+                                <select id="practice-audio-course-filter">
+                                    <option value="all" selected>Todos</option>
+                                    <option value="new">Solo nuevas</option>
+                                    <option value="review">Solo falladas o pendientes</option>
+                                </select>
+                            </label>
+                            <label class="practice-audio-course-speed" for="practice-audio-course-rate">
+                                <span>Velocidad</span>
+                                <select id="practice-audio-course-rate">
+                                    <option value="1" selected>100%</option>
+                                    <option value="0.9">90%</option>
+                                    <option value="0.85">85%</option>
+                                    <option value="0.8">80%</option>
+                                    <option value="0.75">75%</option>
+                                </select>
+                                <small class="practice-audio-course-help">Se aplica a la siguiente frase.</small>
+                            </label>
+                        </div>
+                        <div class="practice-audio-course-buttons">
+                            <button id="practice-audio-course-start" type="button" class="button primary">▶ Empezar</button>
+                            <div class="practice-audio-course-secondary">
+                                <button id="practice-audio-course-pause" type="button" class="button secondary" disabled>⏸ Pausar</button>
+                                <button id="practice-audio-course-skip" type="button" class="button secondary" disabled>⏭ Siguiente</button>
+                                <button id="practice-audio-course-stop" type="button" class="button secondary" disabled>⏹ Detener</button>
+                            </div>
+                        </div>
                     </div>
                 </section>
 

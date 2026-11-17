@@ -140,6 +140,7 @@ function openVerbCellViewer(cell) {
     const field = cell.getAttribute('data-field') || ''
     const label = VERB_FIELDS.find(item => item.key === field)?.label || 'Contenido'
     const text = cell.getAttribute('data-audio-text') || cell.textContent.trim()
+    const lang = cell.getAttribute('data-audio-lang') || 'en-US'
 
     document.getElementById('verb-cell-viewer')?.remove()
 
@@ -147,28 +148,45 @@ function openVerbCellViewer(cell) {
     dialog.id = 'verb-cell-viewer'
     dialog.className = 'verb-cell-viewer'
 
-    const heading = document.createElement('div')
-    heading.className = 'verb-cell-viewer-head'
-    const title = document.createElement('h3')
-    title.textContent = label
     const closeDialog = () => {
         dialog.close()
         dialog.remove()
     }
 
+    const head = document.createElement('header')
+    head.className = 'verb-cell-viewer-head'
+    const titles = document.createElement('div')
+    titles.className = 'verb-cell-viewer-titles'
+    const eyebrow = document.createElement('p')
+    eyebrow.className = 'verb-cell-viewer-eyebrow'
+    eyebrow.textContent = 'Contenido completo'
+    const title = document.createElement('h3')
+    title.textContent = label
+    titles.append(eyebrow, title)
     const close = document.createElement('button')
     close.type = 'button'
     close.className = 'verb-cell-viewer-close'
-    close.textContent = 'Cerrar'
+    close.textContent = '×'
+    close.title = 'Cerrar'
+    close.setAttribute('aria-label', 'Cerrar')
     close.addEventListener('click', closeDialog)
-    heading.append(title, close)
+    head.append(titles, close)
 
     const body = document.createElement('div')
     body.className = 'verb-cell-viewer-body'
-    body.textContent = text || '—'
+    const quote = document.createElement('p')
+    quote.textContent = text || '—'
+    body.append(quote)
 
-    const actions = document.createElement('div')
+    const actions = document.createElement('footer')
     actions.className = 'verb-cell-viewer-actions'
+    const listen = document.createElement('button')
+    listen.type = 'button'
+    listen.className = 'verb-cell-viewer-audio'
+    listen.textContent = '▶ Escuchar'
+    listen.addEventListener('click', () => {
+        window.playAudioFromGlobal?.(text, lang.startsWith('es') ? 'es' : 'en')
+    })
     const edit = document.createElement('button')
     edit.type = 'button'
     edit.className = 'verb-cell-viewer-edit'
@@ -177,9 +195,14 @@ function openVerbCellViewer(cell) {
         closeDialog()
         window.editVerbCell?.(cell, field, cell.getAttribute('data-verb-id'))
     })
-    actions.appendChild(edit)
+    const done = document.createElement('button')
+    done.type = 'button'
+    done.className = 'verb-cell-viewer-done'
+    done.textContent = 'Cerrar'
+    done.addEventListener('click', closeDialog)
+    actions.append(listen, edit, done)
 
-    dialog.append(heading, body, actions)
+    dialog.append(head, body, actions)
     dialog.addEventListener('click', event => {
         if (event.target === dialog) closeDialog()
     })
