@@ -37,6 +37,7 @@ const state = {
     practiceDelay: 3,
     autoActive: false,
     autoTimer: null,
+    countdownTimer: null,
     phraseTimer: null,
     timingOffsets: new Map(),
     translation: "",
@@ -717,9 +718,22 @@ function pollShadowing() {
     finishPhrase()
 }
 
-function setPracticeStatus(message) {
+function setPracticeStatus(message, { counting = false } = {}) {
     const node = byId("shadowing-practice-status")
-    if (node) node.textContent = message || ""
+    if (!node) return
+    node.textContent = message || ""
+    node.classList.toggle("is-counting", counting)
+}
+
+function clearCountdown() {
+    if (state.countdownTimer) {
+        clearInterval(state.countdownTimer)
+        state.countdownTimer = null
+    }
+}
+
+function setCountdownLabel(seconds) {
+    setPracticeStatus(`Siguiente frase en ${seconds} s…`, { counting: true })
 }
 
 /* Un único botón de play: en modo manual reproduce la frase actual y en
@@ -743,6 +757,7 @@ function stopAutoPractice(message = "") {
         clearTimeout(state.autoTimer)
         state.autoTimer = null
     }
+    clearCountdown()
     stopPhraseTimer()
     state.autoActive = false
     state.awaitingTurn = false
@@ -768,8 +783,28 @@ function startAutoPractice() {
 function handleAutoAdvance() {
     if (state.awaitingTurn) return
     state.awaitingTurn = true
-    setPracticeStatus(`Siguiente frase en ${state.practiceDelay} s…`)
+    clearCountdown()
+    const delay = Math.max(1, Number(state.practiceDelay) || 3)
+    let remaining = delay
+    setCountdownLabel(remaining)
+
+    // La espera se ve contar 3 → 2 → 1 en el estado de la práctica.
+    state.countdownTimer = setInterval(() => {
+        if (!state.autoActive) {
+            clearCountdown()
+            return
+        }
+        remaining -= 1
+        if (remaining > 0) {
+            setCountdownLabel(remaining)
+            return
+        }
+        clearCountdown()
+    }, 1000)
+
     state.autoTimer = setTimeout(() => {
+        state.autoTimer = null
+        clearCountdown()
         if (!state.autoActive) return
         const nextIndex = state.currentIndex + 1
         if (nextIndex >= state.current.transcript.length) {
@@ -781,7 +816,7 @@ function handleAutoAdvance() {
         // antes de mover el video:audio y texto avanzan a la vez.
         playPhrase(nextIndex)
         setPracticeStatus("Reproduciendo frase…")
-    }, state.practiceDelay * 1000)
+    }, delay * 1000)
 }
 
 async function createLesson() {
