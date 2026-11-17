@@ -70,9 +70,14 @@ async function refreshCategoryViewFromLocalCopy() {
     return newData
 }
 
-function openInlineEditor(fieldName, currentValue, field) {
+/* Modal de edición compartido (Adjetivos y Verbos). Nunca muta la celda: solo
+ * devuelve el nuevo valor o null al cancelar/escape, así no quedan selecciones
+ * ni rectángulos marcados en la tabla. */
+function openInlineEditor(fieldName, currentValue, field, options = {}) {
     return new Promise((resolve, reject) => {
-        const multiline = field === 'example_en' || field === 'example_es' || field === 'spanish'
+        const multiline = options.multiline ?? (
+            field === 'example_en' || field === 'example_es' || field === 'spanish'
+        )
         const dialog = document.createElement('dialog')
         dialog.className = 'inline-edit-dialog'
 
@@ -401,7 +406,7 @@ async function deleteAdjectiveRow(item) {
     }
 }
 
-export { editCell, deleteAdjectiveRow, getStatusBadge, updateWordStatus }
+export { editCell, deleteAdjectiveRow, getStatusBadge, updateWordStatus, openInlineEditor }
 
 window.editCell = editCell
 window.deleteAdjectiveRow = deleteAdjectiveRow

@@ -109,7 +109,11 @@ export function buildVerbCell(v, f) {
             examples: v.example_base ? [{ id: `example-verb-${v.id}-0`, en: v.example_base || '', es: '' }] : [],
             context: [v.category || '', v.type || ''].filter(Boolean).join(' · ')
         }
-        return `<td class="editable-cell border-b px-4 py-3 hover:bg-gray-50 cursor-pointer text-sm" data-verb-id="${v.id}" data-field="${f.key}" data-audio-text="${escaped}" ondblclick="window.editVerbCell(this, '${f.key}', ${v.id})"><div class="verb-cell-content">${renderGroupWordButton(v.verb || '', payload)}</div></td>`
+        // Lápiz igual que en Adjetivos: abre el modal compartido. Se detiene la
+        // propagación para que el toque no llegue al reordenador ni dispare audio.
+        const verbIdJs = JSON.stringify(String(v.id)).replace(/"/g, '&quot;')
+        const pencil = `<button type="button" class="icon-button word-edit-button" onclick="event.stopPropagation(); window.editVerbCell(this.closest('td'), 'verb', ${verbIdJs})" ondblclick="event.stopPropagation()" title="Editar verbo" aria-label="Editar ${escaped}">✏️</button>`
+        return `<td class="editable-cell border-b px-4 py-3 hover:bg-gray-50 cursor-pointer text-sm" data-verb-id="${v.id}" data-field="${f.key}" data-audio-text="${escaped}" ondblclick="window.editVerbCell(this, '${f.key}', ${v.id})"><div class="verb-cell-content">${renderGroupWordButton(v.verb || '', payload, '', null, pencil)}</div></td>`
     }
 
     return `<td

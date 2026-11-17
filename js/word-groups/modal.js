@@ -148,10 +148,12 @@ function renderInlineWordEditButton(text, item) {
     return `<button type="button" class="icon-button word-edit-button" onclick="event.stopPropagation(); window.editWordInline(decodeURIComponent('${encoded}'))" title="Editar palabra" aria-label="Editar palabra ${escapeHtml(text)}">✏️</button>`
 }
 
-export function renderGroupWordButton(text, payload, className = "", editItem = null) {
+export function renderGroupWordButton(text, payload, className = "", editItem = null, editButtonHtml = null) {
     const encoded = encodeURIComponent(JSON.stringify(payload || {}))
     const extra = className ? ` ${className}` : ""
-    const editButton = renderInlineWordEditButton(text, editItem)
+    const editButton = editButtonHtml === null
+        ? renderInlineWordEditButton(text, editItem)
+        : editButtonHtml
     const trigger = `<button type="button" class="word-group-trigger${extra}" data-word-group-open="true" data-word-group-payload="${escapeAttr(encoded)}" title="Ver palabras similares y diferencias" aria-label="Ver palabras similares a ${escapeHtml(text)}"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false"><path fill="currentColor" d="M10.8 6.2l4.5 4.5-4.5 4.5-1.4-1.4 3.1-3.1-3.1-3.1 1.4-1.4zm5.2 1.4l1.4 1.4-2.9 2.9 2.9 2.9-1.4 1.4-4.3-4.3 4.3-4.3z"/></svg><span>${escapeHtml(text)}</span></button>`
     const audio = `<button type="button" class="icon-button audio-button word-group-audio" onclick="window.playAudioFromGlobal('${String(text || "").replace(/'/g, "\\'").replace(/"/g, '&quot;')}', 'en')" title="Escuchar palabra" aria-label="Escuchar ${escapeHtml(text)}">🔊</button>`
     return `<span class="word-group-stack">${trigger}${editButton}${audio}</span>`

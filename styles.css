@@ -147,23 +147,14 @@
         border-radius: 6px;
     }
 
-    #verbs-section .editable-cell:hover,
-    #verbs-table-view .editable-cell:hover,
-    #verbs-search-results .editable-cell:hover {
-        background-color: #f8fafc;
-        box-shadow: inset 0 0 0 1px #e2e8f0;
-    }
-
-    #verbs-section .editable-cell.editing,
-    #verbs-table-view .editable-cell.editing,
-    #verbs-search-results .editable-cell.editing {
-        background-color: #fef3c7 !important;
-        outline: 3px solid #f59e0b;
-        outline-offset: -3px;
-        cursor: text;
-        z-index: 5;
-        position: relative;
-        box-shadow: 0 4px 20px rgba(245, 158, 11, 0.25);
+    /* Solo un fondo suave con ratón real: en táctil no se dibuja ningún
+     * recuadro al tocar, que era lo que dejaba la celda "marcada". */
+    @media (hover: hover) {
+        #verbs-section .editable-cell:hover,
+        #verbs-table-view .editable-cell:hover,
+        #verbs-search-results .editable-cell:hover {
+            background-color: #f8fafc;
+        }
     }
 
     /* Celdas largas: se recortan a tres líneas y se abren en una ventana. */
@@ -183,15 +174,6 @@
         overflow: hidden;
         overflow-wrap: anywhere;
         max-height: 4.8em;
-    }
-
-    #verbs-section .editable-cell.editing .verb-cell-content,
-    #verbs-table-view .editable-cell.editing .verb-cell-content,
-    #verbs-search-results .editable-cell.editing .verb-cell-content {
-        display: block;
-        -webkit-line-clamp: unset;
-        max-height: none;
-        overflow: visible;
     }
 
     #verbs-section .verb-cell-expand,
@@ -222,22 +204,10 @@
         padding-right: 26px;
     }
 
-    #verbs-section .editable-cell.editing .verb-cell-content,
-    #verbs-table-view .editable-cell.editing .verb-cell-content,
-    #verbs-search-results .editable-cell.editing .verb-cell-content {
-        padding-right: 0;
-    }
-
     #verbs-section .editable-cell.is-truncated .verb-cell-expand,
     #verbs-table-view .editable-cell.is-truncated .verb-cell-expand,
     #verbs-search-results .editable-cell.is-truncated .verb-cell-expand {
         display: inline-flex;
-    }
-
-    #verbs-section .editable-cell.editing .verb-cell-expand,
-    #verbs-table-view .editable-cell.editing .verb-cell-expand,
-    #verbs-search-results .editable-cell.editing .verb-cell-expand {
-        display: none;
     }
 
     #verbs-section .verb-cell-expand:hover,
