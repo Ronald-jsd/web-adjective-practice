@@ -1,8 +1,7 @@
+import { normalizeSearchText as normalize } from "../search-utils.js"
+
 export function normalizeSearchText(value) {
-    return String(value || "")
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .toLowerCase()
+    return normalize(value)
 }
 
 export function filterVocabulary(items, query) {

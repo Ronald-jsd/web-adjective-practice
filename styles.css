@@ -1,4 +1,46 @@
 
+    /* La columna "Adjective" tiene que destacar: antes su cabecera y su
+     * contenido eran gris claro y prácticamente se perdían en la tabla. */
+    #search-results table th.adjective-word-col,
+    #category-view table th.adjective-word-col {
+        background: #28745a !important;
+        color: #fff !important;
+        font-size: 0.72rem !important;
+        font-weight: 800 !important;
+        letter-spacing: 0.08em;
+        border-bottom: 2px solid #1c4f3a !important;
+        white-space: nowrap;
+    }
+
+    #search-results table td.adjective-word-col,
+    #category-view table td.adjective-word-col {
+        background: #eef6f2 !important;
+        border-left: 3px solid #28745a;
+        border-right: 1px solid #cfe3d9;
+        color: #123d2b !important;
+        font-size: 1rem !important;
+        font-weight: 700 !important;
+        min-width: 150px;
+        vertical-align: middle;
+    }
+
+    #search-results table tbody tr:nth-child(even) td.adjective-word-col,
+    #category-view table tbody tr:nth-child(even) td.adjective-word-col {
+        background: #e6f1eb !important;
+    }
+
+    #search-results table tbody tr:hover td.adjective-word-col,
+    #category-view table tbody tr:hover td.adjective-word-col {
+        background: #dceee4 !important;
+    }
+
+    #search-results table td.adjective-word-col .word-group-trigger,
+    #category-view table td.adjective-word-col .word-group-trigger {
+        color: #123d2b !important;
+        font-size: 1.02rem !important;
+        font-weight: 800 !important;
+    }
+
     #verbs-section .overflow-x-auto,
     #verbs-table-view .overflow-x-auto,
     #verbs-search-results .overflow-x-auto {

@@ -10,10 +10,11 @@ import { renderVerbTable, renderVerbCategories, openVerbCategory, showVerbAIPrev
 import { sortVerbs } from './verbs-sort.js'
 import { renderVerbPagination } from './verbs-pagination.js'
 import { filterFavoriteVerbs } from './verbs-render.js'
+import { matchesSearchTerms } from '../search-utils.js'
 
 window.searchVerbs = function () {
     const input = document.getElementById('verbs-search-input')
-    const query = input?.value?.toLowerCase().trim() || ''
+    const query = input?.value?.trim() || ''
 
     const resultsContainer = document.getElementById('verbs-search-results')
     const resultsTbody = document.getElementById('verbs-search-tbody')
@@ -40,17 +41,11 @@ window.searchVerbs = function () {
     if (view) view.classList.add('hidden')
 
     let results = filterFavoriteVerbs(verbsData.filter(v =>
-        (v.verb || '').toLowerCase().includes(query) ||
-        (v.translation || '').toLowerCase().includes(query) ||
-        (v.past_simple || '').toLowerCase().includes(query) ||
-        (v.pronunciation_ps || '').toLowerCase().includes(query) ||
-        (v.past_participle || '').toLowerCase().includes(query) ||
-        (v.pronunciation_pp || '').toLowerCase().includes(query) ||
-        (v.adjective || '').toLowerCase().includes(query) ||
-        (v.pronunciation_adj || '').toLowerCase().includes(query) ||
-        (v.adverb || '').toLowerCase().includes(query) ||
-        (v.pronunciation_adv || '').toLowerCase().includes(query) ||        
-        (v.category || '').toLowerCase().includes(query)
+        matchesSearchTerms([
+            v.verb, v.translation, v.past_simple, v.pronunciation_ps,
+            v.past_participle, v.pronunciation_pp, v.adjective,
+            v.pronunciation_adj, v.adverb, v.pronunciation_adv, v.category
+        ].join(' '), query)
     ))
 
     console.log(`Resultados filtrados: ${results.length} verbos`)

@@ -293,7 +293,7 @@ function openCategoryView(data) {
                     <tr data-item-id="${itemId}" class="${idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'} hover:bg-gray-100 transition-colors ${isCustom ? 'custom-row' : ''}">
                         <td class="py-2 px-3 border-b text-center">${favoriteButton}</td>
                         ${dragHandleHtml}
-                        <td class="py-3 px-4 border-b" ondblclick="window.editCell('word', '${escapedWord}', ${itemObjStr})">
+                        <td class="py-3 px-4 border-b adjective-word-col" ondblclick="window.editCell('word', '${escapedWord}', ${itemObjStr})">
                             <div class="flex items-center gap-2 flex-wrap">
                                 ${wordEn} ${statusBadge}
                                 ${!isCustom ? '<span class="text-xs px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded whitespace-nowrap">📚 DB</span>' : '<span class="text-xs px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded whitespace-nowrap">✏️</span>'}
@@ -359,7 +359,7 @@ function openCategoryView(data) {
                                 <tr>
                                     <th class="py-3 px-3 text-xs font-bold text-gray-600 uppercase tracking-wider text-center">Importante</th>
                                     ${dragHandleHeader}
-                                    <th class="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wider">Adjective 🔊</th>
+                                    <th class="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wider adjective-word-col">Adjective 🔊</th>
                                     <th class="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wider">Pronun.</th>
                                     <th class="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wider">Español 🔊</th>
                                     <th class="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wider">Example EN 🔊</th>
@@ -387,6 +387,13 @@ function openCategoryView(data) {
             renderSubcategoryPagination(totalItems, pageSize, totalPages);
             document.getElementById("adjective-favorite-filter")?.addEventListener("change", event => {
                 store.adjectiveFavoritesOnly = event.target.value === "favorites";
+                const synchronizedFilters = [
+                    document.getElementById("adjective-global-favorite-filter"),
+                    document.getElementById("adjective-search-favorite-filter")
+                ];
+                synchronizedFilters.forEach(select => {
+                    if (select) select.value = event.target.value;
+                });
                 store.subcategoryPaginationState.currentPage = 1;
                 renderActiveContent();
             });

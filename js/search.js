@@ -4,6 +4,7 @@ import { renderGroupWordButton } from './word-groups/modal.js'
 import { renderCategories } from './data.js'
 import { editCell, getStatusBadge } from './editing.js'
 import { getFavoriteKey } from './favorites.js'
+import { matchesSearchTerms } from './search-utils.js'
 
 const PAGE_SIZE_OPTIONS = [10, 15, 25, 50, 100]
 const DEFAULT_PAGE_SIZE = 15
@@ -13,22 +14,15 @@ export let searchMode = 'partial'
 function performSearch(query) {
     store.lastSearchQuery = query
     if (!query?.trim()) {
-        renderCategories(store.categoriesData)
+        if (store.adjectiveFavoritesOnly) showFavoriteAdjectives()
+        else renderCategories(store.categoriesData)
         return
     }
 
-    query = query.toLowerCase().trim()
+    query = query.trim()
     const results = []
 
-    const matchesSearch = (text) => {
-        const lowerText = String(text || '').toLowerCase()
-        if (searchMode === 'exact') {
-            const words = lowerText.split(/\s+/)
-            return words.some(word => word === query)
-        } else {
-            return lowerText.includes(query)
-        }
-    }
+    const matchesSearch = (text) => matchesSearchTerms(text, query, searchMode)
 
     // Las tarjetas personales ya se agregan por separado más abajo; evitar
     // mostrar la misma copia una vez como «DB» y otra como «Personalizadas».
@@ -89,6 +83,60 @@ function performSearch(query) {
     store.currentSearchResults = store.adjectiveFavoritesOnly
         ? results.filter(item => store.favoriteSet.has(getFavoriteKey('adjective', item.id)))
         : results
+    store.searchPaginationState.currentPage = 1
+    store.searchPaginationState.pageSize = store.searchPaginationState.pageSize || DEFAULT_PAGE_SIZE
+    store.searchPaginationState.totalPages = Math.ceil(store.currentSearchResults.length / store.searchPaginationState.pageSize)
+    renderSearchResults()
+}
+
+/* Muestra todos los adjetivos marcados como favoritos, con o sin búsqueda
+ * activa, igual que hace el filtro de la pestaña de verbos. */
+export function showFavoriteAdjectives() {
+    const results = []
+
+    ;(store.categoriesData || []).forEach(cat => {
+        ;(cat.subcategories || []).forEach(sub => {
+            ;(sub.items || []).forEach(item => {
+                if (!store.favoriteSet.has(getFavoriteKey('adjective', item[5]))) return
+                results.push({
+                    category: cat.title,
+                    categoryId: cat.id,
+                    subcategory: sub.title,
+                    subcategoryId: sub.id,
+                    word: item[0],
+                    pronunciation: item[1],
+                    spanish: item[2],
+                    example_en: item[3],
+                    example_es: item[4] || '',
+                    id: item[5],
+                    isCustom: false,
+                    itemIndex: sub.items.indexOf(item)
+                })
+            })
+        })
+    })
+
+    ;(store.userCustomItems || []).forEach(customItem => {
+        if (!store.favoriteSet.has(getFavoriteKey('adjective', customItem.id))) return
+        results.push({
+            category: customItem.category || '📝 Mis Expresiones',
+            categoryId: null,
+            subcategory: customItem.subcategory || 'Personalizadas',
+            subcategoryId: null,
+            word: customItem.word,
+            pronunciation: customItem.pronunciation || '',
+            spanish: customItem.spanish,
+            example_en: customItem.example_en || '',
+            example_es: customItem.example_es || '',
+            id: `custom_${customItem.id}`,
+            isCustom: true,
+            customData: customItem,
+            itemIndex: 0
+        })
+    })
+
+    store.lastSearchQuery = results.length ? '' : '★ favoritos'
+    store.currentSearchResults = results
     store.searchPaginationState.currentPage = 1
     store.searchPaginationState.pageSize = store.searchPaginationState.pageSize || DEFAULT_PAGE_SIZE
     store.searchPaginationState.totalPages = Math.ceil(results.length / store.searchPaginationState.pageSize)
@@ -152,8 +200,11 @@ function renderSearchResults() {
     const pageResults = store.currentSearchResults.slice(start, start + pageSize)
 
     const countEl = document.getElementById('search-results-count')
-    const favoriteFilter = document.getElementById('adjective-search-favorite-filter')
-    if (favoriteFilter) favoriteFilter.value = store.adjectiveFavoritesOnly ? 'favorites' : 'all'
+    const favoriteValue = store.adjectiveFavoritesOnly ? 'favorites' : 'all'
+    ;['adjective-search-favorite-filter', 'adjective-global-favorite-filter', 'adjective-favorite-filter'].forEach(id => {
+        const favoriteFilter = document.getElementById(id)
+        if (favoriteFilter) favoriteFilter.value = favoriteValue
+    })
     if (countEl) {
         const end = Math.min(start + pageSize, totalResults)
         countEl.textContent = `Mostrando ${totalResults > 0 ? start + 1 : 0}-${end} de ${totalResults} resultados`
@@ -227,7 +278,7 @@ function renderSearchResults() {
                         </td>
                         <td class="py-2.5 px-3 text-sm">${r.category || ''}</td>
                         <td class="py-2.5 px-3 text-sm">${r.subcategory || ''}</td>
-                        <td class="py-2.5 px-3 font-bold" ondblclick="window.editCell('word', '${escapedWord}', ${itemObjStr})">
+                        <td class="py-2.5 px-3 font-bold adjective-word-col" ondblclick="window.editCell('word', '${escapedWord}', ${itemObjStr})">
                             <div class="flex items-center gap-2 flex-wrap">
                                 ${wordWithAudio} ${statusBadge}
                                 ${!r.isCustom ? '<span class="text-xs px-1.5 py-0.5 bg-blue-100 text-blue-700 rounded whitespace-nowrap">📚 DB</span>' : '<span class="text-xs px-1.5 py-0.5 bg-purple-100 text-purple-700 rounded whitespace-nowrap">✏️</span>'}

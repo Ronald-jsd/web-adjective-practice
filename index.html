@@ -123,6 +123,16 @@
                         texto)</span>
                 </div>
 
+                <div class="flex justify-center mt-3">
+                    <label for="adjective-global-favorite-filter" class="flex items-center gap-2 text-sm text-gray-600">
+                        Mostrar:
+                        <select id="adjective-global-favorite-filter" class="border border-gray-300 rounded-lg px-3 py-2 bg-white">
+                            <option value="all">Todos los adjetivos</option>
+                            <option value="favorites">★ Solo favoritos</option>
+                        </select>
+                    </label>
+                </div>
+
                 <p class="text-sm text-gray-500 mt-4">
                     🔊 Click en cualquier palabra para escuchar | ✏️ Doble click para
                     editar (requiere login) | ⋮⋮ Arrastrar para reordenar
@@ -166,7 +176,7 @@
                                     <th class="py-3 px-4 text-xs font-bold text-gray-500 uppercase">
                                         Subcategoría
                                     </th>
-                                    <th class="py-3 px-4 text-xs font-bold text-gray-500 uppercase">
+                                    <th class="py-3 px-4 text-xs font-bold text-gray-500 uppercase adjective-word-col">
                                         Adjective
                                     </th>
                                     <th class="py-3 px-4 text-xs font-bold text-gray-500 uppercase">
@@ -280,8 +290,8 @@
         <div id="practice-section" class="section">
             <div class="practice-layout">
                 <nav id="practice-pane-tabs" class="practice-pane-tabs" aria-label="Tipo de práctica">
-                    <button class="practice-pane-tab active" data-practice-pane="general" type="button" aria-selected="true">Ejercicios</button>
-                    <button class="practice-pane-tab" data-practice-pane="audio" type="button" aria-selected="false"><span class="pane-label-long">Escucha continua</span><span class="pane-label-short">Escucha</span> <span aria-hidden="true">🎧</span></button>
+                    <button class="practice-pane-tab active" data-practice-pane="general" type="button" aria-selected="true">Exercise</button>
+                    <button class="practice-pane-tab" data-practice-pane="audio" type="button" aria-selected="false"><span class="pane-label-long">Listening</span><span class="pane-label-short">Escucha</span> <span aria-hidden="true">🎧</span></button>
                     <button class="practice-pane-tab" data-practice-pane="shadowing" type="button" aria-selected="false">Shadowing <span aria-hidden="true">🎤</span></button>
                 </nav>
                 <div id="practice-pane-general" class="practice-pane active">

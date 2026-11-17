@@ -5,7 +5,7 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
 import { checkUser, loadUserCustomItems, initAuthSession } from "./auth.js";
 import { renderCategories, loadCategoriesFromSupabase, refreshCategoriesFromLocalCustomItems } from "./data.js";
-import { performSearch, initSearchModeListeners } from "./search.js";
+import { performSearch, initSearchModeListeners, showFavoriteAdjectives } from "./search.js";
 import { closeCategoryView } from "./category-view.js";
 import { updateAIButton } from "./ai.js";
 import { initializePractice, setNotionPracticeCategories } from "./practice.js";
@@ -86,13 +86,26 @@ function setupEventListeners() {
     const clearBtn = document.getElementById("clear-search");
     const backBtn = document.getElementById("back-to-categories");
     const adjectiveFavoriteFilter = document.getElementById("adjective-search-favorite-filter");
+    const adjectiveGlobalFavoriteFilter = document.getElementById("adjective-global-favorite-filter");
+    const adjectiveFilters = [adjectiveGlobalFavoriteFilter, adjectiveFavoriteFilter].filter(Boolean);
 
-    if (adjectiveFavoriteFilter) {
-        adjectiveFavoriteFilter.addEventListener("change", () => {
-            store.adjectiveFavoritesOnly = adjectiveFavoriteFilter.value === "favorites";
-            if (store.lastSearchQuery?.trim()) performSearch(store.lastSearchQuery);
+    const setAdjectiveFavoriteFilter = (value, source) => {
+        store.adjectiveFavoritesOnly = value === "favorites";
+        adjectiveFilters.forEach(select => {
+            if (select !== source) select.value = value;
         });
-    }
+        const activeFilter = document.getElementById("adjective-favorite-filter");
+        if (activeFilter && activeFilter !== source) activeFilter.value = value;
+        if (store.lastSearchQuery?.trim() && store.lastSearchQuery !== "★ favoritos") performSearch(store.lastSearchQuery);
+        else if (store.adjectiveFavoritesOnly) showFavoriteAdjectives();
+        else {
+            const resultsPanel = document.getElementById("search-results");
+            if (resultsPanel) resultsPanel.classList.add("hidden");
+            renderCategories(store.categoriesData);
+        }
+    };
+
+    adjectiveFilters.forEach(select => select.addEventListener("change", () => setAdjectiveFavoriteFilter(select.value, select)));
 
     if (searchInput) {
         searchInput.addEventListener("input", async (e) => {
