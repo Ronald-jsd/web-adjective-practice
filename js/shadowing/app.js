@@ -2,7 +2,7 @@ import { store, GEMINI_KEY_STORAGE, GROQ_KEY_STORAGE } from "../config.js"
 import { resolveSessionUser } from "../offline/session.js"
 import { showToast } from "../cache.js"
 import { parseManualTranscript, splitTranscriptSegments, extractYouTubeId, suggestionWords, normalizeWord, looksLikeYouTubeUrl } from "./model.js"
-import { TRANSCRIPT_PROVIDERS, findProvider, providerLabel, transcriptConfig, setTranscriptCredentials, clearTranscriptCredentials } from "./transcript.js"
+import { TRANSCRIPT_PROVIDERS, findProvider, providerLabel, transcriptConfig, setTranscriptCredentials, clearTranscriptCredentials, readTranscriptCache, writeTranscriptCache } from "./transcript.js"
 import { createShadowingRepository } from "./repository.js"
 import { createSentenceRepository } from "../sentences/repository.js"
 
@@ -276,6 +276,35 @@ async function createLesson() {
         return null
     }
     const videoUrl = youtubeUrl(input.value)
+
+    // La casilla se consume una sola vez para no gastar créditos por error.
+    const forceBox = byId("shadowing-transcript-force")
+    const force = Boolean(forceBox?.checked)
+    if (forceBox) forceBox.checked = false
+
+    // 1. Si la lección ya está guardada, se reutiliza sin llamar a nadie.
+    const saved = state.lessons.find(lesson => lesson.videoId === videoId && lesson.transcript?.length)
+    if (saved && !force) {
+        await openLesson(saved.id)
+        showStatus(`Lección ya guardada · ${saved.transcript.length} frases (sin gastar créditos).`)
+        return state.current
+    }
+
+    // 2. Copia local de una descarga anterior: funciona incluso sin conexión.
+    if (!force) {
+        const cached = await readTranscriptCache(videoId)
+        if (cached) {
+            await applyLesson({
+                videoId,
+                videoUrl,
+                title: cached.title || "Lección de YouTube",
+                segments: cached.segments,
+                note: `Lección lista desde la copia local · ${cached.segments.length} frases (sin gastar créditos).`
+            })
+            return state.current
+        }
+    }
+
     const config = transcriptConfig()
     const status = byId("shadowing-status")
     if (status) {
@@ -286,7 +315,6 @@ async function createLesson() {
     }
     let title = "Lección de YouTube"
     let segments = []
-    let source = "auto"
     let providerName = ""
     try {
         const body = { videoId }
@@ -294,6 +322,7 @@ async function createLesson() {
             body.provider = config.provider
             body.apiKey = config.apiKey
         }
+        if (force) body.force = true
         const { data, error } = await supabaseClient.functions.invoke("youtube-transcript", { body })
         if (error) {
             const details = await readFunctionError(error)
@@ -305,6 +334,7 @@ async function createLesson() {
         title = data.title || title
         segments = splitTranscriptSegments(data.segments)
         providerName = data.source && data.source !== "youtube" ? String(data.source) : ""
+        await writeTranscriptCache(videoId, { title, language: data.language || "en", source: data.source || "youtube", segments })
     } catch (autoError) {
         console.warn("[shadowing] No se obtuvo la transcripción automática:", autoError)
         byId("shadowing-manual")?.classList.remove("hidden")
@@ -313,7 +343,18 @@ async function createLesson() {
         return null
     }
 
-    state.current = { id: "", videoId, videoUrl, title, source, transcript: segments }
+    await applyLesson({
+        videoId,
+        videoUrl,
+        title,
+        segments,
+        note: `Lección lista · ${segments.length} frases ${providerName ? `(${providerLabel(providerName)})` : "(transcripción automática)"}.`
+    })
+    return state.current
+}
+
+async function applyLesson({ videoId, videoUrl, title, segments, note }) {
+    state.current = { id: "", videoId, videoUrl, title, source: "auto", transcript: segments }
     state.currentIndex = 0
     state.translation = ""
     state.selectedWord = ""
@@ -322,8 +363,7 @@ async function createLesson() {
     byId("shadowing-video-url").value = videoUrl
     renderLesson()
     renderPlayerState()
-    showStatus(`Lección lista · ${segments.length} frases ${providerName ? `(${providerLabel(providerName)})` : "(transcripción automática)"}.`)
-    return state.current
+    showStatus(note)
 }
 
 async function readFunctionError(error) {

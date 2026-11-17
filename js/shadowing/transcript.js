@@ -1,4 +1,5 @@
 import { splitTranscriptSegments } from "./model.js"
+import { cacheSnapshot, readSnapshot } from "../offline/cache.js"
 
 /* Configuración de la transcripción automática.
  * La clave vive solo en este dispositivo (localStorage) y se envía a la
@@ -137,4 +138,42 @@ export function normalizeProviderSegments(provider, payload) {
     const cues = cuesFromItems(raw, isSupadata ? 1 / 1000 : 1)
     if (!cues.length) return []
     return splitTranscriptSegments(cues)
+}
+
+/* Caché local de transcripciones ya descargadas.
+ * Evita volver a gastar créditos del proveedor para el mismo video y
+ * permite reabrir la lección sin conexión. */
+const TRANSCRIPT_CACHE_PREFIX = "shadowing-transcript:"
+const TRANSCRIPT_CACHE_INDEX = "shadowing-transcript-index"
+const TRANSCRIPT_CACHE_LIMIT = 40
+
+export async function readTranscriptCache(videoId) {
+    if (!videoId) return null
+    const cached = await readSnapshot(TRANSCRIPT_CACHE_PREFIX + videoId)
+    if (!cached || !Array.isArray(cached.segments) || !cached.segments.length) return null
+    return cached
+}
+
+export async function writeTranscriptCache(videoId, payload) {
+    if (!videoId || !Array.isArray(payload?.segments) || !payload.segments.length) return
+    const entry = {
+        videoId,
+        title: String(payload.title || ""),
+        language: String(payload.language || "en"),
+        source: String(payload.source || "auto"),
+        segments: payload.segments,
+        savedAt: new Date().toISOString()
+    }
+    await cacheSnapshot(TRANSCRIPT_CACHE_PREFIX + videoId, entry)
+
+    const previous = (await readSnapshot(TRANSCRIPT_CACHE_INDEX)) || []
+    const next = [{ videoId, savedAt: entry.savedAt }, ...previous.filter(item => item?.videoId !== videoId)]
+        .slice(0, TRANSCRIPT_CACHE_LIMIT)
+    const keep = new Set(next.map(item => item.videoId))
+    for (const item of previous) {
+        if (item?.videoId && !keep.has(item.videoId)) {
+            await cacheSnapshot(TRANSCRIPT_CACHE_PREFIX + item.videoId, null)
+        }
+    }
+    await cacheSnapshot(TRANSCRIPT_CACHE_INDEX, next)
 }

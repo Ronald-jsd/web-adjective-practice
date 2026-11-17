@@ -102,3 +102,10 @@ test("transcript credentials stay on the device and can be cleared", () => {
         globalThis.localStorage = originalStorage
     }
 })
+
+test("transcript cache degrades gracefully without IndexedDB", async () => {
+    const { readTranscriptCache, writeTranscriptCache } = await import("../js/shadowing/transcript.js")
+    assert.equal(await readTranscriptCache("jNQXAC9IVRw"), null)
+    await writeTranscriptCache("jNQXAC9IVRw", { segments: [{ start: 0, duration: 1, text: "Hola." }] })
+    assert.equal(await readTranscriptCache(""), null)
+})

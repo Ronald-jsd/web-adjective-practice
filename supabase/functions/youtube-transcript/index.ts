@@ -2,6 +2,8 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
+const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
@@ -26,6 +28,50 @@ async function authenticate(request: Request) {
     const client = createClient(supabaseUrl, anonKey);
     const { data, error } = await client.auth.getUser(token);
     return error ? null : data.user;
+}
+
+/* Caché compartida de transcripciones. Guarda solo subtítulos públicos y
+ * evita gastar créditos del proveedor cuando el video se repite. */
+function adminClient() {
+    if (!serviceKey) return null;
+    return createClient(supabaseUrl, serviceKey, { auth: { persistSession: false } });
+}
+
+async function readTranscriptCache(videoId: string) {
+    const client = adminClient();
+    if (!client) return null;
+    try {
+        const { data, error } = await client
+            .from("youtube_transcript_cache")
+            .select("title,language,source,segments,updated_at")
+            .eq("video_id", videoId)
+            .maybeSingle();
+        if (error || !data) return null;
+        const updatedAt = Date.parse(String(data.updated_at || ""));
+        if (!Number.isFinite(updatedAt) || Date.now() - updatedAt > CACHE_TTL_MS) return null;
+        if (!Array.isArray(data.segments) || !data.segments.length) return null;
+        return data as { title: string; language: string; source: string; segments: Segment[] };
+    } catch (error) {
+        console.warn("transcript cache read failed", error);
+        return null;
+    }
+}
+
+async function writeTranscriptCache(videoId: string, payload: { title: string; language: string; source: string; segments: Segment[] }) {
+    const client = adminClient();
+    if (!client || !payload.segments.length) return;
+    try {
+        await client.from("youtube_transcript_cache").upsert({
+            video_id: videoId,
+            title: payload.title || "",
+            language: payload.language || "en",
+            source: payload.source || "youtube",
+            segments: payload.segments,
+            updated_at: new Date().toISOString(),
+        }, { onConflict: "video_id" });
+    } catch (error) {
+        console.warn("transcript cache write failed", error);
+    }
 }
 
 const VIDEO_ID = /^[A-Za-z0-9_-]{11}$/;
@@ -279,6 +325,21 @@ Deno.serve(async request => {
         const videoId = String(payload?.videoId || "").trim();
         if (!VIDEO_ID.test(videoId)) return jsonResponse({ error: "El enlace de YouTube no es válido.", code: "invalid_video" }, 400);
 
+        // Si ya descargamos este video, se devuelve la copia guardada: cero créditos.
+        if (payload?.force !== true) {
+            const cached = await readTranscriptCache(videoId);
+            if (cached) {
+                return jsonResponse({
+                    title: cached.title || await titleFor(videoId),
+                    language: cached.language || "en",
+                    generated: false,
+                    source: cached.source || "youtube",
+                    cached: true,
+                    segments: cached.segments,
+                });
+            }
+        }
+
         // La key puede venir del dispositivo o de los secretos del proyecto.
         const provider = normalizeProvider(payload?.provider || Deno.env.get("TRANSCRIPT_PROVIDER"));
         const apiKey = String(payload?.apiKey || Deno.env.get("TRANSCRIPT_API_KEY") || "").trim();
@@ -290,9 +351,12 @@ Deno.serve(async request => {
                     ? await supadataTranscript(videoId, apiKey)
                     : await transcriptFetchTranscript(videoId, apiKey);
                 if (result.segments.length) {
+                    const title = result.title || await titleFor(videoId);
+                    const language = result.language || "en";
+                    await writeTranscriptCache(videoId, { title, language, source: provider, segments: result.segments });
                     return jsonResponse({
-                        title: result.title || await titleFor(videoId),
-                        language: result.language || "en",
+                        title,
+                        language,
                         generated: false,
                         source: provider,
                         segments: result.segments,
@@ -314,6 +378,12 @@ Deno.serve(async request => {
         // Respaldo: intentamos leer los subtítulos públicos directamente.
         const fallback = await youtubeTranscript(videoId);
         if (fallback?.segments?.length) {
+            await writeTranscriptCache(videoId, {
+                title: fallback.title,
+                language: fallback.language,
+                source: "youtube",
+                segments: fallback.segments,
+            });
             return jsonResponse({
                 title: fallback.title,
                 language: fallback.language,
