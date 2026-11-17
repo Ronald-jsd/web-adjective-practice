@@ -206,8 +206,6 @@
 .shadowing-player iframe { width: 100%; height: 100%; border: 0; display: block }
 
 .shadowing-controls {
-    position: relative;
-    z-index: 120;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -648,7 +646,7 @@
     .shadowing-player { border-width: 3px; border-radius: 16px }
     .shadowing-controls { padding: 9px; gap: 7px; border-radius: 15px }
     .shadowing-controls .icon-button { min-width: 40px; height: 42px }
-    .shadowing-play { flex: 1; min-width: 130px }
+    .shadowing-play { flex: 1; min-width: 60px }
     .shadowing-speed { flex: 0 0 auto; justify-content: flex-start }
     .shadowing-transcript { padding: 20px 18px 20px 24px; font-size: clamp(19px, 5.4vw, 25px); border-radius: 17px }
     .shadowing-transcript::before { inset: 12px auto 12px 11px }
