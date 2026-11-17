@@ -409,7 +409,31 @@
                             <section class="shadowing-import-panel panel">
                                 <label class="shadowing-url-label">Enlace de YouTube<input id="shadowing-video-url" type="url" inputmode="url" autocomplete="off" placeholder="https://www.youtube.com/watch?v=…" required></label>
                                 <button id="shadowing-load-video" class="button primary" type="button">▶ Crear lección</button>
+                                <div class="shadowing-transcript-bar">
+                                    <button id="shadowing-transcript-config" class="shadowing-config-button" type="button">⚙️ Transcripción automática</button>
+                                    <span id="shadowing-transcript-state" class="shadowing-config-state">Pegado manual</span>
+                                </div>
                             </section>
+                            <dialog id="shadowing-transcript-dialog" class="shadowing-dialog" aria-labelledby="shadowing-transcript-dialog-title">
+                                <div class="shadowing-dialog-body">
+                                    <header class="shadowing-dialog-head">
+                                        <h3 id="shadowing-transcript-dialog-title">Transcripción automática</h3>
+                                        <button id="shadowing-transcript-close" class="shadowing-dialog-close" type="button" aria-label="Cerrar">✕</button>
+                                    </header>
+                                    <p class="shadowing-dialog-lead">Conecta una API key gratuita y la app bajará los subtítulos del video sola, también desde el móvil.</p>
+                                    <label class="shadowing-dialog-field">Proveedor<select id="shadowing-transcript-provider"></select></label>
+                                    <p id="shadowing-transcript-plan" class="shadowing-dialog-note"></p>
+                                    <label class="shadowing-dialog-field">API key<input id="shadowing-transcript-key" type="password" autocomplete="off" spellcheck="false" placeholder="Pega tu API key"></label>
+                                    <ol id="shadowing-transcript-steps" class="shadowing-dialog-steps"></ol>
+                                    <p class="shadowing-dialog-note">La key se guarda solo en este dispositivo. Si usas otro móvil u ordenador, pégala allí también.</p>
+                                    <div class="shadowing-dialog-actions">
+                                        <button id="shadowing-transcript-save" class="button primary" type="button">Guardar</button>
+                                        <button id="shadowing-transcript-clear" class="button secondary" type="button">Borrar key</button>
+                                        <a id="shadowing-transcript-signup" class="shadowing-dialog-link" href="https://supadata.ai" target="_blank" rel="noopener">Crear cuenta gratis</a>
+                                    </div>
+                                    <p id="shadowing-transcript-dialog-status" class="shadowing-status" role="status" aria-live="polite"></p>
+                                </div>
+                            </dialog>
                             <div id="shadowing-status" class="shadowing-status" role="status" aria-live="polite"></div>
                             <details id="shadowing-manual" class="shadowing-manual hidden"><summary>¿No hay transcripción? Pégala aquí</summary><label class="shadowing-paste-label">Transcripción o formato SRT/VTT<textarea id="shadowing-transcript-input" rows="8" placeholder="Welcome back to the channel.&#10;Today we are building an app."></textarea></label><button id="shadowing-parse-manual" class="button secondary" type="button">Procesar transcripción</button></details>
                             <div id="shadowing-player" class="shadowing-player hidden" aria-label="Reproductor de YouTube"></div>

@@ -1,7 +1,8 @@
 import { store, GEMINI_KEY_STORAGE, GROQ_KEY_STORAGE } from "../config.js"
 import { resolveSessionUser } from "../offline/session.js"
 import { showToast } from "../cache.js"
-import { parseManualTranscript, splitTranscriptSegments, extractYouTubeId, suggestionWords, normalizeWord } from "./model.js"
+import { parseManualTranscript, splitTranscriptSegments, extractYouTubeId, suggestionWords, normalizeWord, looksLikeYouTubeUrl } from "./model.js"
+import { TRANSCRIPT_PROVIDERS, findProvider, providerLabel, transcriptConfig, setTranscriptCredentials, clearTranscriptCredentials } from "./transcript.js"
 import { createShadowingRepository } from "./repository.js"
 import { createSentenceRepository } from "../sentences/repository.js"
 
@@ -275,24 +276,40 @@ async function createLesson() {
         return null
     }
     const videoUrl = youtubeUrl(input.value)
+    const config = transcriptConfig()
     const status = byId("shadowing-status")
     if (status) {
-        status.textContent = "Intentando obtener los subtítulos automáticamente…"
+        status.textContent = config.configured
+            ? `Buscando los subtítulos con ${providerLabel(config.provider)}…`
+            : "Intentando obtener los subtítulos automáticamente…"
         status.classList.remove("error", "success")
     }
     let title = "Lección de YouTube"
     let segments = []
     let source = "auto"
+    let providerName = ""
     try {
-        const { data, error } = await supabaseClient.functions.invoke("youtube-transcript", { body: { videoId } })
-        if (error) throw error
+        const body = { videoId }
+        if (config.configured) {
+            body.provider = config.provider
+            body.apiKey = config.apiKey
+        }
+        const { data, error } = await supabaseClient.functions.invoke("youtube-transcript", { body })
+        if (error) {
+            const details = await readFunctionError(error)
+            const failure = new Error(details.message || "No se pudo obtener la transcripción automática.")
+            failure.code = details.code
+            throw failure
+        }
         if (!data?.segments?.length) throw new Error("No se encontraron subtítulos automáticos.")
         title = data.title || title
         segments = splitTranscriptSegments(data.segments)
+        providerName = data.source && data.source !== "youtube" ? String(data.source) : ""
     } catch (autoError) {
         console.warn("[shadowing] No se obtuvo la transcripción automática:", autoError)
         byId("shadowing-manual")?.classList.remove("hidden")
-        showStatus("YouTube no entregó una transcripción reutilizable. Pega el texto, SRT o VTT y pulsa Procesar transcripción.", true)
+        showStatus(transcriptFailureMessage(autoError, config), true)
+        if (autoError.code === "invalid_key" || autoError.code === "quota") openTranscriptDialog()
         return null
     }
 
@@ -305,13 +322,142 @@ async function createLesson() {
     byId("shadowing-video-url").value = videoUrl
     renderLesson()
     renderPlayerState()
-    showStatus(`Lección lista · ${segments.length} frases ${source === "auto" ? "(transcripción automática)" : ""}.`)
+    showStatus(`Lección lista · ${segments.length} frases ${providerName ? `(${providerLabel(providerName)})` : "(transcripción automática)"}.`)
     return state.current
+}
+
+async function readFunctionError(error) {
+    const response = error?.context
+    if (response && typeof response.clone === "function") {
+        try {
+            const body = await response.clone().json()
+            return { code: String(body?.code || ""), message: String(body?.error || ""), status: response.status }
+        } catch {
+            // La respuesta no era JSON; usamos el mensaje genérico.
+        }
+    }
+    return { code: "", message: String(error?.message || ""), status: 0 }
+}
+
+function transcriptFailureMessage(error, config) {
+    const provider = providerLabel(config.provider)
+    if (error?.code === "invalid_key") {
+        return `La API key de ${provider} no es válida. Revísala en “⚙️ Transcripción automática”.`
+    }
+    if (error?.code === "quota") {
+        return `Se agotó el cupo gratuito de ${provider}. Pega la transcripción manualmente o espera al próximo ciclo.`
+    }
+    if (!config.configured) {
+        return "YouTube no entregó una transcripción reutilizable. Conecta “⚙️ Transcripción automática” (gratis) o pega el texto, SRT o VTT y pulsa Procesar transcripción."
+    }
+    return `${provider} no encontró subtítulos para este video. Pega el texto, SRT o VTT y pulsa Procesar transcripción.`
+}
+
+function renderTranscriptConfig() {
+    const config = transcriptConfig()
+    const stateLabel = byId("shadowing-transcript-state")
+    const button = byId("shadowing-transcript-config")
+    if (stateLabel) {
+        stateLabel.textContent = config.configured ? `${providerLabel(config.provider)} conectada` : "Pegado manual"
+        stateLabel.classList.toggle("on", config.configured)
+    }
+    if (button) {
+        button.title = config.configured
+            ? "Cambiar la API key de la transcripción automática"
+            : "Conectar una API key gratuita para bajar los subtítulos automáticamente"
+    }
+}
+
+function syncTranscriptProviderHints() {
+    const select = byId("shadowing-transcript-provider")
+    const provider = findProvider(select?.value || transcriptConfig().provider)
+    const plan = byId("shadowing-transcript-plan")
+    if (plan) plan.textContent = provider.freePlan
+    const steps = byId("shadowing-transcript-steps")
+    if (steps) {
+        steps.replaceChildren()
+        provider.steps.forEach(step => {
+            const item = document.createElement("li")
+            item.textContent = step
+            steps.append(item)
+        })
+    }
+    const link = byId("shadowing-transcript-signup")
+    if (link) link.href = provider.signupUrl
+}
+
+function openTranscriptDialog() {
+    const dialog = byId("shadowing-transcript-dialog")
+    if (!dialog) return
+    const select = byId("shadowing-transcript-provider")
+    if (select && !select.options.length) {
+        TRANSCRIPT_PROVIDERS.forEach(provider => {
+            const option = document.createElement("option")
+            option.value = provider.id
+            option.textContent = provider.label
+            select.append(option)
+        })
+    }
+    const config = transcriptConfig()
+    if (select) select.value = config.provider
+    const key = byId("shadowing-transcript-key")
+    if (key) key.value = config.apiKey
+    const status = byId("shadowing-transcript-dialog-status")
+    if (status) {
+        status.textContent = ""
+        status.classList.remove("error")
+    }
+    syncTranscriptProviderHints()
+    if (typeof dialog.showModal === "function") dialog.showModal()
+    else dialog.setAttribute("open", "")
+}
+
+function closeTranscriptDialog() {
+    const dialog = byId("shadowing-transcript-dialog")
+    if (!dialog) return
+    if (typeof dialog.close === "function") dialog.close()
+    else dialog.removeAttribute("open")
+}
+
+function saveTranscriptConfig() {
+    const provider = byId("shadowing-transcript-provider")?.value || TRANSCRIPT_PROVIDERS[0].id
+    const key = byId("shadowing-transcript-key")?.value || ""
+    const status = byId("shadowing-transcript-dialog-status")
+    if (!setTranscriptCredentials(provider, key)) {
+        if (status) {
+            status.textContent = "Pega una API key antes de guardar."
+            status.classList.add("error")
+        }
+        return
+    }
+    if (status) {
+        status.textContent = `Listo: ${providerLabel(provider)} conectada en este dispositivo.`
+        status.classList.remove("error")
+    }
+    renderTranscriptConfig()
+    showToast("Transcripción automática configurada.", "success")
+}
+
+function clearTranscriptConfig() {
+    clearTranscriptCredentials()
+    const key = byId("shadowing-transcript-key")
+    if (key) key.value = ""
+    const status = byId("shadowing-transcript-dialog-status")
+    if (status) {
+        status.textContent = "Key borrada. La app vuelve al pegado manual."
+        status.classList.remove("error")
+    }
+    renderTranscriptConfig()
 }
 
 function parseManual() {
     const input = byId("shadowing-transcript-input")
-    const segments = parseManualTranscript(input?.value || "")
+    const rawText = String(input?.value || "").trim()
+    if (looksLikeYouTubeUrl(rawText)) {
+        showStatus("El enlace no es el texto de la transcripción. Abre el video y pulsa “Show transcript” (o descarga/copia el SRT/VTT) y pega el texto aquí.", true)
+        return
+    }
+    const segments = parseManualTranscript(rawText)
     if (!segments.length) {
         showStatus("La transcripción está vacía o no tiene un formato reconocido.", true)
         return
@@ -713,6 +859,11 @@ function wireEvents() {
     byId("shadowing-add-review")?.addEventListener("click", () => saveSelectedSentence())
     byId("shadowing-record")?.addEventListener("click", () => startRecording())
     byId("shadowing-play-recording")?.addEventListener("click", playLastRecording)
+    byId("shadowing-transcript-config")?.addEventListener("click", openTranscriptDialog)
+    byId("shadowing-transcript-close")?.addEventListener("click", closeTranscriptDialog)
+    byId("shadowing-transcript-save")?.addEventListener("click", saveTranscriptConfig)
+    byId("shadowing-transcript-clear")?.addEventListener("click", clearTranscriptConfig)
+    byId("shadowing-transcript-provider")?.addEventListener("change", syncTranscriptProviderHints)
     window.setInterval(() => pollShadowing(), 500)
 }
 
@@ -724,6 +875,7 @@ export async function initializeShadowing(supabase) {
     sentenceRepository = createSentenceRepository(supabaseClient)
     wireEvents()
     setupPracticePaneTabs()
+    renderTranscriptConfig()
     state.user = await resolveSessionUser(supabaseClient)
     await refreshLessons().catch(error => console.warn("[shadowing] No se pudieron cargar las lecciones:", error))
 }

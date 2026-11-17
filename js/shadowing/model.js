@@ -77,6 +77,11 @@ export function splitTranscriptSegments(segments) {
     return sentences
 }
 
+export function looksLikeYouTubeUrl(value) {
+    const text = String(value || "").trim()
+    return /^https?:\/\/\S+$/i.test(text) || /^www\.(?:youtube\.com|youtu\.be\/|m\.youtube\.com)\S*$/i.test(text)
+}
+
 const SRT_LINE = /^\d{1,2}:\d{2}:\d{2}[.,]\d{3}\s*-->\s*\d{1,2}:\d{2}:\d{2}[.,]\d{3}/
 
 export function parseManualTranscript(raw) {
