@@ -11,7 +11,8 @@ const corsHeaders = {
 
 const PROVIDERS = ["supadata", "transcriptfetch"] as const;
 type Provider = (typeof PROVIDERS)[number];
-type Segment = { start: number; duration: number; text: string };
+type WordTiming = { text: string; from: number; to: number; measured?: boolean };
+type Segment = { start: number; duration: number; text: string; words?: WordTiming[] };
 type ProviderResult = { segments: Segment[]; language: string; title: string };
 
 function jsonResponse(body: unknown, status = 200) {
@@ -119,10 +120,13 @@ function captionsFromHtml(html: string): CaptionTrack[] {
     return Array.isArray(tracks) ? tracks : [];
 }
 
-function searchJson3(value: unknown): Array<{ tStartMs: number; dDurationMs: number; segs?: Array<{ utf8: string }> }> {
+type Json3Seg = { utf8?: string; tStartMs?: number; dDurationMs?: number; segs?: Json3Seg[] };
+type Json3Event = { tStartMs?: number; dDurationMs?: number; segs?: Json3Seg[] };
+
+function searchJson3(value: unknown): Json3Event[] {
     if (!value || typeof value !== "object") return [];
     const record = value as Record<string, unknown>;
-    if (Array.isArray(record.events)) return record.events as Array<{ tStartMs: number; dDurationMs: number; segs?: Array<{ utf8: string }> }>;
+    if (Array.isArray(record.events)) return record.events as Json3Event[];
     for (const child of Object.values(record)) {
         const found = searchJson3(child);
         if (found.length) return found;
@@ -130,7 +134,39 @@ function searchJson3(value: unknown): Array<{ tStartMs: number; dDurationMs: num
     return [];
 }
 
-function parseJson3(text: string) {
+/* json3 guarda cada palabra con tStartMs/dDurationMs, a veces anidada dentro
+ * de otro seg. Es la única fuente gratuita de tiempos reales por palabra. */
+function json3Words(segs: Json3Seg[]): WordTiming[] {
+    const words: WordTiming[] = [];
+    for (const seg of segs || []) {
+        if (Array.isArray(seg.segs) && seg.segs.length) {
+            words.push(...json3Words(seg.segs));
+            continue;
+        }
+        const text = String(seg.utf8 || "").replace(/\s+/g, " ").trim();
+        if (!text) continue;
+        const from = Number(seg.tStartMs);
+        if (!Number.isFinite(from)) continue;
+        const duration = Number(seg.dDurationMs);
+        words.push({
+            text,
+            from: Math.max(0, from) / 1000,
+            to: Math.max(from + 80, from + (Number.isFinite(duration) ? duration : 80)) / 1000,
+            measured: true
+        });
+    }
+    return words.sort((left, right) => left.from - right.from);
+}
+
+function json3Text(segs: Json3Seg[]): string {
+    return (segs || [])
+        .map(seg => (Array.isArray(seg.segs) && seg.segs.length ? json3Text(seg.segs) : String(seg.utf8 || "")))
+        .join("")
+        .replace(/\s+/g, " ")
+        .trim();
+}
+
+function parseJson3(text: string): Segment[] {
     let parsed: unknown;
     try {
         parsed = JSON.parse(text);
@@ -139,11 +175,16 @@ function parseJson3(text: string) {
     }
     return searchJson3(parsed)
         .filter(event => Array.isArray(event.segs))
-        .map(event => ({
-            start: Number(event.tStartMs || 0) / 1000,
-            duration: Math.max(0.3, Number(event.dDurationMs || 1000) / 1000),
-            text: (event.segs || []).map(seg => String(seg.utf8 || "")).join("").replace(/\s+/g, " ").trim()
-        }))
+        .map(event => {
+            const segs = event.segs || [];
+            const words = json3Words(segs);
+            return {
+                start: Math.max(0, Number(event.tStartMs || 0)) / 1000,
+                duration: Math.max(0.3, Number(event.dDurationMs || 1000) / 1000),
+                text: json3Text(segs),
+                words: words.length ? words : undefined
+            };
+        })
         .filter(segment => segment.text)
 }
 

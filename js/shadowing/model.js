@@ -24,6 +24,34 @@ function normalizedWords(text) {
     return String(text || "").trim().match(/\S+/g) || []
 }
 
+/* Los tiempos por palabra pueden venir de los segs de json3 (medidos) o de
+ * los bloques rolling ya repartidos por esta misma función (estimados). */
+function normalizeProvidedWords(value) {
+    if (!Array.isArray(value)) return []
+    return value.map(word => ({
+        text: String(word?.text || "").replace(/\s+/g, " ").trim(),
+        from: Number(word?.from),
+        to: Number(word?.to),
+        measured: Boolean(word?.measured)
+    })).filter(word => word.text && Number.isFinite(word.from) && Number.isFinite(word.to) && word.to > word.from)
+}
+
+/* Reajusta los tiempos de palabra cuando una frase se recorta o se fusiona. */
+function fitWords(words, start, end) {
+    const list = normalizeProvidedWords(words)
+    if (!list.length) return []
+    const first = Math.min(...list.map(word => word.from))
+    const last = Math.max(...list.map(word => word.to))
+    const scale = (end - start) / Math.max(0.2, last - first)
+    let previous = start
+    return list.map(word => {
+        const from = Math.max(previous, Math.min(end, start + (word.from - first) * scale))
+        const to = Math.max(from + 0.06, Math.min(end, start + (word.to - first) * scale))
+        previous = to
+        return { ...word, from, to }
+    })
+}
+
 function flushSentence(sentence, sentences, minimumWords = 1) {
     const clean = sentence.text.replace(/\s+/g, " ").trim()
     const wordCount = normalizedWords(clean).length
@@ -48,7 +76,8 @@ export function splitTranscriptSegments(segments) {
         .map(segment => ({
             start: Math.max(0, Number(segment.start || 0)),
             duration: Math.max(0.3, Number(segment.duration || 1)),
-            text: String(segment.text).replace(/\s+/g, " ").trim()
+            text: String(segment.text).replace(/\s+/g, " ").trim(),
+            words: normalizeProvidedWords(segment.words)
         }))
         .sort((a, b) => a.start - b.start)
     if (!cleaned.length) return []
@@ -65,11 +94,17 @@ export function splitTranscriptSegments(segments) {
             ? (next.start >= ownEnd - 0.05 ? ownEnd : Math.max(cue.start + 0.2, next.start))
             : ownEnd
         const span = Math.max(0.2, cueEnd - cue.start)
+        const measured = cue.words.filter(word => word.from >= cue.start - 0.4 && word.from <= cueEnd + 0.4)
+        if (measured.length) {
+            measured.forEach(word => words.push({ ...word, to: Math.max(word.from + 0.06, Math.min(word.to, cueEnd + 0.25)) }))
+            return
+        }
         tokens.forEach((token, position) => {
             words.push({
                 text: token,
                 from: cue.start + span * (position / tokens.length),
-                to: cue.start + span * ((position + 1) / tokens.length)
+                to: cue.start + span * ((position + 1) / tokens.length),
+                measured: false
             })
         })
     })
@@ -83,7 +118,8 @@ export function splitTranscriptSegments(segments) {
             text: current.map(word => word.text).join(" ").replace(/\s+([,.!?;:])/g, "$1"),
             start: current[0].from,
             end: current[current.length - 1].to,
-            wordCount: current.length
+            wordCount: current.length,
+            words: current.map(word => ({ ...word }))
         })
         current = []
     }
@@ -99,6 +135,7 @@ export function splitTranscriptSegments(segments) {
         if (previous && previous.wordCount < MIN_SEGMENT_SIZE) {
             previous.text = `${previous.text} ${sentence.text}`.trim()
             previous.end = sentence.end
+            previous.words = [...(previous.words || []), ...(sentence.words || [])]
             previous.wordCount += sentence.wordCount
         } else {
             merged.push({ ...sentence })
@@ -110,6 +147,7 @@ export function splitTranscriptSegments(segments) {
             const previous = merged[merged.length - 2]
             previous.text = `${previous.text} ${last.text}`.trim()
             previous.end = last.end
+            previous.words = [...(previous.words || []), ...(last.words || [])]
             previous.wordCount += last.wordCount
             merged.pop()
         }
@@ -121,11 +159,16 @@ export function splitTranscriptSegments(segments) {
         }
     }
 
-    return merged.map(sentence => ({
-        start: Math.max(0, Number(sentence.start.toFixed(2))),
-        end: Math.max(sentence.start + 0.5, Number(sentence.end.toFixed(2))),
-        text: sentence.text
-    }))
+    return merged.map(sentence => {
+        const start = Math.max(0, Number(sentence.start.toFixed(2)))
+        const end = Math.max(start + 0.5, Number(sentence.end.toFixed(2)))
+        return {
+            start,
+            end,
+            text: sentence.text,
+            words: fitWords(sentence.words, start, end)
+        }
+    })
 }
 
 /* Ajusta el final de cada frase al comienzo de la siguiente. Con los
@@ -142,7 +185,7 @@ export function retimeSegments(segments) {
         // Solo acortamos si la siguiente empieza DESPUÉS: si los tiempos se
         // solapan, conservamos la duración propia para no cortar la frase.
         if (next && Number(next.start || 0) > end) end = Number(next.start) - 0.02
-        return { ...segment, start, end }
+        return { ...segment, start, end, words: fitWords(segment.words, start, Math.max(start + 0.5, end)) }
     })
 }
 

@@ -2,6 +2,7 @@ import { store, GEMINI_KEY_STORAGE, GROQ_KEY_STORAGE } from "../config.js"
 import { resolveSessionUser } from "../offline/session.js"
 import { showToast } from "../cache.js"
 import { parseManualTranscript, splitTranscriptSegments, extractYouTubeId, suggestionWords, normalizeWord, looksLikeYouTubeUrl, activeWordIndex, retimeSegments } from "./model.js"
+import { buildSpeechGuide } from "./speech-guide.js"
 import { TRANSCRIPT_PROVIDERS, findProvider, providerLabel, transcriptConfig, setTranscriptCredentials, clearTranscriptCredentials } from "./transcript.js"
 import { createTranscriptStore } from "./transcript-store.js"
 import { createAiCache } from "./ai-cache.js"
@@ -255,38 +256,56 @@ function renderTranscript(lesson = state.current) {
     container.replaceChildren()
     state.speakingIndex = -1
 
-    const tokens = sentence.match(/[A-Za-z]+(?:['’-][A-Za-z]+)*|\S+/g) || []
-    const words = tokens.filter(token => /^[A-Za-z]+(?:['’-][A-Za-z]+)*$/.test(token))
-    const totalWeight = words.reduce((sum, token) => sum + wordWeight(token), 0) || 1
-    const spans = []
-    let elapsed = 0
+    const segment = lesson.transcript?.[state.currentIndex] || null
+    const guide = buildSpeechGuide(segment, lesson.transcript?.[state.currentIndex + 1] || null)
+    const buttons = []
+    const accuracy = guide.source === "measured" ? "tiempo medido" : "tiempo estimado"
 
-    tokens.forEach((token, tokenIndex) => {
-        const isWord = /^[A-Za-z]+(?:['’-][A-Za-z]+)*$/.test(token)
-        if (isWord) {
-            const unit = document.createElement("span")
-            unit.className = "shadowing-word-unit"
-            const button = document.createElement("button")
-            button.type = "button"
-            button.className = "shadowing-word"
-            button.textContent = token
-            button.title = "Escuchar pronunciación gratis"
-            const weight = wordWeight(token)
-            spans.push({ element: button, from: elapsed / totalWeight, to: (elapsed + weight) / totalWeight })
-            elapsed += weight
-            button.addEventListener("click", () => playWordPronunciation(token))
-            const ipa = document.createElement("small")
-            ipa.className = "shadowing-word-ipa"
-            unit.append(button, ipa)
-            container.append(unit, document.createTextNode(" "))
-            if (tokenIndex < 28) {
-                setTimeout(() => fillPronunciation(token, ipa), tokenIndex * 60)
-            }
+    guide.items.forEach((item, tokenIndex) => {
+        if (!item.isWord) {
+            container.append(document.createTextNode(item.token + " "))
+            if (item.pauseAfter) container.append(makeGuideMark("sh-guide-pause", item.pauseAfter, guidePauseTitle(item)))
+            if (item.contour) container.append(makeGuideMark("sh-guide-contour", item.contour, "Tono final estimado por la puntuación"))
             return
         }
-        container.append(document.createTextNode(token + " "))
+        if (item.pauseBefore) {
+            container.append(makeGuideMark("sh-guide-pause", item.pauseBefore, `Pausa de ${Math.round(item.gapBeforeMs)} ms`))
+            container.append(document.createTextNode(" "))
+        }
+        const unit = document.createElement("span")
+        unit.className = "shadowing-word-unit"
+        const button = document.createElement("button")
+        button.type = "button"
+        button.className = `shadowing-word sh-guide-${item.stress}`
+        button.textContent = item.token
+        button.title = `${item.posLabel} · ${Math.round(item.durationMs)} ms · ${accuracy}. Clic para escuchar.`
+        button.dataset.pos = item.pos
+        button.dataset.ms = String(Math.round(item.durationMs))
+        button.addEventListener("click", () => playWordPronunciation(item.token))
+        const ipa = document.createElement("small")
+        ipa.className = "shadowing-word-ipa"
+        unit.append(button, ipa)
+        container.append(unit)
+        if (item.pauseAfter) container.append(makeGuideMark("sh-guide-pause", item.pauseAfter, guidePauseTitle(item)))
+        if (item.contour) container.append(makeGuideMark("sh-guide-contour", item.contour, "Tono final estimado por la puntuación"))
+        container.append(document.createTextNode(" "))
+        buttons.push(button)
+        if (tokenIndex < 28) {
+            setTimeout(() => fillPronunciation(item.token, ipa), tokenIndex * 60)
+        }
     })
-    state.wordSpans = spans
+    state.wordSpans = guide.spans.map((span, index) => ({ ...span, element: buttons[index] }))
+    const legend = byId("shadowing-guide-legend")
+    if (legend) {
+        legend.classList.toggle("hidden", !guide.items.length)
+        const accuracyNote = legend.querySelector("[data-guide-source]")
+        if (accuracyNote) {
+            const timing = guide.pauseSource === "timing" ? "Las pausas salen de los huecos entre frases" : "Las pausas se estiman por puntuación"
+            accuracyNote.textContent = guide.source === "measured"
+                ? `Tiempos medidos palabra por palabra en los subtítulos del video. ${timing}.`
+                : `Duración y estrés estimados de los subtítulos; ${timing}.`
+        }
+    }
     renderWordList(sentence)
     renderRecording()
 }
@@ -296,8 +315,17 @@ async function fillPronunciation(word, node) {
     if (data?.ipa && node.isConnected) node.textContent = data.ipa
 }
 
-function wordWeight(token) {
-    return Math.max(3, token.replace(/[^A-Za-z]/g, "").length)
+function guidePauseTitle(item) {
+    if (item.pauseAfterSource === "punctuation") return "Pausa breve estimada por la puntuación"
+    return `Pausa de ${Math.round(item.pauseAfterMs || 0)} ms entre frases`
+}
+
+function makeGuideMark(className, text, title) {
+    const mark = document.createElement("span")
+    mark.className = className
+    mark.textContent = text
+    mark.title = title
+    return mark
 }
 
 /* Reproduce una palabra con la voz unificada (sin créditos). */
@@ -305,9 +333,8 @@ function speakWord(word) {
     playWordPronunciation(word)
 }
 
-/* Resalta la palabra que se está oyendo. Los subtítulos solo traen el tiempo
- * de la frase completa, así que se reparte la duración según lo larga que sea
- * cada palabra: es una aproximación, no un karaoke exacto. */
+/* Resalta la palabra que se está oyendo. Cuando hay tiempos por palabra el
+ * resaltado los sigue; si no, se reparte la frase por el largo de las palabras. */
 function highlightSpokenWord(seconds, segment) {
     const spans = state.wordSpans || []
     if (!spans.length) return

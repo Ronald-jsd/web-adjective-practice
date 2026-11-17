@@ -283,6 +283,34 @@
     color: #7d5713;
     box-shadow: 0 2px 8px rgba(190, 135, 20, .22), inset 0 0 0 1px rgba(214, 158, 28, .5);
 }
+.shadowing-transcript .shadowing-word.sh-guide-primary,
+.shadowing-transcript .shadowing-word.sh-guide-primary:hover { color: var(--sh-accent); font-weight: 900; text-shadow: 0 1px 0 rgba(163, 79, 45, .12) }
+.shadowing-transcript .shadowing-word.sh-guide-secondary,
+.shadowing-transcript .shadowing-word.sh-guide-secondary:hover { color: var(--sh-primary-dark); font-weight: 800 }
+.shadowing-transcript .shadowing-word.sh-guide-faded,
+.shadowing-transcript .shadowing-word.sh-guide-faded:hover { color: #a4b1a8; font-weight: 500; opacity: .75 }
+.sh-guide-pause { display: inline-grid; place-items: center; margin: 0 2px; color: var(--sh-accent); font: 900 .78em/1 "DM Sans", sans-serif; letter-spacing: -.12em; vertical-align: middle }
+.sh-guide-contour { display: inline-grid; place-items: center; margin-left: 3px; padding: 0 6px; border-radius: 8px; background: #f7e9e1; color: var(--sh-accent); font: 900 12px/1.5 "DM Sans", sans-serif; vertical-align: middle }
+.shadowing-guide-legend {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px 14px;
+    padding: 11px 15px;
+    border: 1px solid var(--sh-border);
+    border-radius: 14px;
+    background: #fbfdfb;
+    color: #5d7064;
+    font: 600 11px/1.5 "DM Sans", sans-serif;
+    box-shadow: var(--sh-shadow-sm);
+}
+.shadowing-guide-legend strong { color: var(--sh-ink); font: 800 11px Manrope, sans-serif; letter-spacing: .06em; text-transform: uppercase }
+.shadowing-guide-legend i { display: inline-block; width: 10px; height: 10px; margin-right: 5px; border-radius: 3px; vertical-align: -1px }
+.sh-legend-primary { background: var(--sh-accent) }
+.sh-legend-secondary { background: var(--sh-primary-dark) }
+.sh-legend-faded { background: #c8d3ca }
+.shadowing-guide-legend b { color: var(--sh-accent); font-weight: 900 }
+.shadowing-guide-legend small { flex: 1 1 100%; color: #8a998f; font-size: 11px }
 .shadowing-translation {
     padding: 14px 18px;
     border-left: 4px solid var(--sh-primary);

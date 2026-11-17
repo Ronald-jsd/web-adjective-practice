@@ -13,6 +13,7 @@ import {
 } from "../js/shadowing/transcript.js"
 import { normalizeTranscriptRow } from "../js/shadowing/transcript-store.js"
 import { normalizeAiCacheRow } from "../js/shadowing/ai-cache.js"
+import { buildSpeechGuide, partOfSpeech } from "../js/shadowing/speech-guide.js"
 
 test("extractYouTubeId accepts watch, short, shorts and embed URLs", () => {
     assert.equal(extractYouTubeId("https://www.youtube.com/watch?v=Q5vAL799_BM"), "Q5vAL799_BM")
@@ -196,4 +197,78 @@ test("retimeSegments no corta una frase cuando los tiempos se solapan", () => {
         { start: 9, end: 14, duration: 5, text: "b" }
     ])
     assert.ok(withGap[0].end < withGap[1].start)
+})
+
+test("splitTranscriptSegments conserva los tiempos de palabra recibidos", () => {
+    const result = splitTranscriptSegments([{
+        start: 0,
+        duration: 3,
+        text: "Hello there friend.",
+        words: [
+            { text: "Hello", from: 0, to: 0.6, measured: true },
+            { text: "there", from: 0.6, to: 1.1, measured: true },
+            { text: "friend", from: 1.2, to: 2.4, measured: true }
+        ]
+    }])
+    assert.equal(result.length, 1)
+    assert.equal(result[0].words.length, 3)
+    assert.equal(result[0].words[0].from, 0)
+    assert.equal(result[0].words[2].measured, true)
+    assert.ok(result[0].words[2].to <= result[0].end + 0.01)
+})
+
+test("partOfSpeech identifica los tipos usados en la guía", () => {
+    assert.equal(partOfSpeech("company").tag, "noun")
+    assert.equal(partOfSpeech("wants").tag, "verb")
+    assert.equal(partOfSpeech("beautiful").tag, "adjective")
+    assert.equal(partOfSpeech("quickly").tag, "adverb")
+    assert.equal(partOfSpeech("the").tag, "determiner")
+    assert.equal(partOfSpeech("and").tag, "conjunction")
+    assert.equal(partOfSpeech("we").tag, "pronoun")
+    assert.equal(partOfSpeech("2026").tag, "number")
+})
+
+test("buildSpeechGuide marca pausas, estrés y tono con tiempos medidos", () => {
+    const guide = buildSpeechGuide({
+        start: 0,
+        end: 4,
+        text: "So the company wants an app.",
+        words: [
+            { text: "So", from: 0, to: 0.25, measured: true },
+            { text: "the", from: 0.25, to: 0.4, measured: true },
+            { text: "company", from: 0.5, to: 1.3, measured: true },
+            { text: "wants", from: 1.35, to: 2, measured: true },
+            { text: "an", from: 2.05, to: 2.2, measured: true },
+            { text: "app", from: 2.9, to: 3.6, measured: true }
+        ]
+    })
+    const item = token => guide.items.find(entry => entry.token === token)
+    assert.equal(guide.source, "measured")
+    assert.equal(guide.contour, "↘")
+    assert.equal(item("company").stress, "primary")
+    assert.equal(item("the").stress, "faded")
+    assert.equal(item("app").pauseBefore, "||")
+    assert.equal(item("app").pos, "noun")
+    assert.equal(item("app").durationMs, 700)
+    assert.ok(guide.spans.every(span => span.from >= 0 && span.to <= 1))
+})
+
+test("buildSpeechGuide marca pausas por puntuación y por hueco entre frases", () => {
+    const guide = buildSpeechGuide({ start: 1, end: 3, text: "Hello, there." }, { start: 4, end: 6, text: "Bye." })
+    const comma = guide.items.find(item => item.token === ",")
+    const last = guide.items[guide.items.length - 1]
+    assert.equal(comma.pauseAfter, "|")
+    assert.equal(comma.pauseAfterSource, "punctuation")
+    assert.equal(last.pauseAfter, "||")
+    assert.equal(guide.pauseSource, "timing")
+})
+
+test("buildSpeechGuide estima la guía cuando la transcripción no trae palabras", () => {
+    const guide = buildSpeechGuide({ start: 1, end: 3, text: "Hello there." })
+    assert.equal(guide.source, "estimated")
+    assert.equal(guide.items.filter(item => item.isWord).length, 2)
+    assert.equal(guide.contour, "↘")
+    assert.equal(guide.spans.length, 2)
+    assert.ok(guide.spans[1].to <= 1)
+    assert.deepEqual(buildSpeechGuide(null).items, [])
 })
