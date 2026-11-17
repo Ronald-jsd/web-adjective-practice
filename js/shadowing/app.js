@@ -33,6 +33,7 @@ const state = {
     autoActive: false,
     autoTimer: null,
     autoRecording: false,
+    timingOffsets: new Map(),
     translation: "",
     lookupCache: new Map(),
     selectedWord: "",
@@ -43,6 +44,52 @@ const state = {
     chunks: [],
     recognizer: null,
     stream: null
+}
+
+const TIMING_STORAGE = "shadowing_phrase_timing_v1"
+
+function timingKey(index) {
+    return `${state.current?.videoId || ""}::${index}`
+}
+
+function loadTimingOffsets() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(TIMING_STORAGE) || "{}")
+        state.timingOffsets = new Map(Object.entries(saved || {}).map(([key, value]) => [key, Number(value) || 0]))
+    } catch (error) {
+        state.timingOffsets = new Map()
+    }
+}
+
+function saveTimingOffsets() {
+    try {
+        localStorage.setItem(TIMING_STORAGE, JSON.stringify(Object.fromEntries(state.timingOffsets)))
+    } catch (error) {
+        console.warn("[shadowing] No se pudo guardar el ajuste de tiempos:", error)
+    }
+}
+
+function phraseAt(index = state.currentIndex) {
+    const segment = state.current?.transcript?.[index]
+    if (!segment) return null
+    const offset = state.timingOffsets.get(timingKey(index)) || 0
+    return { ...segment, end: Math.max(segment.start + 0.4, segment.end + offset) }
+}
+
+function adjustPhraseEnd(delta) {
+    const segment = state.current?.transcript?.[state.currentIndex]
+    if (!segment) return
+    const key = timingKey(state.currentIndex)
+    const next = Math.max(-3, Math.min(3, (state.timingOffsets.get(key) || 0) + delta))
+    state.timingOffsets.set(key, Number(next.toFixed(2)))
+    saveTimingOffsets()
+    renderTimingControl()
+}
+
+function renderTimingControl() {
+    const value = state.timingOffsets.get(timingKey(state.currentIndex)) || 0
+    const node = byId("shadowing-timing-value")
+    if (node) node.textContent = `${value > 0 ? "+" : ""}${value.toFixed(1)} s`
 }
 
 function showStatus(message, isError = false) {
@@ -168,6 +215,7 @@ function renderLesson() {
     if (title) title.textContent = current?.title || "Elige una lección"
     if (count) count.textContent = `${transcript.length ? state.currentIndex + 1 : 0}/${transcript.length}`
     markLibraryActive()
+    renderTimingControl()
     const lines = byId("shadowing-lines")
     if (!lines) return
     lines.replaceChildren()
@@ -381,12 +429,10 @@ function handlePlaybackState(data) {
 
 function pollShadowing() {
     if (!state.current || !state.playerReady || !state.player) return
-    const segment = state.current.transcript?.[state.currentIndex]
+    const segment = phraseAt()
     if (!segment) return
     const seconds = Number(state.player.getCurrentTime?.() || 0)
-    // Pequeño adelanto: la palabra se enciende justo antes del sonido y así
-    // no se queda atrás cuando el video va rápido.
-    highlightSpokenWord(seconds + 0.12, segment)
+    highlightSpokenWord(seconds + 0.03, segment)
     if (seconds < segment.end - 0.05) return
 
     if (state.autoActive && state.practiceMode !== "manual") {
@@ -1300,6 +1346,8 @@ function wireEvents() {
         state.practiceDelay = Number(event.target.value) || 3
     })
     byId("shadowing-auto-toggle")?.addEventListener("click", startAutoPractice)
+    byId("shadowing-timing-minus")?.addEventListener("click", () => adjustPhraseEnd(-0.1))
+    byId("shadowing-timing-plus")?.addEventListener("click", () => adjustPhraseEnd(0.1))
     byId("shadowing-add-vocabulary")?.addEventListener("click", () => saveSelectedWord())
     byId("shadowing-add-review")?.addEventListener("click", () => saveSelectedSentence())
     byId("shadowing-record")?.addEventListener("click", () => {
@@ -1324,6 +1372,7 @@ export async function initializeShadowing(supabase) {
     sentenceRepository = createSentenceRepository(supabaseClient)
     transcriptStore = createTranscriptStore(supabaseClient)
     aiCache = createAiCache(supabaseClient)
+    loadTimingOffsets()
     wireEvents()
     setupPracticePaneTabs()
     renderTranscriptConfig()

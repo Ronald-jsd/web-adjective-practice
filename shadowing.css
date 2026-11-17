@@ -509,3 +509,8 @@
     .shadowing-word-actions{flex-wrap:wrap}
     .shadowing-word-actions .button{flex:1 1 45%}
 }
+.shadowing-timing-field{display:grid;gap:5px}
+.shadowing-timing-controls{display:inline-flex;align-items:center;gap:2px;border:1px solid var(--sh-border-strong);border-radius:9px;background:#fff;padding:2px}
+.shadowing-timing-controls button{width:30px;height:30px;border:0;border-radius:7px;background:var(--sh-primary-soft);color:var(--sh-primary-dark);font:800 15px/1 "DM Sans",sans-serif;cursor:pointer}
+.shadowing-timing-controls button:hover{background:#d7ecdf}
+.shadowing-timing-controls span{min-width:52px;text-align:center;color:var(--sh-ink);font:800 12px "DM Sans",sans-serif;letter-spacing:normal;text-transform:none}

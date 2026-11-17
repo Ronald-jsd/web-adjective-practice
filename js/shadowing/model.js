@@ -104,7 +104,7 @@ export function retimeSegments(segments) {
         const start = Math.max(0, Number(segment.start || 0))
         const next = list[index + 1]
         let end = Number(segment.end || start + 2)
-        if (next) end = Math.max(start + 0.5, Number(next.start || end) - 0.08)
+        if (next) end = Math.max(start + 0.5, Number(next.start || end) - 0.02)
         else end = Math.max(start + 0.5, end)
         return { ...segment, start, end }
     })

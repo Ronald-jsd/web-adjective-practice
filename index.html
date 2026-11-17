@@ -461,6 +461,9 @@
                                 <label class="shadowing-practice-field">Modo<select id="shadowing-mode"><option value="manual" selected>Manual</option><option value="auto">Automático (sin micrófono)</option><option value="auto-record">Automático + grabar</option></select></label>
                                 <label class="shadowing-practice-field">Espera<select id="shadowing-practice-delay"><option value="2">2 s</option><option value="3" selected>3 s</option><option value="4">4 s</option><option value="5">5 s</option><option value="6">6 s</option></select></label>
                                 <button id="shadowing-auto-toggle" class="button primary" type="button" aria-pressed="false">▶ Iniciar práctica</button>
+                                <span class="shadowing-practice-field shadowing-timing-field">Final frase
+                                    <span class="shadowing-timing-controls"><button id="shadowing-timing-minus" type="button" title="Recortar 0,1 s">−</button><span id="shadowing-timing-value">0.0 s</span><button id="shadowing-timing-plus" type="button" title="Extender 0,1 s">＋</button></span>
+                                </span>
                                 <span id="shadowing-practice-status" class="shadowing-practice-status" aria-live="polite"></span>
                             </div>
                             <div id="shadowing-transcript" class="shadowing-transcript hidden" aria-label="Frase que practicarás"></div>
