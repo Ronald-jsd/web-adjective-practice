@@ -1766,3 +1766,202 @@
             padding: 8px 12px;
         }
     }
+
+/* ==========================================================================
+   Ejercicios — refined design (solo #practice-section)
+   Paleta central: verde #28745a, terracota #a34f2d, tinta #20392f.
+   ========================================================================== */
+#practice-section .practice-layout { gap: 24px 28px; padding: 24px 0 54px }
+#practice-section .practice-heading {
+    margin-bottom: 4px;
+    padding: 22px 26px;
+    border: 1px solid #dce4de;
+    border-radius: 20px;
+    background: linear-gradient(135deg, #fff 0%, #f8fbf8 100%);
+    box-shadow: 0 12px 32px rgba(34, 60, 45, .08);
+}
+#practice-section .practice-heading h2 { font-size: clamp(2rem, 3.6vw, 2.7rem); letter-spacing: -.02em }
+#practice-section .practice-heading > p:last-child { margin-bottom: 0 }
+
+#practice-section .practice-controls,
+#practice-section .practice-audio-course,
+#practice-section .practice-import-panel {
+    border: 1px solid #dce4de;
+    border-radius: 18px;
+    background: #fff;
+    box-shadow: 0 10px 28px rgba(34, 60, 45, .08);
+}
+#practice-section .practice-controls { padding: 18px; align-self: start }
+#practice-section .practice-control-heading { margin-bottom: 13px }
+#practice-section .practice-control-heading h3 { font-size: 1rem; color: #20392f }
+#practice-section .practice-count { font-weight: 700; color: #7d8a81 }
+#practice-section .practice-category-list {
+    max-height: 360px;
+    gap: 3px;
+    padding: 4px;
+    border: 1px solid #e7ede8;
+    border-radius: 14px;
+    background: #f9fbf9;
+}
+#practice-section .practice-category-option {
+    min-height: 44px;
+    padding: 8px 10px;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: background .16s, transform .16s;
+}
+#practice-section .practice-category-option:hover { background: #eaf3ec; transform: translateX(2px) }
+#practice-section .practice-category-option input { accent-color: #28745a }
+#practice-section .practice-mode-heading { margin-top: 22px }
+#practice-section .practice-exercise-mode {
+    min-height: 46px;
+    border-radius: 11px;
+    border-color: #d5dfd8;
+    background: #fcfefc;
+    font-weight: 600;
+    box-shadow: 0 2px 8px rgba(34, 60, 45, .05);
+}
+#practice-section .practice-exercise-mode:focus { border-color: #28745a; box-shadow: 0 0 0 3px rgba(40, 116, 90, .15); outline: none }
+
+#practice-section .practice-audio-course {
+    padding: 20px;
+    border-left: 4px solid #a34f2d;
+}
+#practice-section .practice-audio-course-current {
+    border: 1px solid #ecded2;
+    border-radius: 13px;
+    background: #fbf4ee;
+    color: #5b463a;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, .7);
+}
+#practice-section .practice-audio-course-controls button {
+    min-height: 44px;
+    padding: 9px 14px;
+    border-color: #e6d8cf;
+    border-radius: 11px;
+    background: #fffaf6;
+    color: #8b4a2c;
+    box-shadow: 0 2px 8px rgba(120, 70, 40, .06);
+    transition: transform .16s, box-shadow .16s, background .16s;
+}
+#practice-section .practice-audio-course-controls button:hover:not(:disabled) { background: #fbefe7; transform: translateY(-2px); box-shadow: 0 8px 18px rgba(120, 70, 40, .12) }
+#practice-section .practice-audio-course-speed select { border-radius: 10px; border-color: #e6d8cf; background: #fffaf6; color: #8b4a2c }
+#practice-section .practice-audio-course-speed select:focus { outline: none; border-color: #a34f2d; box-shadow: 0 0 0 3px rgba(163, 79, 45, .14) }
+
+#practice-section .practice-exercise {
+    min-height: 440px;
+    padding: 26px clamp(18px, 4vw, 40px) 30px;
+    border: 1px solid #dce4de;
+    border-top: 4px solid #28745a;
+    border-radius: 20px;
+    background: linear-gradient(180deg, #fff 0%, #fdfefd 100%);
+    box-shadow: 0 18px 45px rgba(34, 60, 45, .11), 0 2px 6px rgba(34, 60, 45, .04);
+}
+#practice-section .practice-exercise-topline { color: #7d8a81; font-weight: 800 }
+#practice-section .practice-review-summary { color: #7d8a81 }
+#practice-section .practice-prompt {
+    min-height: 150px;
+    margin: 16px 0 4px;
+    padding: 18px 20px;
+    border: 1px solid #e3ebe4;
+    border-radius: 16px;
+    background: #f8fbf8;
+    box-shadow: inset 0 1px 0 #fff, 0 2px 10px rgba(34, 60, 45, .04);
+    font-size: clamp(1.5rem, 3vw, 1.95rem);
+    letter-spacing: -.01em;
+}
+#practice-section .practice-hint { color: #7d8a81; font-weight: 600 }
+#practice-section .practice-meaning { border-radius: 0 13px 13px 0; box-shadow: 0 4px 14px rgba(120, 70, 40, .07) }
+
+#practice-section .practice-choice-options { gap: 11px; max-width: 560px }
+#practice-section .practice-choice-button {
+    min-height: 52px;
+    padding: 12px 14px;
+    border: 1px solid #d5dfd8;
+    border-radius: 13px;
+    background: #fff;
+    color: #304238;
+    font-size: .9rem;
+    box-shadow: 0 3px 10px rgba(34, 60, 45, .06);
+    transition: transform .16s, box-shadow .16s, border-color .16s, background .16s;
+}
+#practice-section .practice-choice-button:hover:not(:disabled) { border-color: #28745a; background: #f0f7f2; transform: translateY(-2px); box-shadow: 0 10px 20px rgba(34, 60, 45, .12) }
+#practice-section .practice-choice-button:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(40, 116, 90, .18) }
+#practice-section .practice-choice-button:disabled { opacity: .85 }
+#practice-section .practice-choice-button.is-correct { border-color: #24835f; background: #e2f3e9; color: #176647; box-shadow: 0 0 0 2px rgba(36, 131, 95, .16) }
+#practice-section .practice-choice-button.is-incorrect { border-color: #b95743; background: #fff0ec; color: #a04432; box-shadow: 0 0 0 2px rgba(185, 87, 67, .14) }
+
+#practice-section .practice-build-zone { border-radius: 13px; background: #f9fbf9; box-shadow: inset 0 1px 3px rgba(34, 60, 45, .05) }
+#practice-section .practice-build-zone--selected { background: #f0f7f2; border-color: #9cc7ac }
+#practice-section .practice-build-token {
+    min-height: 44px;
+    padding: 9px 13px;
+    border-radius: 10px;
+    background: #fff;
+    box-shadow: 0 3px 9px rgba(34, 60, 45, .07);
+    transition: transform .14s, border-color .14s, background .14s;
+}
+#practice-section .practice-build-token:hover:not(:disabled) { transform: translateY(-2px); border-color: #28745a; background: #f0f7f2 }
+#practice-section .practice-build-board.is-correct .practice-build-token { border-color: #24835f; background: #e2f3e9 }
+#practice-section .practice-build-board.is-incorrect .practice-build-token { border-color: #b95743; background: #fff0ec }
+#practice-section .practice-build-clear { color: #647168; border-radius: 9px; }
+#practice-section .practice-build-clear:hover { background: #eef4ee }
+#practice-section .practice-build-footer button:last-child { min-height: 44px; padding: 10px 20px; border-radius: 11px; background: linear-gradient(135deg, #2f8667, #205b46); box-shadow: 0 8px 18px rgba(40, 116, 90, .25) }
+#practice-section .practice-exercise-stats { padding: 9px 14px; border: 1px solid #d3e6d8; background: #eef6f0; font-weight: 700; color: #3f5d4d }
+
+#practice-section .practice-listen-button,
+#practice-section .practice-next-button,
+#practice-section #practice-submit {
+    min-height: 46px;
+    padding: 10px 20px;
+    border-radius: 11px;
+    background: linear-gradient(135deg, #2f8667, #205b46);
+    box-shadow: 0 8px 18px rgba(40, 116, 90, .25), inset 0 1px 0 rgba(255, 255, 255, .18);
+    transition: transform .16s, box-shadow .16s;
+}
+#practice-section .practice-listen-button:hover:not(:disabled),
+#practice-section .practice-next-button:hover:not(:disabled),
+#practice-section #practice-submit:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 12px 24px rgba(40, 116, 90, .32); background: linear-gradient(135deg, #2a7b5e, #1c513d) }
+#practice-section .practice-listen-button:focus-visible,
+#practice-section .practice-next-button:focus-visible,
+#practice-section #practice-submit:focus-visible { outline: none; box-shadow: 0 0 0 3px rgba(40, 116, 90, .2) }
+#practice-section .practice-audio-answer {
+    min-height: 40px;
+    padding: 8px 13px;
+    border-radius: 10px;
+    color: #28745a;
+    font-weight: 800;
+    box-shadow: 0 2px 8px rgba(34, 60, 45, .06);
+    transition: transform .16s, box-shadow .16s;
+}
+#practice-section .practice-audio-answer:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(34, 60, 45, .12) }
+
+#practice-section .practice-answer-row input {
+    min-height: 46px;
+    padding: 10px 14px;
+    border-radius: 11px;
+    border-color: #d5dfd8;
+    background: #fcfefc;
+    box-shadow: inset 0 1px 3px rgba(34, 60, 45, .04);
+}
+#practice-section .practice-answer-row input:focus { border-color: #28745a; box-shadow: 0 0 0 3px rgba(40, 116, 90, .15) }
+#practice-section .practice-feedback { max-width: 560px; padding: 13px 16px; border-radius: 13px; font-weight: 700 }
+#practice-section .practice-feedback.is-correct { background: #e6f4ea; box-shadow: inset 3px 0 0 #24835f }
+#practice-section .practice-feedback.is-incorrect { background: #fff0ec; box-shadow: inset 3px 0 0 #b95743 }
+#practice-section .practice-import-panel { padding: 16px; border-color: #e6d8cf }
+#practice-section .practice-import-panel summary { color: #8b4a2c }
+#practice-section .practice-import-panel textarea { border-radius: 10px; border-color: #e6d8cf; background: #fffaf6 }
+
+@media (max-width: 700px) {
+    #practice-section .practice-heading { padding: 18px; border-radius: 16px }
+    #practice-section .practice-controls,
+    #practice-section .practice-audio-course { padding: 15px; border-radius: 15px }
+    #practice-section .practice-exercise { min-height: 0; padding: 20px 16px 24px; border-radius: 17px }
+    #practice-section .practice-prompt { min-height: 120px; padding: 15px; border-radius: 13px }
+    #practice-section .practice-choice-button { min-height: 48px }
+    #practice-section .practice-listen-button,
+    #practice-section .practice-next-button,
+    #practice-section #practice-submit { min-height: 48px; flex: 1 }
+    #practice-section .practice-actions { gap: 8px }
+}
+#practice-section .practice-prompt,#practice-section .practice-heading h2{overflow-wrap:anywhere}
