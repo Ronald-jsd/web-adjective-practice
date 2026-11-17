@@ -92,7 +92,8 @@
 
                 <div class="relative max-w-2xl mx-auto">
                     <input type="text" id="global-search" placeholder="Buscar adjetivo (inglés o español)..."
-                        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" name="search-query"
+                        autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="search"
+                        data-lpignore="true" data-1p-ignore="true" data-form-type="other"
                         class="w-full px-5 py-3.5 pl-12 bg-white border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all" />
                     <svg class="w-5 h-5 text-gray-400 absolute left-4 top-1/2 transform -translate-y-1/2" fill="none"
                         stroke="currentColor" viewBox="0 0 24 24">
@@ -128,8 +129,9 @@
                         Mostrar:
                         <select id="adjective-global-favorite-filter" class="border border-gray-300 rounded-lg px-3 py-2 bg-white">
                             <option value="all">Todos los adjetivos</option>
-                            <option value="favorites">★ Solo favoritos</option>
+                            <option value="favorites">★ Solo favoritos 🔒</option>
                         </select>
+                        <span id="adjective-favorite-login-hint" class="text-xs text-amber-700 hidden">Inicia sesión para ver tus favoritos</span>
                     </label>
                 </div>
 
@@ -569,6 +571,8 @@
                         <label class="ai-query-search">
                             <span class="sr-only">Buscar en mis consultas</span>
                             <input id="browser-ai-search" type="search" placeholder="Buscar una consulta, palabra o explicación..."
+                                autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="search"
+                                data-lpignore="true" data-1p-ignore="true" data-form-type="other"
                                 class="w-full rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm focus:border-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-100">
                         </label>
                         <label class="ai-query-filter">
@@ -648,7 +652,7 @@
                             <label>Notas <span class="optional">Opcional</span><textarea name="notes" rows="4" maxlength="2000" placeholder="Usos:&#10;- ...&#10;- ...&#10;Cuándo usarla:&#10;- ..."></textarea><small class="field-hint">Puedes escribir texto libre o secciones como «Usos:», «Cuándo usarla:» y «Errores comunes:». Se mostrarán ordenadas al guardar.</small></label>
                             <div class="form-actions"><button class="button primary" type="submit">Guardar frase</button><button class="button secondary hidden" id="cancel-edit" type="button">Cancelar edición</button><span class="save-note">Se guarda al instante en tu cuenta.</span></div>
                         </form>
-                        <div class="section-heading list-heading"><div><p class="eyebrow">TU COLECCIÓN</p><h2>Mis frases</h2></div><input id="search-input" class="search" type="search" placeholder="Buscar en mis frases…" aria-label="Buscar frases"></div>
+                        <div class="section-heading list-heading"><div><p class="eyebrow">TU COLECCIÓN</p><h2>Mis frases</h2></div><input id="search-input" class="search" type="search" placeholder="Buscar en mis frases…" aria-label="Buscar frases" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="search" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></div>
                         <div id="sentence-list" class="sentence-list"></div>
                     </section>
                     <section id="vocabulary-screen" class="screen">
@@ -677,7 +681,7 @@
                             </label>
                             <div class="form-actions"><button class="button primary" type="submit">Guardar vocabulario</button><button class="button secondary hidden" id="cancel-vocabulary-edit" type="button">Cancelar edición</button></div>
                         </form>
-                        <div class="section-heading list-heading"><div><p class="eyebrow">TU COLECCIÓN</p><h2>Mi vocabulario</h2></div><input id="vocabulary-search-input" class="search" type="search" placeholder="Buscar en mi vocabulario…" aria-label="Buscar vocabulario"></div>
+                        <div class="section-heading list-heading"><div><p class="eyebrow">TU COLECCIÓN</p><h2>Mi vocabulario</h2></div><input id="vocabulary-search-input" class="search" type="search" placeholder="Buscar en mi vocabulario…" aria-label="Buscar vocabulario" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="search" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></div>
                         <div id="vocabulary-list" class="sentence-list"><div class="empty">Abre esta pestaña para cargar tu vocabulario.</div></div>
                     </section>
                     <section id="notion-screen" class="screen">
@@ -723,6 +727,8 @@
                 <div class="mb-6">
                     <div class="relative">
                         <input id="verbs-search-input" type="text" placeholder="🔍 Buscar verbos..."
+                            autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="search"
+                            data-lpignore="true" data-1p-ignore="true" data-form-type="other"
                             class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
                             oninput="window.searchVerbs ? window.searchVerbs() : null" />
                     </div>
@@ -731,8 +737,9 @@
                         <select id="verbs-favorite-filter" class="border border-gray-300 rounded-lg px-3 py-2 bg-white"
                             onchange="window.setVerbFavoriteFilter(this.value)">
                             <option value="all">Todos los verbos</option>
-                            <option value="favorites">★ Solo importantes</option>
+                            <option value="favorites">★ Solo importantes 🔒</option>
                         </select>
+                        <span id="verbs-favorite-login-hint" class="text-xs text-gray-500 hidden">Inicia sesión para ver tus favoritos</span>
                     </label>
                 </div>
 

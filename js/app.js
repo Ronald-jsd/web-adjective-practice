@@ -81,6 +81,29 @@ window.addEventListener("session-revalidated", async () => {
     }
 });
 
+/* Sin sesión no hay favoritos visibles: el logout limpia la copia local por
+ * seguridad. Mostramos el aviso en vez de dejar un filtro que parece vacío. */
+function updateFavoriteFilterHints() {
+    const filters = [
+        {
+            select: document.getElementById("adjective-global-favorite-filter"),
+            hint: document.getElementById("adjective-favorite-login-hint")
+        },
+        {
+            select: document.getElementById("verbs-favorite-filter"),
+            hint: document.getElementById("verbs-favorite-login-hint")
+        }
+    ];
+
+    filters.forEach(({ select, hint }) => {
+        if (hint) hint.classList.toggle("hidden", !!store.currentUser);
+        if (select) {
+            select.disabled = !store.currentUser;
+            select.title = store.currentUser ? "" : "Inicia sesión para ver tus favoritos";
+        }
+    });
+}
+
 function setupEventListeners() {
     const searchInput = document.getElementById("global-search");
     const clearBtn = document.getElementById("clear-search");
@@ -90,6 +113,11 @@ function setupEventListeners() {
     const adjectiveFilters = [adjectiveGlobalFavoriteFilter, adjectiveFavoriteFilter].filter(Boolean);
 
     const setAdjectiveFavoriteFilter = (value, source) => {
+        if (value === "favorites" && !store.currentUser) {
+            showToast("Inicia sesión para ver tus favoritos.", "info");
+            if (source) source.value = "all";
+            return;
+        }
         store.adjectiveFavoritesOnly = value === "favorites";
         adjectiveFilters.forEach(select => {
             if (select !== source) select.value = value;
@@ -191,6 +219,7 @@ async function initApp() {
     startAutoSync();
     initAuthSession();
     await checkUser();
+    updateFavoriteFilterHints();
     initializeBrowserAI();
     initializeNotionIntegration(supabase);
     initializeNotionEmbeds(supabase);
