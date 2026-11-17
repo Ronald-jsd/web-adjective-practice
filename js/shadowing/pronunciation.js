@@ -6,6 +6,9 @@ import { playAudioEnhanced } from "../audio.js"
 
 const PRONUNCIATION_CACHE = "shadowing_pronunciation_v2"
 
+let playbackGeneration = 0
+let currentAudio = null
+
 function readCache() {
     try {
         return JSON.parse(localStorage.getItem(PRONUNCIATION_CACHE) || "{}") || {}
@@ -27,6 +30,8 @@ function remember(term, data) {
 }
 
 export function speakPhrase(text, lang = "en") {
+    playbackGeneration += 1
+    stopCurrentAudio()
     return playAudioEnhanced(text, lang)
 }
 
@@ -70,21 +75,40 @@ export async function getPronunciation(word) {
 }
 
 /* Reproduce la palabra al instante con la voz del dispositivo. Si el
- * diccionario público tiene audio real, sustituye la voz sintética. */
+ * diccionario público tiene audio real, sustituye la voz sintética.
+ * Un contador evita que una respuesta tardía de una palabra anterior corte
+ * la palabra que el usuario acaba de tocar. */
+function stopCurrentAudio() {
+    if (!currentAudio) return
+    try {
+        currentAudio.pause()
+        currentAudio.currentTime = 0
+    } catch (error) { /* ya terminó */ }
+    currentAudio = null
+}
+
 export async function playWordPronunciation(word) {
     const term = String(word || "").trim()
     if (!term) return false
-    const utterance = speakWordInstant(term)
+    const generation = ++playbackGeneration
+    stopCurrentAudio()
+    speakWordInstant(term)
+
     const data = await getPronunciation(term)
+    if (generation !== playbackGeneration) return false
     const url = data?.audio || ""
-    if (!url) return Boolean(utterance)
+    if (!url) return true
+
     try {
         window.speechSynthesis?.cancel()
         const audio = new Audio(url.startsWith("//") ? `https:${url}` : url)
+        currentAudio = audio
         await audio.play()
+        if (generation !== playbackGeneration && currentAudio === audio) stopCurrentAudio()
         return true
     } catch (error) {
-        console.warn("[shadowing] No se pudo reproducir el audio del diccionario:", error)
-        return Boolean(utterance)
+        // El audio del diccionario falló: se oye la voz del dispositivo.
+        if (generation === playbackGeneration) speakWordInstant(term)
+        return false
     }
 }
