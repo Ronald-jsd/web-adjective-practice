@@ -232,12 +232,25 @@
 }
 .shadowing-controls .icon-button:hover { border-color: var(--sh-primary); background: var(--sh-primary-soft); transform: translateY(-2px) }
 .shadowing-play { min-width: 116px; min-height: 46px; border-radius: 13px; background: linear-gradient(135deg, #23805f, var(--sh-primary-dark)); font-size: 14px }
-.shadowing-speed { display: flex; align-items: center; gap: 6px; color: #73857a; font: 700 11px "DM Sans", sans-serif }
-.shadowing-speed select {
+.shadowing-speed { display: inline-flex; align-items: center; gap: 0; color: #73857a; font: 700 11px "DM Sans", sans-serif }
+.shadowing-speed-icon {
+    display: grid;
+    place-items: center;
+    width: 26px;
     height: 40px;
-    padding: 0 10px;
     border: 1px solid var(--sh-border);
-    border-radius: 10px;
+    border-right: 0;
+    border-radius: 10px 0 0 10px;
+    background: #f8fbf8;
+    color: var(--sh-primary-dark);
+    font-size: 13px;
+}
+.shadowing-speed select {
+    width: 64px;
+    height: 40px;
+    padding: 0 14px 0 4px;
+    border: 1px solid var(--sh-border);
+    border-radius: 0 10px 10px 0;
     background: #fbfdfb;
     color: var(--sh-ink);
     font: 700 12px "DM Sans", sans-serif;
@@ -615,8 +628,7 @@
     .shadowing-controls { padding: 9px; gap: 7px; border-radius: 15px }
     .shadowing-controls .icon-button { min-width: 40px; height: 42px }
     .shadowing-play { flex: 1; min-width: 130px }
-    .shadowing-speed { flex: 1 1 100%; justify-content: center }
-    .shadowing-speed select { flex: 1 }
+    .shadowing-speed { flex: 0 0 auto; justify-content: flex-start }
     .shadowing-transcript { padding: 20px 18px 20px 24px; font-size: clamp(19px, 5.4vw, 25px); border-radius: 17px }
     .shadowing-transcript::before { inset: 12px auto 12px 11px }
     .shadowing-recorder { grid-template-columns: 1fr; gap: 13px; padding: 16px }
