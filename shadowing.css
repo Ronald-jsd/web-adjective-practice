@@ -378,16 +378,111 @@
 .shadowing-guide-sample[data-key="contour"] { background: #f7e9e1; color: var(--sh-accent); font-size: 18px }
 .shadowing-guide-sample[data-key="hover"] { background: #eef4f7; color: #3f7089; font-size: 16px }
 .shadowing-guide-foot { margin: 12px 0 0; color: #8a998f; font: 500 10px/1.5 "DM Sans", sans-serif }
+.shadowing-guide-grabber,
+.shadowing-guide-detail { display: none }
 .shadowing-config-button.active { background: var(--sh-primary); color: #fff; border-color: var(--sh-primary-dark) }
+
+/* Móvil: hoja inferior compacta. Las 7 explicaciones pasan a chips
+ * deslizables y solo se muestra el detalle del chip seleccionado, para que
+ * la guía no tape la frase ni más de un tercio de la pantalla. */
 @media (max-width: 700px) {
     .shadowing-guide-window {
-        right: 10px !important;
-        left: 10px !important;
-        bottom: 10px !important;
+        right: 0 !important;
+        left: 0 !important;
+        bottom: 0 !important;
         top: auto !important;
         width: auto;
-        max-height: 62vh;
-        border-radius: 16px;
+        max-height: min(46vh, 300px);
+        border-radius: 18px 18px 0 0;
+        border-bottom: 0;
+        padding-bottom: env(safe-area-inset-bottom, 0px);
+        animation: sh-guide-sheet-in .2s ease-out;
+    }
+    @keyframes sh-guide-sheet-in {
+        from { opacity: 0; transform: translateY(100%) }
+        to { opacity: 1; transform: none }
+    }
+    .shadowing-guide-grabber {
+        display: block;
+        width: 38px;
+        height: 4px;
+        margin: 4px auto 0;
+        border-radius: 999px;
+        background: #cbd9cf;
+    }
+    .shadowing-guide-head { padding: 5px 12px 6px; touch-action: manipulation }
+    .shadowing-guide-head .practice-eyebrow { display: none }
+    .shadowing-guide-head h3 { font-size: 14px }
+    .shadowing-guide-head h3 span { display: none }
+    .shadowing-guide-head .shadowing-dialog-close { width: 30px; height: 30px }
+    .shadowing-guide-body { padding: 7px 12px 8px }
+    .shadowing-guide-lead {
+        margin: 0 0 7px;
+        padding: 5px 8px;
+        font-size: 10.5px;
+        line-height: 1.35;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+    }
+    .shadowing-guide-examples {
+        display: flex;
+        gap: 7px;
+        overflow-x: auto;
+        padding: 2px 2px 5px;
+        scroll-snap-type: x proximity;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: none;
+    }
+    .shadowing-guide-examples::-webkit-scrollbar { display: none }
+    .shadowing-guide-row {
+        flex: 0 0 auto;
+        width: 86px;
+        grid-template-columns: none;
+        justify-items: center;
+        gap: 3px;
+        padding: 5px;
+        border: 1px solid var(--sh-border);
+        border-radius: 11px;
+        background: #fff;
+        scroll-snap-align: start;
+        cursor: pointer;
+    }
+    .shadowing-guide-row.selected {
+        border-color: var(--sh-primary);
+        background: var(--sh-primary-soft);
+        box-shadow: var(--sh-ring);
+    }
+    .shadowing-guide-sample { min-height: 22px; padding: 2px 4px; font-size: 12px }
+    .shadowing-guide-row .shadowing-guide-row-body { display: grid; gap: 0; min-width: 0; width: 100%; text-align: center }
+    .shadowing-guide-row strong {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        font: 800 9px/1.3 Manrope, sans-serif;
+    }
+    .shadowing-guide-row .shadowing-guide-row-body > span { display: none }
+    .shadowing-guide-detail:not([hidden]) {
+        display: grid;
+        gap: 1px;
+        margin-top: 6px;
+        padding: 6px 9px;
+        border-radius: 9px;
+        background: var(--sh-primary-soft);
+    }
+    .shadowing-guide-detail strong { color: var(--sh-primary-dark); font: 800 10px Manrope, sans-serif }
+    .shadowing-guide-detail span { color: #3f5c4c; font: 500 10px/1.3 "DM Sans", sans-serif }
+    .shadowing-guide-foot {
+        margin: 5px 0 0;
+        font-size: 9px;
+        line-height: 1.3;
+        display: -webkit-box;
+        -webkit-line-clamp: 1;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
     }
 }
 .shadowing-translation {

@@ -124,10 +124,20 @@ function toggleGuideWindow(open) {
 function wireGuideWindow() {
     const node = byId("shadowing-guide-window")
     if (!node) return
+    // #practice-section mantiene un transform de su animación de entrada; eso
+    // convierte cualquier position:fixed en hijo en posición relativa al
+    // contenedor. Al mover la guía al body se ancla de verdad al viewport.
+    if (node.parentElement !== document.body) document.body.appendChild(node)
     byId("shadowing-guide-open")?.addEventListener("click", () => toggleGuideWindow())
     byId("shadowing-guide-close")?.addEventListener("click", () => toggleGuideWindow(false))
+    byId("shadowing-guide-examples")?.addEventListener("click", event => {
+        const row = event.target.closest(".shadowing-guide-row")
+        if (row) selectGuideRow(row)
+    })
     const handle = node.querySelector("[data-guide-drag]")
     handle?.addEventListener("pointerdown", event => {
+        // En móvil la guía es una hoja fija abajo: no se arrastra.
+        if (window.matchMedia("(max-width: 700px)").matches) return
         if (event.target.closest("button")) return
         const rect = node.getBoundingClientRect()
         state.guideDrag = { x: event.clientX - rect.left, y: event.clientY - rect.top }
@@ -153,6 +163,14 @@ function wireGuideWindow() {
     document.addEventListener("keydown", event => {
         if (event.key === "Escape" && !node.classList.contains("hidden")) toggleGuideWindow(false)
     })
+    const section = byId("practice-section")
+    if (section) {
+        new MutationObserver(() => {
+            if (section.classList.contains("active") || node.classList.contains("hidden")) return
+            toggleGuideWindow(false)
+            state.guideWindowShown = false // se reabre al volver a Practicar si estaba abierta
+        }).observe(section, { attributes: true, attributeFilter: ["class"] })
+    }
 }
 
 function phraseAt(index = state.currentIndex) {
@@ -390,6 +408,21 @@ async function fillPronunciation(word, node) {
     if (data?.ipa && node.isConnected) node.textContent = data.ipa
 }
 
+/* En móvil solo se muestra el detalle del chip elegido, para no apilar siete
+ * explicaciones. En escritorio el panel queda oculto por CSS. */
+function selectGuideRow(row) {
+    const host = byId("shadowing-guide-examples")
+    if (!host || !row) return
+    host.querySelectorAll(".shadowing-guide-row").forEach(item => item.classList.toggle("selected", item === row))
+    const detail = byId("shadowing-guide-detail")
+    if (!detail) return
+    const title = detail.querySelector("[data-guide-detail-title]")
+    const text = detail.querySelector("[data-guide-detail-text]")
+    if (title) title.textContent = row.querySelector("strong")?.textContent || ""
+    if (text) text.textContent = row.querySelector(".shadowing-guide-row-body > span")?.textContent || ""
+    detail.hidden = false
+}
+
 function renderGuideWindow(guide, lesson) {
     const node = byId("shadowing-guide-window")
     const openButton = byId("shadowing-guide-open")
@@ -416,6 +449,7 @@ function renderGuideWindow(guide, lesson) {
             sample.dataset.key = entry.key
             sample.textContent = entry.sample
             const body = document.createElement("div")
+            body.className = "shadowing-guide-row-body"
             const title = document.createElement("strong")
             title.textContent = entry.label
             const detail = document.createElement("span")
@@ -424,6 +458,7 @@ function renderGuideWindow(guide, lesson) {
             row.append(sample, body)
             host.append(row)
         }
+        selectGuideRow(host.querySelector(".shadowing-guide-row"))
     }
     const source = node?.querySelector("[data-guide-source]")
     if (source) {

@@ -470,6 +470,7 @@
                             </div>
                             <div id="shadowing-transcript" class="shadowing-transcript hidden" aria-label="Frase que practicarás"></div>
                             <aside id="shadowing-guide-window" class="shadowing-guide-window hidden" role="dialog" aria-label="Guía de ritmo, estrés y pausas" aria-live="polite">
+                                <div class="shadowing-guide-grabber" aria-hidden="true"></div>
                                 <header class="shadowing-guide-head" data-guide-drag>
                                     <div>
                                         <p class="practice-eyebrow">CÓMO SONAR COMO EL HABLANTE</p>
@@ -480,6 +481,10 @@
                                 <div class="shadowing-guide-body">
                                     <p class="shadowing-guide-lead" data-guide-lead></p>
                                     <div id="shadowing-guide-examples" class="shadowing-guide-examples"></div>
+                                    <div id="shadowing-guide-detail" class="shadowing-guide-detail" aria-live="polite" hidden>
+                                        <strong data-guide-detail-title></strong>
+                                        <span data-guide-detail-text></span>
+                                    </div>
                                     <p class="shadowing-guide-foot" data-guide-source></p>
                                 </div>
                             </aside>
