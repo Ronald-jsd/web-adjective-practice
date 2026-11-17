@@ -181,6 +181,7 @@ export const TABLES = {
     reviewCards: "my_sentence_review_cards",
     shadowingLessons: "user_shadowing_lessons",
     transcriptCache: "user_transcript_cache",
+    aiCache: "user_ai_cache",
     notionPages: "user_notion_pages",
     wordGroups: "user_word_groups"
 };

@@ -12,6 +12,7 @@ import {
     transcriptConfig
 } from "../js/shadowing/transcript.js"
 import { normalizeTranscriptRow } from "../js/shadowing/transcript-store.js"
+import { normalizeAiCacheRow } from "../js/shadowing/ai-cache.js"
 
 test("extractYouTubeId accepts watch, short, shorts and embed URLs", () => {
     assert.equal(extractYouTubeId("https://www.youtube.com/watch?v=Q5vAL799_BM"), "Q5vAL799_BM")
@@ -136,4 +137,20 @@ test("activeWordIndex follows the sentence timing", () => {
     assert.equal(activeWordIndex(spans, 11.8, segment), 2)
     assert.equal(activeWordIndex(spans, 13, segment), -1)
     assert.equal(activeWordIndex([], 11, segment), -1)
+})
+
+test("ai cache rows keep the account shape", () => {
+    const row = normalizeAiCacheRow({
+        user_id: "user-1",
+        kind: "word",
+        cache_key: "from",
+        value: { translation: "desde" },
+        source: "ai",
+        updated_at: "2026-11-16T10:00:00.000Z"
+    })
+    assert.equal(row.kind, "word")
+    assert.equal(row.key, "from")
+    assert.equal(row.value.translation, "desde")
+    assert.equal(row.source, "ai")
+    assert.equal(normalizeAiCacheRow(null), null)
 })

@@ -4,6 +4,7 @@ import { showToast } from "../cache.js"
 import { parseManualTranscript, splitTranscriptSegments, extractYouTubeId, suggestionWords, normalizeWord, looksLikeYouTubeUrl, activeWordIndex } from "./model.js"
 import { TRANSCRIPT_PROVIDERS, findProvider, providerLabel, transcriptConfig, setTranscriptCredentials, clearTranscriptCredentials } from "./transcript.js"
 import { createTranscriptStore } from "./transcript-store.js"
+import { createAiCache } from "./ai-cache.js"
 import { createShadowingRepository } from "./repository.js"
 import { createSentenceRepository } from "../sentences/repository.js"
 
@@ -12,6 +13,7 @@ let supabaseClient = null
 let shadowingRepository = null
 let sentenceRepository = null
 let transcriptStore = null
+let aiCache = null
 let ytScript = null
 
 const byId = id => document.getElementById(id)
@@ -81,6 +83,74 @@ async function refreshLessons(selectedId = "") {
         select.append(option)
     }
     if (selectedId) select.value = selectedId
+    renderLessonLibrary()
+}
+
+function renderLessonLibrary() {
+    const grid = byId("shadowing-library-grid")
+    if (!grid) return
+    const count = byId("shadowing-library-count")
+    if (count) count.textContent = String(state.lessons.length)
+    grid.replaceChildren()
+    if (!state.lessons.length) {
+        const empty = document.createElement("p")
+        empty.className = "shadowing-dialog-note"
+        empty.textContent = "Todavía no guardaste ningún video. Pega un enlace de YouTube y pulsa «Crear lección»."
+        grid.append(empty)
+        return
+    }
+    for (const lesson of state.lessons) {
+        const card = document.createElement("article")
+        card.className = "shadowing-library-card"
+        card.dataset.lessonId = lesson.id
+
+        const image = document.createElement("img")
+        image.className = "shadowing-library-thumb"
+        image.alt = "Miniatura del video"
+        image.loading = "lazy"
+        if (lesson.videoId) {
+            image.src = `https://i.ytimg.com/vi/${encodeURIComponent(lesson.videoId)}/mqdefault.jpg`
+        }
+        card.append(image)
+
+        const body = document.createElement("div")
+        body.className = "shadowing-library-body"
+        const title = document.createElement("h4")
+        title.textContent = lesson.title || `Lección ${lesson.videoId}`
+        title.title = title.textContent
+        const meta = document.createElement("p")
+        meta.className = "shadowing-library-meta"
+        const parts = [`${lesson.transcript?.length || 0} frases`]
+        const date = formatSavedDate(lesson.createdAt)
+        if (date) parts.push(date)
+        meta.textContent = parts.join(" · ")
+        body.append(title, meta)
+
+        const actions = document.createElement("div")
+        actions.className = "shadowing-library-actions"
+        const open = document.createElement("button")
+        open.type = "button"
+        open.className = "button primary shadowing-library-open"
+        open.textContent = "Abrir lección"
+        open.addEventListener("click", () => openLesson(lesson.id))
+        const link = document.createElement("a")
+        link.className = "shadowing-library-link"
+        link.textContent = "YouTube ↗"
+        link.href = lesson.videoUrl || `https://www.youtube.com/watch?v=${encodeURIComponent(lesson.videoId || "")}`
+        link.target = "_blank"
+        link.rel = "noopener noreferrer"
+        actions.append(open, link)
+        body.append(actions)
+        card.append(body)
+        grid.append(card)
+    }
+    markLibraryActive()
+}
+
+function markLibraryActive() {
+    document.querySelectorAll(".shadowing-library-card").forEach(card => {
+        card.classList.toggle("active", card.dataset.lessonId === state.current?.id)
+    })
 }
 
 function renderLesson() {
@@ -90,6 +160,7 @@ function renderLesson() {
     const count = byId("shadowing-progress")
     if (title) title.textContent = current?.title || "Elige una lección"
     if (count) count.textContent = `${transcript.length ? state.currentIndex + 1 : 0}/${transcript.length}`
+    markLibraryActive()
     const lines = byId("shadowing-lines")
     if (!lines) return
     lines.replaceChildren()
@@ -688,16 +759,27 @@ function writeStoredCache(storageKey, id, value, limit) {
     }
 }
 
+function usableCache(entry, hasAIKeys) {
+    return Boolean(entry?.value && (entry.source === "ai" || !hasAIKeys))
+}
+
 async function lookupWord(word) {
     const term = normalizeWord(word)
     if (!term) return
     state.selectedWord = term
     const host = byId("shadowing-word-definition")
     const hasAIKeys = Boolean(localStorage.getItem(GROQ_KEY_STORAGE) || localStorage.getItem(GEMINI_KEY_STORAGE))
+    const user = await ensureUser()
 
     const apply = lookup => {
         renderWordLookup(lookup)
         updateWordActions(true)
+    }
+    const remember = (lookup, source) => {
+        state.lookupCache.set(term, lookup)
+        writeStoredCache(WORD_CACHE_STORAGE, term, { lookup, source }, WORD_CACHE_LIMIT)
+        const pending = aiCache?.save(user?.id || null, "word", term, lookup, source)
+        if (pending) pending.catch(error => console.warn("[shadowing] No se pudo guardar en la cuenta:", error))
     }
 
     const memory = state.lookupCache.get(term)
@@ -706,20 +788,29 @@ async function lookupWord(word) {
         return
     }
 
-    // Copia guardada en el dispositivo: la segunda vez no cuesta nada.
+    // 1. Copia en este dispositivo: la segunda vez no cuesta nada.
     const stored = readStoredCache(WORD_CACHE_STORAGE, term)?.value
-    if (stored?.lookup && (stored.source === "ai" || !hasAIKeys)) {
-        state.lookupCache.set(term, stored.lookup)
-        apply(stored.lookup)
+    const localEntry = stored?.lookup ? { value: stored.lookup, source: stored.source } : null
+    if (usableCache(localEntry, hasAIKeys)) {
+        apply(localEntry.value)
         return
+    }
+
+    // 2. Copia en la cuenta: funciona también desde otro dispositivo.
+    if (aiCache) {
+        const remote = await aiCache.get(user?.id || null, "word", term)
+        if (usableCache(remote, hasAIKeys)) {
+            writeStoredCache(WORD_CACHE_STORAGE, term, { lookup: remote.value, source: remote.source }, WORD_CACHE_LIMIT)
+            apply(remote.value)
+            return
+        }
     }
 
     if (host) host.innerHTML = `<p>Buscando “${term}”…</p>`
     if (!hasAIKeys) {
         try {
             const lookup = await dictionaryFallback(term)
-            state.lookupCache.set(term, lookup)
-            writeStoredCache(WORD_CACHE_STORAGE, term, { lookup, source: "dictionary" }, WORD_CACHE_LIMIT)
+            remember(lookup, "dictionary")
             apply(lookup)
         } catch (error) {
             if (host) host.textContent = "No se pudo buscar esa palabra."
@@ -729,14 +820,12 @@ async function lookupWord(word) {
     try {
         const { lookupEnglishWord } = await import("../ai-translation.js")
         const lookup = await lookupEnglishWord(term, state.current?.transcript?.[state.currentIndex]?.text || "")
-        state.lookupCache.set(term, lookup)
-        writeStoredCache(WORD_CACHE_STORAGE, term, { lookup, source: "ai" }, WORD_CACHE_LIMIT)
+        remember(lookup, "ai")
         apply(lookup)
     } catch (error) {
         console.warn("[shadowing] IA no disponible, usando diccionario:", error)
         const lookup = await dictionaryFallback(term)
-        state.lookupCache.set(term, lookup)
-        writeStoredCache(WORD_CACHE_STORAGE, term, { lookup, source: "dictionary" }, WORD_CACHE_LIMIT)
+        remember(lookup, "dictionary")
         apply(lookup)
     }
 }
@@ -791,7 +880,7 @@ async function translateCurrentSentence() {
     const button = byId("shadowing-translate")
     const node = byId("shadowing-translation")
 
-    // Una traducción ya vista no se vuelve a pedir a la IA.
+    // Copia en este dispositivo.
     const stored = readStoredCache(SENTENCE_CACHE_STORAGE, current)?.value
     if (stored) {
         state.translation = stored
@@ -800,6 +889,21 @@ async function translateCurrentSentence() {
             node.textContent = stored
         }
         return
+    }
+
+    // Copia en la cuenta: otro dispositivo no vuelve a pagar la traducción.
+    if (aiCache) {
+        const user = await ensureUser()
+        const remote = await aiCache.get(user?.id || null, "sentence", current)
+        if (remote?.value) {
+            state.translation = remote.value
+            writeStoredCache(SENTENCE_CACHE_STORAGE, current, remote.value, SENTENCE_CACHE_LIMIT)
+            if (node) {
+                node.classList.remove("hidden")
+                node.textContent = remote.value
+            }
+            return
+        }
     }
 
     if (!localStorage.getItem(GROQ_KEY_STORAGE) && !localStorage.getItem(GEMINI_KEY_STORAGE)) {
@@ -820,6 +924,9 @@ async function translateCurrentSentence() {
         const result = await translateEnglishSentence(current)
         state.translation = result.spanish
         writeStoredCache(SENTENCE_CACHE_STORAGE, current, result.spanish, SENTENCE_CACHE_LIMIT)
+        const user = await ensureUser()
+        const pending = aiCache?.save(user?.id || null, "sentence", current, result.spanish, "ai")
+        if (pending) pending.catch(error => console.warn("[shadowing] No se pudo guardar en la cuenta:", error))
         if (node) {
             node.classList.remove("hidden")
             node.textContent = result.spanish
@@ -1119,6 +1226,7 @@ export async function initializeShadowing(supabase) {
     shadowingRepository = createShadowingRepository(supabaseClient)
     sentenceRepository = createSentenceRepository(supabaseClient)
     transcriptStore = createTranscriptStore(supabaseClient)
+    aiCache = createAiCache(supabaseClient)
     wireEvents()
     setupPracticePaneTabs()
     renderTranscriptConfig()
