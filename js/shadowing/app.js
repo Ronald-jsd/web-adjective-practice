@@ -1,12 +1,11 @@
 import { store, GEMINI_KEY_STORAGE, GROQ_KEY_STORAGE } from "../config.js"
-import { playAudioEnhanced } from "../audio.js"
 import { resolveSessionUser } from "../offline/session.js"
 import { showToast } from "../cache.js"
 import { parseManualTranscript, splitTranscriptSegments, extractYouTubeId, suggestionWords, normalizeWord, looksLikeYouTubeUrl, activeWordIndex, retimeSegments } from "./model.js"
 import { TRANSCRIPT_PROVIDERS, findProvider, providerLabel, transcriptConfig, setTranscriptCredentials, clearTranscriptCredentials } from "./transcript.js"
 import { createTranscriptStore } from "./transcript-store.js"
 import { createAiCache } from "./ai-cache.js"
-import { playWordPronunciation, speakPhrase } from "./pronunciation.js"
+import { playWordPronunciation, speakPhrase, getPronunciation } from "./pronunciation.js"
 import { createShadowingRepository } from "./repository.js"
 import { createSentenceRepository } from "../sentences/repository.js"
 
@@ -261,20 +260,27 @@ function renderTranscript(lesson = state.current) {
     const spans = []
     let elapsed = 0
 
-    tokens.forEach(token => {
+    tokens.forEach((token, tokenIndex) => {
         const isWord = /^[A-Za-z]+(?:['’-][A-Za-z]+)*$/.test(token)
         if (isWord) {
+            const unit = document.createElement("span")
+            unit.className = "shadowing-word-unit"
             const button = document.createElement("button")
             button.type = "button"
             button.className = "shadowing-word"
             button.textContent = token
-            button.title = "Escuchar pronunciación (no gasta IA)"
+            button.title = "Escuchar pronunciación gratis"
             const weight = wordWeight(token)
             spans.push({ element: button, from: elapsed / totalWeight, to: (elapsed + weight) / totalWeight })
             elapsed += weight
-            button.addEventListener("click", () => speakWord(token))
-            container.append(button)
-            container.append(" ")
+            button.addEventListener("click", () => playWordPronunciation(token))
+            const ipa = document.createElement("small")
+            ipa.className = "shadowing-word-ipa"
+            unit.append(button, ipa)
+            container.append(unit, document.createTextNode(" "))
+            if (tokenIndex < 28) {
+                setTimeout(() => fillPronunciation(token, ipa), tokenIndex * 60)
+            }
             return
         }
         container.append(document.createTextNode(token + " "))
@@ -284,13 +290,18 @@ function renderTranscript(lesson = state.current) {
     renderRecording()
 }
 
+async function fillPronunciation(word, node) {
+    const data = await getPronunciation(word)
+    if (data?.ipa && node.isConnected) node.textContent = data.ipa
+}
+
 function wordWeight(token) {
     return Math.max(3, token.replace(/[^A-Za-z]/g, "").length)
 }
 
 /* Reproduce una palabra con la voz unificada (sin créditos). */
 function speakWord(word) {
-    playAudioEnhanced(word, "en")
+    playWordPronunciation(word)
 }
 
 /* Resalta la palabra que se está oyendo. Los subtítulos solo traen el tiempo
@@ -1333,11 +1344,6 @@ function wireEvents() {
     byId("shadowing-speak-line")?.addEventListener("click", () => {
         const sentence = state.current?.transcript?.[state.currentIndex]?.text || ""
         if (sentence) speakPhrase(sentence, "en")
-    })
-    byId("shadowing-speak-word")?.addEventListener("click", () => {
-        const sentence = state.current?.transcript?.[state.currentIndex]?.text || ""
-        const word = state.selectedWord || suggestionWords(sentence)[0]
-        if (word) playWordPronunciation(word)
     })
     byId("shadowing-mode")?.addEventListener("change", event => {
         state.practiceMode = event.target.value

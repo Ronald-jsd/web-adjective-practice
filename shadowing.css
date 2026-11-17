@@ -514,3 +514,6 @@
 .shadowing-timing-controls button{width:30px;height:30px;border:0;border-radius:7px;background:var(--sh-primary-soft);color:var(--sh-primary-dark);font:800 15px/1 "DM Sans",sans-serif;cursor:pointer}
 .shadowing-timing-controls button:hover{background:#d7ecdf}
 .shadowing-timing-controls span{min-width:52px;text-align:center;color:var(--sh-ink);font:800 12px "DM Sans",sans-serif;letter-spacing:normal;text-transform:none}
+.shadowing-word-unit{display:inline-grid;justify-items:center;align-items:end;vertical-align:bottom;margin:0 4px 0 0;line-height:1.2}
+.shadowing-word-ipa{display:block;min-height:13px;max-width:120px;color:#8a9a90;font:600 10px/1.2 "DM Sans",sans-serif;letter-spacing:0;text-align:center;overflow-wrap:anywhere}
+.shadowing-word-unit .shadowing-word{padding:1px 2px}
