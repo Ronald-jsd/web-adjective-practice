@@ -14,6 +14,7 @@ import {
 import { normalizeTranscriptRow } from "../js/shadowing/transcript-store.js"
 import { normalizeAiCacheRow } from "../js/shadowing/ai-cache.js"
 import { buildSpeechGuide, explainGuide, partOfSpeech } from "../js/shadowing/speech-guide.js"
+import { SAVE_TARGETS, saveTargetKind, saveTargetLabel, catalogRowFor } from "../js/shadowing/save-targets.js"
 
 test("extractYouTubeId accepts watch, short, shorts and embed URLs", () => {
     assert.equal(extractYouTubeId("https://www.youtube.com/watch?v=Q5vAL799_BM"), "Q5vAL799_BM")
@@ -324,4 +325,34 @@ test("explainGuide funciona con una guía vacía sin lanzar errores", () => {
     assert.equal(rows.length, 7)
     assert.ok(rows.every(row => row.sample && row.description))
     assert.equal(rows.find(row => row.key === "contour").sample, "↘")
+})
+
+test("Shadowing ofrece cuatro destinos de guardado sin grabación automática", () => {
+    assert.deepEqual(SAVE_TARGETS.map(target => target.value), ["vocabulary", "verb", "adjective", "sentence"])
+    assert.equal(saveTargetKind("sentence"), "sentence")
+    assert.equal(saveTargetKind("verb"), "word")
+    assert.equal(saveTargetLabel("adjective"), "Adjetivos")
+})
+
+test("catalogRowFor crea filas de verbo y adjetivo con el ejemplo de la frase", () => {
+    const data = {
+        word: "meet",
+        lookup: { phonetic: "/miːt/", translation: "reunirse" },
+        sentence: "Let's meet the team.",
+        category: "Grammar",
+        id: 123,
+        now: "2026-01-01T00:00:00.000Z"
+    }
+    const verb = catalogRowFor("verb", data)
+    assert.equal(verb.verb, "meet")
+    assert.equal(verb.translation, "reunirse")
+    assert.equal(verb.example_base, "Let's meet the team.")
+    assert.equal(verb.adjective, undefined)
+
+    const adjective = catalogRowFor("adjective", { ...data, word: "clear" })
+    assert.equal(adjective.adjective, "clear")
+    assert.equal(adjective.pronunciation_adj, "/miːt/")
+    assert.equal(adjective.example_adj, "Let's meet the team.")
+    assert.equal(adjective.verb, undefined)
+    assert.equal(adjective.id, 123)
 })

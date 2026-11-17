@@ -9,6 +9,10 @@ import { createAiCache } from "./ai-cache.js"
 import { playWordPronunciation, speakPhrase, getPronunciation } from "./pronunciation.js"
 import { createShadowingRepository } from "./repository.js"
 import { createSentenceRepository } from "../sentences/repository.js"
+import { SAVE_TARGETS, saveTargetKind, saveTargetLabel, catalogRowFor } from "./save-targets.js"
+import { cacheRow, TABLES } from "../offline/cache.js"
+import { queueChange, isOnline } from "../offline/sync.js"
+import { generateLocalIntegerId } from "../offline/ids.js"
 
 let initialized = false
 let supabaseClient = null
@@ -33,7 +37,6 @@ const state = {
     autoActive: false,
     autoTimer: null,
     phraseTimer: null,
-    autoRecording: false,
     timingOffsets: new Map(),
     translation: "",
     lookupCache: new Map(),
@@ -540,10 +543,12 @@ function updateWordButtonsReset() {
 }
 
 function updateWordActions(enabled) {
-    const addVocab = byId("shadowing-add-vocabulary")
-    const addReview = byId("shadowing-add-review")
-    if (addVocab) addVocab.disabled = !enabled
-    if (addReview) addReview.disabled = !enabled
+    const button = byId("shadowing-save-selected")
+    const target = byId("shadowing-save-target")?.value || "vocabulary"
+    if (button) {
+        button.disabled = !enabled
+        button.textContent = target === "sentence" ? "＋ Guardar frase" : `＋ Guardar en ${saveTargetLabel(target)}`
+    }
 }
 
 function renderRecording() {
@@ -633,6 +638,7 @@ function stopPhraseTimer() {
         clearTimeout(state.phraseTimer)
         state.phraseTimer = null
     }
+    updatePlayButton()
 }
 
 function finishPhrase() {
@@ -675,17 +681,27 @@ function watchPhraseEnd(segment, startedAt) {
     finishPhrase()
 }
 
-/* Va al inicio exacto de la frase y vigila su final con el tiempo del video. */
+/* Va al inicio exacto de la frase y vigila su final con el tiempo del video.
+ * La frase escrita y el audio deben moverse juntos: si el índice cambia se
+ * vuelve a renderizar antes de lanzar el seek. */
 function playPhrase(index = state.currentIndex) {
     const segment = phraseAt(index)
     if (!segment || !state.playerReady || !state.player) return
     stopPhraseTimer()
-    state.currentIndex = Math.max(0, Math.min(state.current.transcript.length - 1, index))
+    const nextIndex = Math.max(0, Math.min(state.current.transcript.length - 1, index))
+    const indexChanged = nextIndex !== state.currentIndex
+    state.currentIndex = nextIndex
+    if (indexChanged) {
+        state.translation = ""
+        state.selectedWord = ""
+        renderLesson()
+    }
     state.player.seekTo(segment.start, true)
     state.player.playVideo()
     const startedAt = performance.now()
     state.phraseStartedAt = startedAt
     state.phraseTimer = setTimeout(() => watchPhraseEnd(segment, startedAt), 40)
+    updatePlayButton()
 }
 
 function pollShadowing() {
@@ -707,11 +723,20 @@ function setPracticeStatus(message) {
     if (node) node.textContent = message || ""
 }
 
-function updateAutoButton() {
-    const button = byId("shadowing-auto-toggle")
+/* Un único botón de play: en modo manual reproduce la frase actual y en
+ * automático inicia o detiene la práctica frase por frase. */
+function updatePlayButton() {
+    const button = byId("shadowing-play")
     if (!button) return
-    button.textContent = state.autoActive ? "■ Detener práctica" : "▶ Iniciar práctica"
-    button.setAttribute("aria-pressed", String(state.autoActive))
+    const auto = state.practiceMode === "auto"
+    const running = state.autoActive || Boolean(state.phraseTimer)
+    button.textContent = auto
+        ? (state.autoActive ? "■ Detener práctica" : "▶ Iniciar práctica")
+        : (running ? "■ Detener" : "▶ Escuchar frase")
+    button.setAttribute("aria-pressed", String(running))
+    button.title = auto
+        ? (state.autoActive ? "Detener la práctica automática" : "Reproducir frase por frase")
+        : (running ? "Detener la reproducción" : "Reproducir la frase actual")
 }
 
 function stopAutoPractice(message = "") {
@@ -720,15 +745,10 @@ function stopAutoPractice(message = "") {
         state.autoTimer = null
     }
     stopPhraseTimer()
-    if (state.autoRecording && state.mediaRecorder) {
-        try { state.mediaRecorder.stop() } catch { /* ya detenido */ }
-        stopSpeechAssessment()
-    }
     state.autoActive = false
     state.awaitingTurn = false
-    state.autoRecording = false
     state.player?.pauseVideo?.()
-    updateAutoButton()
+    updatePlayButton()
     setPracticeStatus(message)
 }
 
@@ -739,41 +759,28 @@ function startAutoPractice() {
     }
     const segment = state.current?.transcript?.[state.currentIndex]
     if (!segment || !state.playerReady) return
-    if (state.practiceMode === "manual") {
-        setPracticeStatus("Elige «Automático» o «Automático + grabar» para usar esta opción.")
-        return
-    }
     state.autoActive = true
     state.awaitingTurn = false
-    updateAutoButton()
     playPhrase(state.currentIndex)
+    updatePlayButton()
     setPracticeStatus("Reproduciendo frase…")
 }
 
 function handleAutoAdvance() {
     if (state.awaitingTurn) return
     state.awaitingTurn = true
-    const record = state.practiceMode === "auto-record"
-    setPracticeStatus(record ? "Tu turno: graba tu frase…" : `Tu turno: espera ${state.practiceDelay} s…`)
-    if (record) {
-        startRecording().then(() => { state.autoRecording = Boolean(state.mediaRecorder) })
-    }
+    setPracticeStatus(`Siguiente frase en ${state.practiceDelay} s…`)
     state.autoTimer = setTimeout(() => {
         if (!state.autoActive) return
-        if (state.autoRecording && state.mediaRecorder) {
-            try { state.mediaRecorder.stop() } catch { /* ya detenido */ }
-            stopSpeechAssessment()
-            state.autoRecording = false
-        }
-        if (state.currentIndex >= state.current.transcript.length - 1) {
+        const nextIndex = state.currentIndex + 1
+        if (nextIndex >= state.current.transcript.length) {
             stopAutoPractice("Práctica terminada.")
             return
         }
         state.awaitingTurn = false
-        state.translation = ""
-        state.selectedWord = ""
-        renderLesson()
-        playPhrase(state.currentIndex + 1)
+        // playPhrase fija el índice y vuelve a renderizar la frase escrita
+        // antes de mover el video:audio y texto avanzan a la vez.
+        playPhrase(nextIndex)
         setPracticeStatus("Reproduciendo frase…")
     }, state.practiceDelay * 1000)
 }
@@ -1368,6 +1375,13 @@ function shadowingVocabularyValues(lookup, sentence, spanishTranslation) {
     }
 }
 
+function shadowingCategory() {
+    const categories = store.categoriesData || []
+    return categories.find(category => category.id === "grammar")?.title
+        || categories.find(category => category.title && category.title !== "Sin Categoría")?.title
+        || "Sin Categoría"
+}
+
 async function saveSelectedWord() {
     const sentence = state.current?.transcript?.[state.currentIndex]?.text || ""
     const word = state.selectedWord || suggestionWords(sentence)[0]
@@ -1378,11 +1392,9 @@ async function saveSelectedWord() {
     if (!state.translation) await translateCurrentSentence()
     const vocabulary = shadowingVocabularyValues(lookup, sentence, state.translation)
     try {
-        const category = (store.categoriesData || []).find(category => category.id === "grammar")?.title || "Mis Expresiones"
-        const saved = await sentenceRepository.saveVocabulary(user.id, vocabulary, null, category)
+        const saved = await sentenceRepository.saveVocabulary(user.id, vocabulary, null, shadowingCategory())
         showToast(`Se agregó “${saved.word}” a Mi vocabulario.`, "success")
         window.dispatchEvent(new CustomEvent("personal-vocabulary-changed"))
-        byId("shadowing-add-vocabulary").disabled = true
     } catch (error) {
         console.error("[shadowing] No se pudo guardar la palabra:", error)
         showStatus(error.message || "No se pudo guardar la palabra.", true)
@@ -1396,7 +1408,7 @@ async function saveSelectedSentence() {
     if (!user) return showStatus("Inicia sesión para guardar frases.", true)
     if (!state.translation) await translateCurrentSentence()
     try {
-        const saved = await sentenceRepository.save(user.id, {
+        await sentenceRepository.save(user.id, {
             englishText: sentence,
             spanishTranslation: state.translation,
             topicTags: ["Other"],
@@ -1407,11 +1419,65 @@ async function saveSelectedSentence() {
         })
         showToast("Frase guardada en Mi aprendizaje → Repasar.", "success")
         window.dispatchEvent(new CustomEvent("personal-sentences-changed"))
-        byId("shadowing-add-review").disabled = true
     } catch (error) {
         console.error("[shadowing] No se pudo guardar la frase:", error)
         showStatus(error.message || "No se pudo guardar la frase.", true)
     }
+}
+
+/* Guarda la palabra seleccionada como verbo o adjetivo del catálogo
+ * compartido, usando la misma cola offline que el resto de categorías. */
+async function saveCatalogWord(target, word, sentence) {
+    const user = await ensureUser()
+    if (!user) return showStatus("Inicia sesión para guardar palabras.", true)
+    const lookup = state.lookupCache.get(normalizeWord(word)) || await lookupWord(word) || {}
+    if (!state.translation) await translateCurrentSentence()
+    const row = catalogRowFor(target, {
+        word,
+        lookup,
+        sentence,
+        translation: state.translation,
+        category: shadowingCategory(),
+        id: generateLocalIntegerId()
+    })
+    try {
+        await cacheRow(TABLES.verbs, row.id, row)
+        await queueChange({
+            table: TABLES.verbs,
+            action: "upsert",
+            payload: row,
+            conflict: "id",
+            localId: row.id,
+            description: target === "verb" ? "Guardar verbo desde Shadowing" : "Guardar adjetivo desde Shadowing"
+        })
+        showToast(
+            isOnline()
+                ? `Se agregó “${word}” a ${saveTargetLabel(target)}.`
+                : `“${word}” guardado en el dispositivo; se sincronizará al reconectar.`,
+            "success"
+        )
+        window.dispatchEvent(new CustomEvent("catalog-changed"))
+        try {
+            const { loadVerbsFromSupabase } = await import("../verbs/verbs-loader.js")
+            await loadVerbsFromSupabase(true)
+            await window.refreshPracticeCategories?.()
+        } catch (error) {
+            console.warn("[shadowing] No se pudo recargar el catálogo:", error)
+        }
+    } catch (error) {
+        console.error("[shadowing] No se pudo guardar en el catálogo:", error)
+        showStatus(error.message || "No se pudo guardar la palabra.", true)
+    }
+}
+
+async function saveSelectedTarget() {
+    const target = byId("shadowing-save-target")?.value || "vocabulary"
+    if (saveTargetKind(target) === "sentence") return saveSelectedSentence()
+    const sentence = state.current?.transcript?.[state.currentIndex]?.text || ""
+    const word = state.selectedWord || suggestionWords(sentence)[0]
+    if (!word) return showStatus("Toca una palabra primero.", true)
+    if (target === "vocabulary") return saveSelectedWord()
+    return saveCatalogWord(target, word, sentence)
 }
 
 async function startRecording() {
@@ -1635,7 +1701,16 @@ function wireEvents() {
     byId("shadowing-lessons")?.addEventListener("change", event => openLesson(event.target.value))
     byId("toggle-shadowing")?.addEventListener("click", () => {})
     byId("shadowing-play")?.addEventListener("click", () => {
-        if (state.autoActive) stopAutoPractice("Práctica detenida.")
+        if (state.practiceMode === "auto") {
+            startAutoPractice()
+            return
+        }
+        if (state.phraseTimer) {
+            stopPhraseTimer()
+            state.player?.pauseVideo?.()
+            setPracticeStatus("Reproducción detenida.")
+            return
+        }
         playPhrase(state.currentIndex)
     })
     byId("shadowing-restart")?.addEventListener("click", () => seekToLine(state.currentIndex, true))
@@ -1648,7 +1723,8 @@ function wireEvents() {
     byId("shadowing-loop")?.addEventListener("click", event => {
         state.loopLine = !state.loopLine
         event.currentTarget.setAttribute("aria-pressed", String(state.loopLine))
-        event.currentTarget.textContent = state.loopLine ? "↻ Frase en bucle" : "↻ Repetir frase"
+        event.currentTarget.title = state.loopLine ? "Frase en bucle (activada)" : "Repetir frase"
+        event.currentTarget.setAttribute("aria-label", event.currentTarget.title)
     })
     byId("shadowing-save")?.addEventListener("click", () => saveCurrentLesson().catch(error => showStatus(error.message || "No se pudo guardar.", true)))
     byId("shadowing-retime")?.addEventListener("click", () => retimeCurrentLesson().catch(error => showStatus(error.message || "No se pudieron corregir los tiempos.", true)))
@@ -1660,16 +1736,28 @@ function wireEvents() {
     byId("shadowing-mode")?.addEventListener("change", event => {
         state.practiceMode = event.target.value
         if (state.autoActive) stopAutoPractice("Modo cambiado: práctica detenida.")
-        setPracticeStatus(state.practiceMode === "manual" ? "Modo manual: usa «Escuchar» y «Grabar» en cada frase." : "Pulsa «Iniciar práctica» para reproducir frase por frase.")
+        setPracticeStatus(state.practiceMode === "manual"
+            ? "Modo manual: escucha, graba y pulsa › para la siguiente frase."
+            : "Pulsa el botón de play para reproducir frase por frase.")
+        updatePlayButton()
     })
     byId("shadowing-practice-delay")?.addEventListener("change", event => {
         state.practiceDelay = Number(event.target.value) || 3
     })
-    byId("shadowing-auto-toggle")?.addEventListener("click", startAutoPractice)
     byId("shadowing-timing-minus")?.addEventListener("click", () => adjustPhraseEnd(-0.1))
     byId("shadowing-timing-plus")?.addEventListener("click", () => adjustPhraseEnd(0.1))
-    byId("shadowing-add-vocabulary")?.addEventListener("click", () => saveSelectedWord())
-    byId("shadowing-add-review")?.addEventListener("click", () => saveSelectedSentence())
+    const saveTarget = byId("shadowing-save-target")
+    if (saveTarget) {
+        saveTarget.replaceChildren(...SAVE_TARGETS.map(target => {
+            const option = document.createElement("option")
+            option.value = target.value
+            option.textContent = target.label
+            option.selected = target.value === "vocabulary"
+            return option
+        }))
+    }
+    saveTarget?.addEventListener("change", () => updateWordActions(true))
+    byId("shadowing-save-selected")?.addEventListener("click", () => saveSelectedTarget())
     byId("shadowing-record")?.addEventListener("click", () => {
         if (state.autoActive) stopAutoPractice("Práctica detenida.")
         startRecording()
@@ -1683,7 +1771,7 @@ function wireEvents() {
     byId("shadowing-transcript-provider")?.addEventListener("change", syncTranscriptProviderHints)
     wireGuideWindow()
     window.setInterval(() => pollShadowing(), 100)
-    updateAutoButton()
+    updatePlayButton()
 }
 
 export async function initializeShadowing(supabase) {

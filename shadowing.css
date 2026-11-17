@@ -647,8 +647,21 @@
     .shadowing-practice-bar .button{grid-column:1/-1;min-height:46px}
     .shadowing-practice-status{grid-column:1/-1;min-width:0;text-align:center}
     .shadowing-practice-field select{width:100%;min-height:44px}
-    .shadowing-word-actions{flex-wrap:wrap}
-    .shadowing-word-actions .button{flex:1 1 45%}
+    .shadowing-word-actions{grid-template-columns:1fr}
+    .shadowing-word-actions .button{width:100%;min-height:44px}
+}
+
+/* Guardado desde Shadowing: se elige el destino y se pulsa una sola acción. */
+.shadowing-word-actions{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:9px}
+.shadowing-save-destination{display:grid;gap:5px;min-width:0;color:#87968d;font:800 10px "DM Sans",sans-serif;letter-spacing:.08em;text-transform:uppercase}
+.shadowing-save-destination select{width:100%;min-height:40px;padding:6px 10px;border:1px solid var(--sh-border-strong);border-radius:10px;background:#fff;color:var(--sh-ink);font:700 12px "DM Sans",sans-serif;letter-spacing:normal;text-transform:none;outline:none}
+.shadowing-save-destination select:focus{border-color:var(--sh-primary);box-shadow:var(--sh-ring)}
+.shadowing-word-actions .button{white-space:nowrap}
+.icon-button-inline{display:grid;place-items:center;width:38px;height:38px;border:1px solid var(--sh-border);border-radius:10px;background:#f8fbf8;color:#4d6558;cursor:pointer;font-size:15px}
+.icon-button-inline:hover{border-color:var(--sh-primary);background:var(--sh-primary-soft)}
+@media(max-width:600px){
+    .shadowing-word-actions{grid-template-columns:1fr}
+    .shadowing-word-actions .button{width:100%;min-height:44px}
 }
 .shadowing-timing-field{display:grid;gap:5px}
 .shadowing-timing-controls{display:inline-flex;align-items:center;gap:2px;border:1px solid var(--sh-border-strong);border-radius:9px;background:#fff;padding:2px}
