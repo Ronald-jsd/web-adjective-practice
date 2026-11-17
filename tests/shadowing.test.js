@@ -1,6 +1,6 @@
 import test from "node:test"
 import assert from "node:assert/strict"
-import { extractYouTubeId, parseManualTranscript, suggestionWords, looksLikeYouTubeUrl, activeWordIndex } from "../js/shadowing/model.js"
+import { extractYouTubeId, parseManualTranscript, suggestionWords, looksLikeYouTubeUrl, activeWordIndex, splitTranscriptSegments, retimeSegments } from "../js/shadowing/model.js"
 import {
     TRANSCRIPT_KEY_STORAGE,
     TRANSCRIPT_PROVIDER_STORAGE,
@@ -153,4 +153,26 @@ test("ai cache rows keep the account shape", () => {
     assert.equal(row.value.translation, "desde")
     assert.equal(row.source, "ai")
     assert.equal(normalizeAiCacheRow(null), null)
+})
+
+test("splitTranscriptSegments reparte el tiempo de un bloque entre sus frases", () => {
+    const result = splitTranscriptSegments([{
+        start: 0,
+        duration: 10,
+        text: "Hello there everyone. This is a longer sentence here."
+    }])
+    assert.equal(result.length, 2)
+    assert.ok(result[0].end < result[1].end)
+    assert.ok(result[0].end <= result[1].start + 0.01)
+})
+
+test("retimeSegments corta cada frase antes de la siguiente", () => {
+    const result = retimeSegments([
+        { start: 0, end: 12, text: "a" },
+        { start: 8, end: 20, text: "b" },
+        { start: 16, end: 30, text: "c" }
+    ])
+    assert.ok(result[0].end < result[1].start)
+    assert.ok(result[1].end < result[2].start)
+    assert.equal(result[0].start, 0)
 })

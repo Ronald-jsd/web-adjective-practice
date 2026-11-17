@@ -2,7 +2,7 @@ import { store, GEMINI_KEY_STORAGE, GROQ_KEY_STORAGE } from "../config.js"
 import { playAudioEnhanced } from "../audio.js"
 import { resolveSessionUser } from "../offline/session.js"
 import { showToast } from "../cache.js"
-import { parseManualTranscript, splitTranscriptSegments, extractYouTubeId, suggestionWords, normalizeWord, looksLikeYouTubeUrl, activeWordIndex } from "./model.js"
+import { parseManualTranscript, splitTranscriptSegments, extractYouTubeId, suggestionWords, normalizeWord, looksLikeYouTubeUrl, activeWordIndex, retimeSegments } from "./model.js"
 import { TRANSCRIPT_PROVIDERS, findProvider, providerLabel, transcriptConfig, setTranscriptCredentials, clearTranscriptCredentials } from "./transcript.js"
 import { createTranscriptStore } from "./transcript-store.js"
 import { createAiCache } from "./ai-cache.js"
@@ -546,7 +546,7 @@ async function createLesson() {
         }
         if (!data?.segments?.length) throw new Error("No se encontraron subtítulos automáticos.")
         title = data.title || title
-        segments = splitTranscriptSegments(data.segments)
+        segments = retimeSegments(splitTranscriptSegments(data.segments))
         providerName = data.source && data.source !== "youtube" ? String(data.source) : ""
         await transcriptStore?.save(user?.id || null, {
             videoId,
@@ -574,7 +574,8 @@ async function createLesson() {
 }
 
 async function applyLesson({ videoId, videoUrl, title, segments, note }) {
-    state.current = { id: "", videoId, videoUrl, title, source: "auto", transcript: segments }
+    const timed = retimeSegments(segments)
+    state.current = { id: "", videoId, videoUrl, title, source: "auto", transcript: timed }
     state.currentIndex = 0
     state.translation = ""
     state.selectedWord = ""
@@ -782,8 +783,8 @@ function parseManual() {
         byId("shadowing-video-url")?.focus()
         return
     }
-    if (!state.current || state.current.videoId !== videoId) state.current = { id: "", videoId, videoUrl: youtubeUrl(raw), title: "Lección de YouTube", source: "manual", transcript: segments }
-    else state.current = { ...state.current, transcript: segments, source: "manual" }
+    if (!state.current || state.current.videoId !== videoId) state.current = { id: "", videoId, videoUrl: youtubeUrl(raw), title: "Lección de YouTube", source: "manual", transcript: retimeSegments(segments) }
+    else state.current = { ...state.current, transcript: retimeSegments(segments), source: "manual" }
     state.currentIndex = 0
     state.translation = ""
     state.selectedWord = ""
@@ -1245,7 +1246,7 @@ async function openLesson(id) {
     const lesson = state.lessons.find(item => item.id === id)
     if (!lesson) return
     if (state.autoActive) stopAutoPractice("")
-    state.current = { ...lesson }
+    state.current = { ...lesson, transcript: retimeSegments(lesson.transcript) }
     state.currentIndex = 0
     state.translation = ""
     state.selectedWord = ""

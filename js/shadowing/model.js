@@ -35,8 +35,15 @@ function flushSentence(sentence, sentences, minimumWords = 1) {
     sentence.wordCount = 0
 }
 
-/* Segments returned by YouTube are cues, not sentences. We merge cues and
- * split at sentence-ending punctuation, keeping the best time available. */
+function sentencesInText(text) {
+    const clean = String(text || "").replace(/\s+/g, " ").trim()
+    const pieces = clean.match(/[^.!?]+[.!?]["'”)]*|[^.!?]+$/g) || [clean]
+    return pieces.map(piece => piece.trim()).filter(Boolean)
+}
+
+/* Cada pieza del proveedor puede contener varias frases. Repartimos su
+ * duración entre las frases según cuántas palabras tiene cada una: así una
+ * frase dentro de un bloque largo no hereda el final de todo el bloque. */
 export function splitTranscriptSegments(segments) {
     const cleaned = (segments || [])
         .filter(segment => segment && String(segment.text || "").trim())
@@ -45,36 +52,62 @@ export function splitTranscriptSegments(segments) {
             duration: Math.max(0.3, Number(segment.duration || 1)),
             text: String(segment.text).replace(/\s+/g, " ").trim()
         }))
-    const sentences = []
-    const current = { text: "", start: null, duration: 0, wordCount: 0 }
+    if (!cleaned.length) return []
 
+    const pieces = []
     for (const segment of cleaned) {
-        const segmentStart = segment.start
-        const words = normalizedWords(segment.text)
-        for (const word of words) {
-            if (current.start === null) current.start = segmentStart
-            current.text = [current.text, word].filter(Boolean).join(" ")
-            current.duration = Math.max(current.duration, segmentStart + segment.duration - current.start)
-            current.wordCount += 1
-            const endsSentence = /[.!?]["'”)]?$/.test(current.text)
-            const tooLarge = current.wordCount >= MAX_SEGMENT_SIZE
-            if ((endsSentence && current.wordCount >= MIN_SEGMENT_SIZE) || tooLarge) {
-                flushSentence(current, sentences, MIN_SEGMENT_SIZE)
-                current.start = null
-            }
+        const parts = sentencesInText(segment.text)
+        const weights = parts.map(part => Math.max(1, tokensizeSentence(part).length))
+        const total = weights.reduce((sum, weight) => sum + weight, 0) || 1
+        let cursor = segment.start
+        parts.forEach((part, index) => {
+            const duration = segment.duration * (weights[index] / total)
+            pieces.push({ start: cursor, end: cursor + duration, text: part, wordCount: weights[index] })
+            cursor += duration
+        })
+    }
+
+    const merged = []
+    for (const piece of pieces) {
+        const previous = merged[merged.length - 1]
+        if (previous && previous.wordCount < MIN_SEGMENT_SIZE) {
+            previous.text = `${previous.text} ${piece.text}`.trim()
+            previous.end = piece.end
+            previous.wordCount += piece.wordCount
+        } else {
+            merged.push({ ...piece })
         }
     }
-    if (current.text) flushSentence(current, sentences, 1)
+    if (merged.length > 1) {
+        const last = merged[merged.length - 1]
+        if (last.wordCount < MIN_SEGMENT_SIZE) {
+            const previous = merged[merged.length - 2]
+            previous.text = `${previous.text} ${last.text}`.trim()
+            previous.end = last.end
+            merged.pop()
+        }
+    }
 
-    if (!sentences.length && cleaned.length) {
-        return cleaned.map(segment => ({ start: segment.start, end: segment.start + segment.duration, text: segment.text }))
-    }
-    for (const sentence of sentences) {
-        if (!Number.isFinite(sentence.start)) sentence.start = 0
-        if (!Number.isFinite(sentence.duration)) sentence.duration = 1
-        sentence.end = sentence.start + Math.max(0.5, sentence.duration)
-    }
-    return sentences
+    return merged.map(piece => ({
+        start: Math.max(0, Number(piece.start.toFixed(2))),
+        end: Math.max(piece.start + 0.5, Number(piece.end.toFixed(2))),
+        text: piece.text
+    }))
+}
+
+/* Ajusta el final de cada frase al comienzo de la siguiente. Con los
+ * subtítulos existentes esto evita que el video siga hablando la frase
+ * siguiente mientras la anterior todavía está marcada como activa. */
+export function retimeSegments(segments) {
+    const list = (segments || []).filter(Boolean).map(segment => ({ ...segment }))
+    return list.map((segment, index) => {
+        const start = Math.max(0, Number(segment.start || 0))
+        const next = list[index + 1]
+        let end = Number(segment.end || start + 2)
+        if (next) end = Math.max(start + 0.5, Number(next.start || end) - 0.08)
+        else end = Math.max(start + 0.5, end)
+        return { ...segment, start, end }
+    })
 }
 
 export function looksLikeYouTubeUrl(value) {
