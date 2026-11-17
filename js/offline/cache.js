@@ -180,6 +180,7 @@ export const TABLES = {
     reviewLogs: "my_sentence_review_logs",
     reviewCards: "my_sentence_review_cards",
     shadowingLessons: "user_shadowing_lessons",
+    transcriptCache: "user_transcript_cache",
     notionPages: "user_notion_pages",
     wordGroups: "user_word_groups"
 };

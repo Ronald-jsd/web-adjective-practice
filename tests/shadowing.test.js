@@ -11,6 +11,7 @@ import {
     setTranscriptCredentials,
     transcriptConfig
 } from "../js/shadowing/transcript.js"
+import { normalizeTranscriptRow } from "../js/shadowing/transcript-store.js"
 
 test("extractYouTubeId accepts watch, short, shorts and embed URLs", () => {
     assert.equal(extractYouTubeId("https://www.youtube.com/watch?v=Q5vAL799_BM"), "Q5vAL799_BM")
@@ -103,9 +104,19 @@ test("transcript credentials stay on the device and can be cleared", () => {
     }
 })
 
-test("transcript cache degrades gracefully without IndexedDB", async () => {
-    const { readTranscriptCache, writeTranscriptCache } = await import("../js/shadowing/transcript.js")
-    assert.equal(await readTranscriptCache("jNQXAC9IVRw"), null)
-    await writeTranscriptCache("jNQXAC9IVRw", { segments: [{ start: 0, duration: 1, text: "Hola." }] })
-    assert.equal(await readTranscriptCache(""), null)
+test("transcript cache rows keep the per-account shape", () => {
+    const row = normalizeTranscriptRow({
+        user_id: "user-1",
+        video_id: "jNQXAC9IVRw",
+        title: "Me at the zoo",
+        language: "en",
+        source: "supadata",
+        segments: [{ start: 0, end: 2, text: "Hola." }],
+        updated_at: "2026-11-16T10:00:00.000Z"
+    })
+    assert.equal(row.videoId, "jNQXAC9IVRw")
+    assert.equal(row.title, "Me at the zoo")
+    assert.equal(row.source, "supadata")
+    assert.equal(row.segments.length, 1)
+    assert.equal(normalizeTranscriptRow(null), null)
 })

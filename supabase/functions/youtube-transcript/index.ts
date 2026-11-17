@@ -3,7 +3,6 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const anonKey = Deno.env.get("SUPABASE_ANON_KEY")!;
 const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-const CACHE_TTL_MS = 30 * 24 * 60 * 60 * 1000;
 const corsHeaders = {
     "Access-Control-Allow-Origin": "*",
     "Access-Control-Allow-Headers": "authorization, apikey, content-type, x-client-info",
@@ -47,8 +46,6 @@ async function readTranscriptCache(videoId: string) {
             .eq("video_id", videoId)
             .maybeSingle();
         if (error || !data) return null;
-        const updatedAt = Date.parse(String(data.updated_at || ""));
-        if (!Number.isFinite(updatedAt) || Date.now() - updatedAt > CACHE_TTL_MS) return null;
         if (!Array.isArray(data.segments) || !data.segments.length) return null;
         return data as { title: string; language: string; source: string; segments: Segment[] };
     } catch (error) {

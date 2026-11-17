@@ -2,7 +2,8 @@ import { store, GEMINI_KEY_STORAGE, GROQ_KEY_STORAGE } from "../config.js"
 import { resolveSessionUser } from "../offline/session.js"
 import { showToast } from "../cache.js"
 import { parseManualTranscript, splitTranscriptSegments, extractYouTubeId, suggestionWords, normalizeWord, looksLikeYouTubeUrl } from "./model.js"
-import { TRANSCRIPT_PROVIDERS, findProvider, providerLabel, transcriptConfig, setTranscriptCredentials, clearTranscriptCredentials, readTranscriptCache, writeTranscriptCache } from "./transcript.js"
+import { TRANSCRIPT_PROVIDERS, findProvider, providerLabel, transcriptConfig, setTranscriptCredentials, clearTranscriptCredentials } from "./transcript.js"
+import { createTranscriptStore } from "./transcript-store.js"
 import { createShadowingRepository } from "./repository.js"
 import { createSentenceRepository } from "../sentences/repository.js"
 
@@ -10,6 +11,7 @@ let initialized = false
 let supabaseClient = null
 let shadowingRepository = null
 let sentenceRepository = null
+let transcriptStore = null
 let ytScript = null
 
 const byId = id => document.getElementById(id)
@@ -276,6 +278,7 @@ async function createLesson() {
         return null
     }
     const videoUrl = youtubeUrl(input.value)
+    const user = await ensureUser()
 
     // La casilla se consume una sola vez para no gastar créditos por error.
     const forceBox = byId("shadowing-transcript-force")
@@ -290,16 +293,16 @@ async function createLesson() {
         return state.current
     }
 
-    // 2. Copia local de una descarga anterior: funciona incluso sin conexión.
+    // 2. Transcripción guardada en tu cuenta o en este dispositivo.
     if (!force) {
-        const cached = await readTranscriptCache(videoId)
-        if (cached) {
+        const cached = transcriptStore ? await transcriptStore.get(user?.id || null, videoId) : null
+        if (cached?.segments?.length) {
             await applyLesson({
                 videoId,
                 videoUrl,
                 title: cached.title || "Lección de YouTube",
                 segments: cached.segments,
-                note: `Lección lista desde la copia local · ${cached.segments.length} frases (sin gastar créditos).`
+                note: `Lección lista desde tus transcripciones · ${cached.segments.length} frases (sin gastar créditos).`
             })
             return state.current
         }
@@ -334,7 +337,13 @@ async function createLesson() {
         title = data.title || title
         segments = splitTranscriptSegments(data.segments)
         providerName = data.source && data.source !== "youtube" ? String(data.source) : ""
-        await writeTranscriptCache(videoId, { title, language: data.language || "en", source: data.source || "youtube", segments })
+        await transcriptStore?.save(user?.id || null, {
+            videoId,
+            title,
+            language: data.language || "en",
+            source: data.source || "youtube",
+            segments
+        })
     } catch (autoError) {
         console.warn("[shadowing] No se obtuvo la transcripción automática:", autoError)
         byId("shadowing-manual")?.classList.remove("hidden")
@@ -450,6 +459,7 @@ function openTranscriptDialog() {
     syncTranscriptProviderHints()
     if (typeof dialog.showModal === "function") dialog.showModal()
     else dialog.setAttribute("open", "")
+    renderSavedTranscripts().catch(error => console.warn("[shadowing] No se pudo listar las transcripciones:", error))
 }
 
 function closeTranscriptDialog() {
@@ -457,6 +467,58 @@ function closeTranscriptDialog() {
     if (!dialog) return
     if (typeof dialog.close === "function") dialog.close()
     else dialog.removeAttribute("open")
+}
+
+function formatSavedDate(value) {
+    if (!value) return ""
+    const date = new Date(value)
+    if (Number.isNaN(date.getTime())) return ""
+    return date.toLocaleDateString("es", { day: "2-digit", month: "short", year: "numeric" })
+}
+
+async function renderSavedTranscripts() {
+    const container = byId("shadowing-transcript-saved-list")
+    if (!container) return
+    container.textContent = "Cargando…"
+    const user = await ensureUser()
+    const rows = transcriptStore ? await transcriptStore.list(user?.id || null) : []
+    container.replaceChildren()
+    if (!rows.length) {
+        const empty = document.createElement("p")
+        empty.className = "shadowing-dialog-note"
+        empty.textContent = "Todavía no hay transcripciones guardadas."
+        container.append(empty)
+        return
+    }
+    for (const row of rows) {
+        const item = document.createElement("div")
+        item.className = "shadowing-saved-item"
+
+        const info = document.createElement("div")
+        info.className = "shadowing-saved-info"
+        const title = document.createElement("strong")
+        title.textContent = row.title || row.videoId
+        const meta = document.createElement("small")
+        const parts = [`${row.segments.length} frases`]
+        const date = formatSavedDate(row.updatedAt)
+        if (date) parts.push(date)
+        if (!user) parts.push("solo en este dispositivo")
+        meta.textContent = parts.join(" · ")
+        info.append(title, meta)
+
+        const remove = document.createElement("button")
+        remove.type = "button"
+        remove.className = "shadowing-saved-delete"
+        remove.textContent = "Borrar"
+        remove.addEventListener("click", async () => {
+            remove.disabled = true
+            await transcriptStore.remove(user?.id || null, row.videoId)
+            await renderSavedTranscripts()
+        })
+
+        item.append(info, remove)
+        container.append(item)
+    }
 }
 
 function saveTranscriptConfig() {
@@ -913,6 +975,7 @@ export async function initializeShadowing(supabase) {
     supabaseClient = supabase || null
     shadowingRepository = createShadowingRepository(supabaseClient)
     sentenceRepository = createSentenceRepository(supabaseClient)
+    transcriptStore = createTranscriptStore(supabaseClient)
     wireEvents()
     setupPracticePaneTabs()
     renderTranscriptConfig()
