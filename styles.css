@@ -1965,6 +1965,25 @@
     #practice-section .practice-audio-course-secondary .button{flex:1 1 calc(50% - 4px);min-height:46px}
 }
 
+/* Práctica en tres pestañas: Ejercicios | Escucha continua | Shadowing.
+ * Los paneles son display:contents, así que sus hijos comparten la rejilla:
+ * los controles quedan a la izquierda y el bloque activo a la derecha. */
+#practice-section .practice-heading { grid-column: 1 / -1; grid-row: 2 }
+#practice-section .practice-controls { grid-column: 1; grid-row: 3 }
+#practice-section .practice-exercise { grid-column: 2; grid-row: 3 }
+#practice-section .practice-pane-audio .practice-audio-course { grid-column: 2; grid-row: 3 }
+#practice-section .practice-controls.hidden,
+#practice-section .practice-heading.hidden,
+#practice-section .practice-exercise.hidden { display: none !important }
+.pane-label-short { display: none }
+
+@media (max-width: 700px) {
+    #practice-section .practice-heading { grid-column: 1; grid-row: 2 }
+    #practice-section .practice-controls { grid-column: 1; grid-row: 3 }
+    #practice-section .practice-exercise,
+    #practice-section .practice-pane-audio .practice-audio-course { grid-column: 1; grid-row: 4 }
+}
+
 /* Ventana flotante de celdas de verbos — paleta central, acciones separadas. */
 .verb-cell-viewer{width:min(620px,calc(100vw - 32px));max-height:min(85vh,720px);padding:0;border:1px solid #dbe6dd;border-radius:20px;background:#fff;color:#20392f;box-shadow:0 28px 70px rgba(28,79,58,.28);overflow:hidden}
 .verb-cell-viewer::backdrop{background:rgba(20,37,30,.55);backdrop-filter:blur(4px)}

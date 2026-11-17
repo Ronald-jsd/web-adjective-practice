@@ -606,8 +606,10 @@
 
 @media (max-width: 600px) {
     .shadowing-pane { gap: 16px; padding-bottom: env(safe-area-inset-bottom) }
-    .practice-pane-tabs { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); width: 100%; border-radius: 16px; gap: 4px }
-    .practice-pane-tab { width: 100%; min-height: 46px; padding: 9px 6px; font-size: 12px }
+    .practice-pane-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); width: 100%; border-radius: 16px; gap: 4px }
+    .practice-pane-tab { width: 100%; min-height: 46px; padding: 9px 3px; font-size: 11px }
+    .pane-label-long { display: none }
+    .pane-label-short { display: inline }
     .shadowing-heading h2 { font-size: clamp(24px, 7vw, 32px) }
     .shadowing-heading p:last-child { font-size: 13px }
     .shadowing-import-panel { grid-template-columns: 1fr; gap: 12px; padding: 15px }

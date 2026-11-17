@@ -1704,15 +1704,28 @@ export async function initializeShadowing(supabase) {
 
 function setupPracticePaneTabs() {
     const tabs = document.querySelectorAll("#practice-pane-tabs [data-practice-pane]")
+    const general = byId("practice-pane-general")
+    // Los controles (Notion, categorías, pegar tabla) están en el panel de
+    // ejercicios, pero con display:contents son celdas de la misma rejilla:
+    // se mantienen visibles también en Escucha continua. Por eso se ocultan
+    // las piezas del panel, no el panel completo.
+    const generalParts = general
+        ? [general.querySelector(".practice-heading"), general.querySelector(".practice-exercise")]
+        : []
+    const controls = document.querySelector("#practice-section .practice-controls")
+    const audioPane = byId("practice-pane-audio")
+    const shadowingPane = byId("shadowing-pane")
+
     const switchPane = name => {
-        document.querySelectorAll("#practice-pane-tabs [data-practice-pane]").forEach(tab => {
+        tabs.forEach(tab => {
             const isActive = tab.dataset.practicePane === name
             tab.classList.toggle("active", isActive)
             tab.setAttribute("aria-selected", String(isActive))
         })
-        byId("practice-pane-general")?.classList.toggle("hidden", name !== "general")
-        const pane = byId("shadowing-pane")
-        if (pane) pane.hidden = name !== "shadowing"
+        generalParts.forEach(part => part?.classList.toggle("hidden", name !== "general"))
+        if (audioPane) audioPane.hidden = name !== "audio"
+        if (shadowingPane) shadowingPane.hidden = name !== "shadowing"
+        if (controls) controls.classList.toggle("hidden", name === "shadowing")
     }
     tabs.forEach(tab => tab.addEventListener("click", () => switchPane(tab.dataset.practicePane)))
 }
