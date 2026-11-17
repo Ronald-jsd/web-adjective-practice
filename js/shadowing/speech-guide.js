@@ -316,6 +316,12 @@ export function explainGuide(guide) {
             description: "También se destaca, pero menos que el golpe principal."
         },
         {
+            key: "normal",
+            label: "Ritmo base",
+            sample: sample("normal") || "palabra",
+            description: "Se dice con fuerza media: ni se destaca ni se liga. Marca el ritmo normal de la frase."
+        },
+        {
             key: "faded",
             label: "Palabra ligera",
             sample: sample("faded") || "to",

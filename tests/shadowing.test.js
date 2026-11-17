@@ -288,7 +288,7 @@ test("explainGuide explica cada marca con palabras reales de la frase", () => {
         ]
     })
     const rows = explainGuide(guide)
-    assert.deepEqual(rows.map(row => row.key), ["primary", "secondary", "faded", "pause", "contour", "hover"])
+    assert.deepEqual(rows.map(row => row.key), ["primary", "secondary", "normal", "faded", "pause", "contour", "hover"])
     const row = key => rows.find(entry => entry.key === key)
     const words = new Set(guide.items.filter(item => item.isWord).map(item => item.token))
     assert.equal(row("primary").sample, "company")
@@ -298,6 +298,14 @@ test("explainGuide explica cada marca con palabras reales de la frase", () => {
     assert.equal(row("contour").sample, "↘")
     assert.match(row("primary").description, /más fuerte/)
     assert.ok(rows.every(entry => entry.label && entry.description && entry.sample))
+})
+
+test("explainGuide explica las palabras de ritmo base que aparecen en negro", () => {
+    const guide = buildSpeechGuide({ start: 0, end: 6, text: "From clean code to clear communication, welcome to English." })
+    const normal = explainGuide(guide).find(row => row.key === "normal")
+    assert.equal(normal.label, "Ritmo base")
+    assert.ok(guide.items.some(item => item.isWord && item.stress === "normal" && item.token === normal.sample))
+    assert.match(normal.description, /fuerza media/)
 })
 
 test("explainGuide adapta la pausa breve y el tono ascendente", () => {
@@ -313,7 +321,7 @@ test("explainGuide adapta la pausa breve y el tono ascendente", () => {
 
 test("explainGuide funciona con una guía vacía sin lanzar errores", () => {
     const rows = explainGuide({ items: [], contour: "" })
-    assert.equal(rows.length, 6)
+    assert.equal(rows.length, 7)
     assert.ok(rows.every(row => row.sample && row.description))
     assert.equal(rows.find(row => row.key === "contour").sample, "↘")
 })

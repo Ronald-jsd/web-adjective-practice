@@ -370,6 +370,9 @@
 .shadowing-guide-row > div > span { color: var(--sh-ink-soft); font: 500 11px/1.45 "DM Sans", sans-serif }
 .shadowing-guide-sample[data-key="primary"] { background: var(--sh-accent-soft); color: var(--sh-accent) }
 .shadowing-guide-sample[data-key="secondary"] { background: var(--sh-primary-soft); color: var(--sh-primary-dark) }
+/* Las palabras "normal" conservan el color tinta de .shadowing-word: no se
+ * tiñen en la frase, por eso su muestra en la guía tampoco lleva color. */
+.shadowing-guide-sample[data-key="normal"] { background: #f1f4f1; color: var(--sh-ink); border: 1px solid var(--sh-border) }
 .shadowing-guide-sample[data-key="faded"] { background: #eef2ee; color: #93a398 }
 .shadowing-guide-sample[data-key="pause"] { background: #fff4e6; color: #b8703f; font-size: 18px; letter-spacing: -.12em }
 .shadowing-guide-sample[data-key="contour"] { background: #f7e9e1; color: var(--sh-accent); font-size: 18px }
