@@ -432,8 +432,10 @@ function pollShadowing() {
     const segment = phraseAt()
     if (!segment) return
     const seconds = Number(state.player.getCurrentTime?.() || 0)
-    highlightSpokenWord(seconds + 0.03, segment)
-    if (seconds < segment.end - 0.05) return
+    // El resaltado es solo visual: nunca decide cuándo se detiene el video.
+    highlightSpokenWord(seconds, segment)
+    // La parada depende únicamente del final de la frase (y de su ajuste).
+    if (seconds < segment.end) return
 
     if (state.autoActive && state.practiceMode !== "manual") {
         state.player.pauseVideo?.()
