@@ -51,6 +51,8 @@ const state = {
 
 const TIMING_STORAGE = "shadowing_phrase_timing_v1"
 const GUIDE_POS_STORAGE = "shadowing_guide_window_v1"
+const GUIDE_MOBILE_QUERY = "(max-width: 700px)"
+const guideIsMobile = () => window.matchMedia(GUIDE_MOBILE_QUERY).matches
 
 function timingKey(index) {
     return `${state.current?.videoId || ""}::${index}`
@@ -76,7 +78,13 @@ function saveTimingOffsets() {
 function readGuidePosition() {
     try {
         const value = JSON.parse(localStorage.getItem(GUIDE_POS_STORAGE) || "null")
-        return value && Number.isFinite(value.left) && Number.isFinite(value.top) ? value : null
+        if (!value || !Number.isFinite(value.left) || !Number.isFinite(value.top)) return null
+        // Una posición guardada en otra pantalla puede dejar la ventana sobre
+        // el reproductor. Si el viewport cambió mucho, se vuelve al sitio por
+        // defecto (abajo a la derecha) en vez de recuperar una ubicación rara.
+        if (value.viewportWidth && Math.abs(value.viewportWidth - window.innerWidth) > 160) return null
+        if (value.viewportHeight && Math.abs(value.viewportHeight - window.innerHeight) > 160) return null
+        return value
     } catch (error) {
         return null
     }
@@ -84,9 +92,26 @@ function readGuidePosition() {
 
 function saveGuidePosition(position) {
     try {
-        localStorage.setItem(GUIDE_POS_STORAGE, JSON.stringify(position))
+        localStorage.setItem(GUIDE_POS_STORAGE, JSON.stringify({
+            ...position,
+            viewportWidth: window.innerWidth,
+            viewportHeight: window.innerHeight
+        }))
     } catch (error) {
         console.warn("[shadowing] No se pudo guardar la posición de la guía:", error)
+    }
+}
+
+/* En móvil la guía es una tarjeta dentro del flujo (justo bajo la frase); en
+ * escritorio se mueve al body para que position:fixed no quede atrapado por el
+ * transform de #practice-section. */
+function syncGuidePlacement(node, originalParent, originalNext) {
+    if (!node) return
+    if (guideIsMobile()) {
+        if (node.parentElement !== originalParent) originalParent.insertBefore(node, originalNext)
+        node.removeAttribute("style")
+    } else if (node.parentElement !== document.body) {
+        document.body.appendChild(node)
     }
 }
 
@@ -115,25 +140,22 @@ function toggleGuideWindow(open) {
     node.classList.toggle("hidden", !visible)
     button?.setAttribute("aria-expanded", String(visible))
     button?.classList.toggle("active", visible)
-    if (visible) {
-        placeGuideWindow(node)
-        state.guideWindowShown = true
-    }
+    if (visible && !guideIsMobile()) placeGuideWindow(node)
+    if (visible) state.guideWindowShown = true
 }
 
 function wireGuideWindow() {
     const node = byId("shadowing-guide-window")
     if (!node) return
-    // #practice-section mantiene un transform de su animación de entrada; eso
-    // convierte cualquier position:fixed en hijo en posición relativa al
-    // contenedor. Al mover la guía al body se ancla de verdad al viewport.
-    if (node.parentElement !== document.body) document.body.appendChild(node)
+    const originalParent = node.parentElement
+    const originalNext = node.nextSibling
+    syncGuidePlacement(node, originalParent, originalNext)
     byId("shadowing-guide-open")?.addEventListener("click", () => toggleGuideWindow())
     byId("shadowing-guide-close")?.addEventListener("click", () => toggleGuideWindow(false))
     const handle = node.querySelector("[data-guide-drag]")
     handle?.addEventListener("pointerdown", event => {
-        // En móvil la guía es una hoja fija abajo: no se arrastra.
-        if (window.matchMedia("(max-width: 700px)").matches) return
+        // En móvil la guía es una tarjeta en flujo: no se arrastra.
+        if (guideIsMobile()) return
         if (event.target.closest("button")) return
         const rect = node.getBoundingClientRect()
         state.guideDrag = { x: event.clientX - rect.left, y: event.clientY - rect.top }
@@ -153,8 +175,15 @@ function wireGuideWindow() {
     }
     handle?.addEventListener("pointerup", stopDrag)
     handle?.addEventListener("pointercancel", stopDrag)
+    handle?.addEventListener("dblclick", () => {
+        // Doble clic en la cabecera: vuelve a la esquina por defecto.
+        localStorage.removeItem(GUIDE_POS_STORAGE)
+        node.removeAttribute("style")
+        placeGuideWindow(node, null)
+    })
     window.addEventListener("resize", () => {
-        if (!node.classList.contains("hidden")) placeGuideWindow(node)
+        syncGuidePlacement(node, originalParent, originalNext)
+        if (!node.classList.contains("hidden") && !guideIsMobile()) placeGuideWindow(node)
     })
     document.addEventListener("keydown", event => {
         if (event.key === "Escape" && !node.classList.contains("hidden")) toggleGuideWindow(false)
