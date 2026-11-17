@@ -1,7 +1,7 @@
 import { store, GEMINI_KEY_STORAGE, GROQ_KEY_STORAGE } from "../config.js"
 import { resolveSessionUser } from "../offline/session.js"
 import { showToast } from "../cache.js"
-import { parseManualTranscript, splitTranscriptSegments, extractYouTubeId, suggestionWords, normalizeWord, looksLikeYouTubeUrl } from "./model.js"
+import { parseManualTranscript, splitTranscriptSegments, extractYouTubeId, suggestionWords, normalizeWord, looksLikeYouTubeUrl, activeWordIndex } from "./model.js"
 import { TRANSCRIPT_PROVIDERS, findProvider, providerLabel, transcriptConfig, setTranscriptCredentials, clearTranscriptCredentials } from "./transcript.js"
 import { createTranscriptStore } from "./transcript-store.js"
 import { createShadowingRepository } from "./repository.js"
@@ -27,6 +27,8 @@ const state = {
     translation: "",
     lookupCache: new Map(),
     selectedWord: "",
+    wordSpans: [],
+    speakingIndex: -1,
     recordings: new Map(),
     mediaRecorder: null,
     chunks: [],
@@ -119,7 +121,14 @@ function renderTranscript(lesson = state.current) {
     if (translate) translate.classList.toggle("hidden", !state.translation)
     if (translate) translate.textContent = state.translation
     container.replaceChildren()
+    state.speakingIndex = -1
+
     const tokens = sentence.match(/[A-Za-z]+(?:['’-][A-Za-z]+)*|\S+/g) || []
+    const words = tokens.filter(token => /^[A-Za-z]+(?:['’-][A-Za-z]+)*$/.test(token))
+    const totalWeight = words.reduce((sum, token) => sum + wordWeight(token), 0) || 1
+    const spans = []
+    let elapsed = 0
+
     tokens.forEach(token => {
         const isWord = /^[A-Za-z]+(?:['’-][A-Za-z]+)*$/.test(token)
         if (isWord) {
@@ -127,16 +136,67 @@ function renderTranscript(lesson = state.current) {
             button.type = "button"
             button.className = "shadowing-word"
             button.textContent = token
-            button.addEventListener("click", () => lookupWord(token))
+            const weight = wordWeight(token)
+            spans.push({ element: button, from: elapsed / totalWeight, to: (elapsed + weight) / totalWeight })
+            elapsed += weight
+            button.addEventListener("click", () => {
+                speakWord(token)
+                lookupWord(token)
+            })
             container.append(button)
-            if (/\s$/.test(token)) container.append(" ")
-            else container.append(" ")
+            container.append(" ")
             return
         }
         container.append(document.createTextNode(token + " "))
     })
+    state.wordSpans = spans
     renderWordList(sentence)
     renderRecording()
+}
+
+function wordWeight(token) {
+    return Math.max(3, token.replace(/[^A-Za-z]/g, "").length)
+}
+
+/* Reproduce una palabra con la voz del navegador (sin conexión ni créditos). */
+let englishVoice = null
+
+function pickEnglishVoice() {
+    const synth = window.speechSynthesis
+    if (!synth?.getVoices) return null
+    const voices = synth.getVoices() || []
+    englishVoice = voices.find(voice => /^en[-_]/i.test(voice.lang) && /google|samantha|aria|jenny|zira|natural/i.test(voice.name))
+        || voices.find(voice => /^en[-_]/i.test(voice.lang))
+        || null
+    return englishVoice
+}
+
+function speakWord(word) {
+    const synth = window.speechSynthesis
+    if (!synth || !word) return
+    try {
+        synth.cancel()
+        const utterance = new SpeechSynthesisUtterance(String(word))
+        utterance.lang = "en-US"
+        utterance.rate = 0.9
+        const voice = englishVoice || pickEnglishVoice()
+        if (voice) utterance.voice = voice
+        synth.speak(utterance)
+    } catch (error) {
+        console.warn("[shadowing] No se pudo pronunciar la palabra:", error)
+    }
+}
+
+/* Resalta la palabra que se está oyendo. Los subtítulos solo traen el tiempo
+ * de la frase completa, así que se reparte la duración según lo larga que sea
+ * cada palabra: es una aproximación, no un karaoke exacto. */
+function highlightSpokenWord(seconds, segment) {
+    const spans = state.wordSpans || []
+    if (!spans.length) return
+    const active = activeWordIndex(spans, seconds, segment)
+    if (active === state.speakingIndex) return
+    state.speakingIndex = active
+    spans.forEach((span, index) => span.element.classList.toggle("speaking", index === active))
 }
 
 function renderWordList(sentence) {
@@ -149,7 +209,10 @@ function renderWordList(sentence) {
         button.type = "button"
         button.className = `shadowing-word${normalizeWord(state.selectedWord) === word ? " active" : ""}`
         button.textContent = word
-        button.addEventListener("click", () => lookupWord(word))
+        button.addEventListener("click", () => {
+            speakWord(word)
+            lookupWord(word)
+        })
         host.append(button)
     }
     updateWordButtons()
@@ -260,6 +323,7 @@ function pollShadowing() {
     const segment = state.current.transcript?.[state.currentIndex]
     if (!segment) return
     const seconds = Number(state.player.getCurrentTime?.() || 0)
+    highlightSpokenWord(seconds, segment)
     if (seconds >= segment.end - 0.05) {
         if (state.loopLine) {
             state.player.seekTo?.(segment.start, true)
@@ -674,6 +738,15 @@ async function translateCurrentSentence() {
     if (!current) return
     const button = byId("shadowing-translate")
     const node = byId("shadowing-translation")
+    if (!localStorage.getItem(GROQ_KEY_STORAGE) && !localStorage.getItem(GEMINI_KEY_STORAGE)) {
+        const message = "Para traducir frases necesitas una API key de IA. Pulsa «🤖 Configurar IA» arriba y pega tu key gratuita de Groq o Gemini."
+        if (node) {
+            node.classList.remove("hidden")
+            node.textContent = message
+        }
+        showStatus(message, true)
+        return
+    }
     if (button) {
         button.disabled = true
         button.textContent = "Traduciendo…"
@@ -687,7 +760,12 @@ async function translateCurrentSentence() {
             node.textContent = result.spanish
         }
     } catch (error) {
-        showStatus(error.message || "No se pudo traducir la frase.", true)
+        const message = error.message || "No se pudo traducir la frase."
+        if (node) {
+            node.classList.remove("hidden")
+            node.textContent = message
+        }
+        showStatus(message, true)
     } finally {
         if (button) {
             button.disabled = false
@@ -966,7 +1044,7 @@ function wireEvents() {
     byId("shadowing-transcript-save")?.addEventListener("click", saveTranscriptConfig)
     byId("shadowing-transcript-clear")?.addEventListener("click", clearTranscriptConfig)
     byId("shadowing-transcript-provider")?.addEventListener("change", syncTranscriptProviderHints)
-    window.setInterval(() => pollShadowing(), 500)
+    window.setInterval(() => pollShadowing(), 250)
 }
 
 export async function initializeShadowing(supabase) {

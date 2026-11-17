@@ -30,7 +30,7 @@ function providerOrder() {
 }
 
 function missingKeyError() {
-    return new Error("No hay una API key de IA configurada. Configúrala en la Guía Oxford y vuelve a intentarlo.")
+    return new Error("No hay una API key de IA configurada. Pulsa «🤖 Configurar IA» y pega tu key gratuita de Groq o Gemini.")
 }
 
 function invalidKeyError() {

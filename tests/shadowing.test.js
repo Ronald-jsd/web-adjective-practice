@@ -1,6 +1,6 @@
 import test from "node:test"
 import assert from "node:assert/strict"
-import { extractYouTubeId, parseManualTranscript, suggestionWords, looksLikeYouTubeUrl } from "../js/shadowing/model.js"
+import { extractYouTubeId, parseManualTranscript, suggestionWords, looksLikeYouTubeUrl, activeWordIndex } from "../js/shadowing/model.js"
 import {
     TRANSCRIPT_KEY_STORAGE,
     TRANSCRIPT_PROVIDER_STORAGE,
@@ -119,4 +119,21 @@ test("transcript cache rows keep the per-account shape", () => {
     assert.equal(row.source, "supadata")
     assert.equal(row.segments.length, 1)
     assert.equal(normalizeTranscriptRow(null), null)
+})
+
+test("activeWordIndex follows the sentence timing", () => {
+    const spans = [
+        { from: 0, to: 0.25 },
+        { from: 0.25, to: 0.6 },
+        { from: 0.6, to: 1 }
+    ]
+    const segment = { start: 10, end: 12 }
+    assert.equal(activeWordIndex(spans, 9, segment), -1)
+    assert.equal(activeWordIndex(spans, 10, segment), 0)
+    assert.equal(activeWordIndex(spans, 10.4, segment), 0)
+    assert.equal(activeWordIndex(spans, 10.5, segment), 1)
+    assert.equal(activeWordIndex(spans, 11, segment), 1)
+    assert.equal(activeWordIndex(spans, 11.8, segment), 2)
+    assert.equal(activeWordIndex(spans, 13, segment), -1)
+    assert.equal(activeWordIndex([], 11, segment), -1)
 })

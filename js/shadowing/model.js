@@ -126,3 +126,17 @@ export function normalizeWord(word) {
 export function suggestionWords(sentence) {
     return [...new Set(tokensizeSentence(sentence).map(normalizeWord).filter(Boolean))].slice(0, 60)
 }
+
+/* Los subtítulos traen el tiempo de la frase completa, no de cada palabra.
+ * Esta función reparte ese tiempo entre las palabras y devuelve cuál se está
+ * oyendo en un segundo concreto. `spans` es [{from, to}] en fracción 0..1. */
+export function activeWordIndex(spans, seconds, segment) {
+    if (!Array.isArray(spans) || !spans.length) return -1
+    const start = Number(segment?.start || 0)
+    const end = Number(segment?.end || start + Math.max(0.5, Number(segment?.duration || 1)))
+    const fraction = (seconds - start) / Math.max(0.3, end - start)
+    if (!(fraction >= 0 && fraction <= 1)) return -1
+    const index = spans.findIndex(span => fraction >= span.from && fraction < span.to)
+    if (index < 0 && fraction >= 1) return spans.length - 1
+    return index
+}
