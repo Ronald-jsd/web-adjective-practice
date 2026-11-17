@@ -233,7 +233,19 @@
     transition: transform .16s, background .16s, border-color .16s;
 }
 .shadowing-controls .icon-button:hover { border-color: var(--sh-primary); background: var(--sh-primary-soft); transform: translateY(-2px) }
-.shadowing-play { min-width: 116px; min-height: 46px; border-radius: 13px; background: linear-gradient(135deg, #23805f, var(--sh-primary-dark)); font-size: 14px }
+.shadowing-controls .shadowing-play {
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    width: 44px;
+    min-width: 44px;
+    height: 44px;
+    min-height: 44px;
+    padding: 0;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #23805f, var(--sh-primary-dark));
+    font-size: 18px;
+}
 .shadowing-speed { display: inline-flex; align-items: center; gap: 0; color: #73857a; font: 700 11px "DM Sans", sans-serif }
 .shadowing-speed-icon {
     display: grid;
@@ -646,7 +658,7 @@
     .shadowing-player { border-width: 3px; border-radius: 16px }
     .shadowing-controls { padding: 9px; gap: 7px; border-radius: 15px }
     .shadowing-controls .icon-button { min-width: 40px; height: 42px }
-    .shadowing-play { flex: 1; min-width: 60px }
+    .shadowing-controls .shadowing-play { width: 40px; min-width: 40px; height: 42px; min-height: 42px; font-size: 17px }
     .shadowing-speed { flex: 0 0 auto; justify-content: flex-start }
     .shadowing-transcript { padding: 20px 18px 20px 24px; font-size: clamp(19px, 5.4vw, 25px); border-radius: 17px }
     .shadowing-transcript::before { inset: 12px auto 12px 11px }
