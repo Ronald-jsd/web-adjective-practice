@@ -166,13 +166,15 @@ test("splitTranscriptSegments reparte el tiempo de un bloque entre sus frases", 
     assert.ok(result[0].end <= result[1].start + 0.01)
 })
 
-test("retimeSegments corta cada frase antes de la siguiente", () => {
-    const result = retimeSegments([
-        { start: 0, end: 12, text: "a" },
-        { start: 8, end: 20, text: "b" },
-        { start: 16, end: 30, text: "c" }
+test("retimeSegments no corta una frase cuando los tiempos se solapan", () => {
+    const overlapping = retimeSegments([
+        { start: 0, end: 12, duration: 12, text: "a" },
+        { start: 8, end: 20, duration: 12, text: "b" }
     ])
-    assert.ok(result[0].end < result[1].start)
-    assert.ok(result[1].end < result[2].start)
-    assert.equal(result[0].start, 0)
+    assert.equal(overlapping[0].end, 12)
+    const withGap = retimeSegments([
+        { start: 0, end: 4, duration: 4, text: "a" },
+        { start: 9, end: 14, duration: 5, text: "b" }
+    ])
+    assert.ok(withGap[0].end < withGap[1].start)
 })

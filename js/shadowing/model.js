@@ -102,10 +102,13 @@ export function retimeSegments(segments) {
     const list = (segments || []).filter(Boolean).map(segment => ({ ...segment }))
     return list.map((segment, index) => {
         const start = Math.max(0, Number(segment.start || 0))
+        const ownEnd = Number(segment.end || 0)
+        const duration = Math.max(0.5, Number(segment.duration || ownEnd - start || 2))
+        let end = Math.max(start + 0.5, ownEnd, start + duration)
         const next = list[index + 1]
-        let end = Number(segment.end || start + 2)
-        if (next) end = Math.max(start + 0.5, Number(next.start || end) - 0.02)
-        else end = Math.max(start + 0.5, end)
+        // Solo acortamos si la siguiente empieza DESPUÉS: si los tiempos se
+        // solapan, conservamos la duración propia para no cortar la frase.
+        if (next && Number(next.start || 0) > end) end = Number(next.start) - 0.02
         return { ...segment, start, end }
     })
 }
