@@ -1,5 +1,6 @@
 import { store } from '../config.js'
 import { showToast } from '../cache.js'
+import { playAudioEnhanced } from '../audio.js'
 import { cacheRow, readCachedRow, removeCachedRow, TABLES } from '../offline/cache.js'
 import { queueChange, isOnline } from '../offline/sync.js'
 import {
@@ -232,21 +233,5 @@ window.deleteVerbRow = async function (verbId) {
 
 export function playAudioWithLang(text, lang = 'en-US') {
     if (!text || text === '—') return
-
-    if (window.speechSynthesis) window.speechSynthesis.cancel()
-
-    const utterance = new SpeechSynthesisUtterance(text)
-    utterance.lang = lang
-    utterance.rate = 0.85
-    utterance.pitch = 1.0
-    utterance.volume = 1
-
-    const voices = window.speechSynthesis.getVoices()
-    const preferred = lang.startsWith('es')
-        ? voices.find(v => v.lang.startsWith('es'))
-        : voices.find(v => v.lang.startsWith('en'))
-
-    if (preferred) utterance.voice = preferred
-
-    setTimeout(() => window.speechSynthesis.speak(utterance), 100)
+    return playAudioEnhanced(text, lang.startsWith('es') ? 'es' : 'en')
 }

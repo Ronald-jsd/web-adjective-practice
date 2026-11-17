@@ -48,6 +48,10 @@
                 </div>
             </div>
             <div id="auth-container" class="ml-auto"></div>
+            <button id="voice-settings-button" type="button" title="Elegir la voz de audio"
+                class="flex items-center gap-2 px-3 py-1.5 bg-sky-50 hover:bg-sky-100 text-sky-700 rounded-lg text-sm font-medium transition-colors border border-sky-200">
+                🔊 Voz
+            </button>
             <button onclick="window.print()"
                 class="flex items-center gap-2 px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors border border-gray-200">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -844,6 +848,23 @@
             if (modalBody) modalBody.innerHTML = "";
         };
     </script>
+    <dialog id="voice-settings-dialog" class="voice-dialog">
+        <div class="voice-dialog-head">
+            <div><p class="practice-eyebrow">AUDIO</p><h3>Elige tu voz</h3></div>
+            <button id="voice-settings-close" type="button" class="voice-dialog-close" aria-label="Cerrar">×</button>
+        </div>
+        <p class="voice-dialog-note">Se aplica en todas las secciones: adjetivos, verbos, vocabulario, práctica, frases y Shadowing. La opción automática elige la voz más natural disponible en tu dispositivo.</p>
+        <div class="voice-dialog-grid">
+            <label>Voz para inglés<select id="voice-en"></select></label>
+            <label>Velocidad del inglés<input id="voice-en-rate" type="range" min="0.6" max="1.2" step="0.02"></label>
+            <label>Voz para español<select id="voice-es"></select></label>
+            <label>Velocidad del español<input id="voice-es-rate" type="range" min="0.6" max="1.2" step="0.02"></label>
+        </div>
+        <div class="voice-dialog-actions">
+            <button id="voice-settings-test" type="button" class="button secondary">▶ Probar voz</button>
+            <button id="voice-settings-save" type="button" class="button primary">Guardar</button>
+        </div>
+    </dialog>
 </body>
 
 </html>

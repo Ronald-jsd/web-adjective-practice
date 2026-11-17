@@ -32,3 +32,14 @@
 .shadowing-library-link{color:#0d6fb8;font:800 11px "DM Sans",sans-serif;text-decoration:none}
 .shadowing-library-link:hover{text-decoration:underline}
 @media(max-width:560px){.shadowing-library-card{grid-template-columns:80px minmax(0,1fr)}.shadowing-library-thumb{width:80px;height:62px}}
+.voice-dialog{width:min(520px,calc(100vw - 28px));padding:0;border:1px solid #d6e4f0;border-radius:18px;box-shadow:0 24px 60px rgba(8,40,70,.24)}
+.voice-dialog::backdrop{background:rgba(9,29,48,.45)}
+.voice-dialog-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px;padding:18px 20px 10px}
+.voice-dialog-head h3{margin:2px 0 0;color:#122d48;font:800 19px Manrope,sans-serif}
+.voice-dialog-close{border:0;background:transparent;color:#6d8192;font-size:24px;line-height:1;cursor:pointer}
+.voice-dialog-note{margin:0 20px 12px;color:#5d7081;font:500 12px/1.5 "DM Sans",sans-serif}
+.voice-dialog-grid{display:grid;gap:12px;padding:0 20px}
+.voice-dialog-grid label{display:grid;gap:5px;color:#24435e;font:800 12px "DM Sans",sans-serif}
+.voice-dialog-grid select{width:100%;min-height:38px;padding:6px 10px;border:1px solid #d2e0ec;border-radius:10px;background:#fff;color:#173a57;font:600 12px "DM Sans",sans-serif}
+.voice-dialog-grid input[type=range]{width:100%;accent-color:#2181da}
+.voice-dialog-actions{display:flex;justify-content:flex-end;gap:8px;padding:16px 20px 18px}

@@ -1,4 +1,5 @@
 import { store, GEMINI_KEY_STORAGE, GROQ_KEY_STORAGE } from "../config.js"
+import { playAudioEnhanced } from "../audio.js"
 import { resolveSessionUser } from "../offline/session.js"
 import { showToast } from "../cache.js"
 import { parseManualTranscript, splitTranscriptSegments, extractYouTubeId, suggestionWords, normalizeWord, looksLikeYouTubeUrl, activeWordIndex } from "./model.js"
@@ -231,33 +232,9 @@ function wordWeight(token) {
     return Math.max(3, token.replace(/[^A-Za-z]/g, "").length)
 }
 
-/* Reproduce una palabra con la voz del navegador (sin conexión ni créditos). */
-let englishVoice = null
-
-function pickEnglishVoice() {
-    const synth = window.speechSynthesis
-    if (!synth?.getVoices) return null
-    const voices = synth.getVoices() || []
-    englishVoice = voices.find(voice => /^en[-_]/i.test(voice.lang) && /google|samantha|aria|jenny|zira|natural/i.test(voice.name))
-        || voices.find(voice => /^en[-_]/i.test(voice.lang))
-        || null
-    return englishVoice
-}
-
+/* Reproduce una palabra con la voz unificada (sin créditos). */
 function speakWord(word) {
-    const synth = window.speechSynthesis
-    if (!synth || !word) return
-    try {
-        synth.cancel()
-        const utterance = new SpeechSynthesisUtterance(String(word))
-        utterance.lang = "en-US"
-        utterance.rate = 0.9
-        const voice = englishVoice || pickEnglishVoice()
-        if (voice) utterance.voice = voice
-        synth.speak(utterance)
-    } catch (error) {
-        console.warn("[shadowing] No se pudo pronunciar la palabra:", error)
-    }
+    playAudioEnhanced(word, "en")
 }
 
 /* Resalta la palabra que se está oyendo. Los subtítulos solo traen el tiempo
