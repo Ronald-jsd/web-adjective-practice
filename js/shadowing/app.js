@@ -31,6 +31,7 @@ const state = {
     practiceDelay: 3,
     autoActive: false,
     autoTimer: null,
+    phraseTimer: null,
     autoRecording: false,
     timingOffsets: new Map(),
     translation: "",
@@ -371,12 +372,9 @@ function seekToLine(index, keepFrame = false) {
     state.currentIndex = Math.max(0, Math.min(current.transcript.length - 1, index))
     state.translation = ""
     state.selectedWord = ""
-    const segment = current.transcript[state.currentIndex]
+    stopPhraseTimer()
     renderLesson()
-    if (keepFrame && state.playerReady && state.player?.seekTo && segment) {
-        state.player.seekTo(segment.start, true)
-        state.player.playVideo?.()
-    }
+    if (keepFrame) playPhrase(state.currentIndex)
 }
 
 function markLine(index) {
@@ -438,6 +436,50 @@ function handlePlaybackState(data) {
     pollShadowing()
 }
 
+function stopPhraseTimer() {
+    if (state.phraseTimer) {
+        clearTimeout(state.phraseTimer)
+        state.phraseTimer = null
+    }
+}
+
+function finishPhrase(force = false) {
+    if (!state.player) return
+    const segment = phraseAt()
+    const current = Number(state.player.getCurrentTime?.() || 0)
+    // Si el reproductor va retrasado respecto al temporizador, esperamos lo
+    // que falte antes de parar, para no cortar la última palabra.
+    if (!force && segment && current < segment.end - 0.05 && (state.phraseExtensions || 0) < 3) {
+        state.phraseExtensions = (state.phraseExtensions || 0) + 1
+        state.phraseTimer = setTimeout(() => finishPhrase(), Math.max(80, Math.ceil((segment.end - current) * 1000) + 60))
+        return
+    }
+    state.phraseExtensions = 0
+    stopPhraseTimer()
+    state.player.pauseVideo?.()
+    if (state.autoActive && state.practiceMode !== "manual") {
+        handleAutoAdvance()
+    } else if (state.loopLine) {
+        playPhrase(state.currentIndex)
+    }
+}
+
+/* Reproduce exactamente una frase: va al inicio, mide su duración con un
+ * temporizador propio y para al final, sin depender del tiempo que YouTube
+ * informa (que a veces se retrasa o se adelanta). */
+function playPhrase(index = state.currentIndex) {
+    const segment = phraseAt(index)
+    if (!segment || !state.playerReady || !state.player) return
+    stopPhraseTimer()
+    state.phraseExtensions = 0
+    state.currentIndex = Math.max(0, Math.min(state.current.transcript.length - 1, index))
+    state.player.seekTo(segment.start, true)
+    state.player.playVideo()
+    const seconds = Math.max(0.5, segment.end - segment.start)
+    const wait = (seconds * 1000) / Math.max(0.5, state.speed || 1) + 180
+    state.phraseTimer = setTimeout(finishPhrase, wait)
+}
+
 function pollShadowing() {
     if (!state.current || !state.playerReady || !state.player) return
     const segment = phraseAt()
@@ -445,20 +487,9 @@ function pollShadowing() {
     const seconds = Number(state.player.getCurrentTime?.() || 0)
     // El resaltado es solo visual: nunca decide cuándo se detiene el video.
     highlightSpokenWord(seconds, segment)
-    // La parada depende únicamente del final de la frase (y de su ajuste).
     if (seconds < segment.end) return
-
-    if (state.autoActive && state.practiceMode !== "manual") {
-        state.player.pauseVideo?.()
-        handleAutoAdvance()
-        return
-    }
-    if (state.loopLine) {
-        state.player.seekTo?.(segment.start, true)
-        state.player.playVideo?.()
-    } else {
-        state.player.pauseVideo?.()
-    }
+    // Respaldo si el usuario reproduces con los controles del propio YouTube.
+    finishPhrase(true)
 }
 
 function setPracticeStatus(message) {
@@ -478,6 +509,7 @@ function stopAutoPractice(message = "") {
         clearTimeout(state.autoTimer)
         state.autoTimer = null
     }
+    stopPhraseTimer()
     if (state.autoRecording && state.mediaRecorder) {
         try { state.mediaRecorder.stop() } catch { /* ya detenido */ }
         stopSpeechAssessment()
@@ -504,8 +536,7 @@ function startAutoPractice() {
     state.autoActive = true
     state.awaitingTurn = false
     updateAutoButton()
-    state.player.seekTo?.(segment.start, true)
-    state.player.playVideo?.()
+    playPhrase(state.currentIndex)
     setPracticeStatus("Reproduciendo frase…")
 }
 
@@ -529,13 +560,10 @@ function handleAutoAdvance() {
             return
         }
         state.awaitingTurn = false
-        const next = state.current.transcript[state.currentIndex + 1]
-        state.currentIndex += 1
         state.translation = ""
         state.selectedWord = ""
         renderLesson()
-        state.player.seekTo?.(next.start, true)
-        state.player.playVideo?.()
+        playPhrase(state.currentIndex + 1)
         setPracticeStatus("Reproduciendo frase…")
     }, state.practiceDelay * 1000)
 }
@@ -1322,10 +1350,8 @@ function wireEvents() {
     byId("shadowing-lessons")?.addEventListener("change", event => openLesson(event.target.value))
     byId("toggle-shadowing")?.addEventListener("click", () => {})
     byId("shadowing-play")?.addEventListener("click", () => {
-        const segment = state.current?.transcript?.[state.currentIndex]
-        if (!segment || !state.playerReady) return
-        state.player.seekTo?.(segment.start, true)
-        state.player.playVideo?.()
+        if (state.autoActive) stopAutoPractice("Práctica detenida.")
+        playPhrase(state.currentIndex)
     })
     byId("shadowing-restart")?.addEventListener("click", () => seekToLine(state.currentIndex, true))
     byId("shadowing-back")?.addEventListener("click", () => seekToLine(state.currentIndex - 1, true))
