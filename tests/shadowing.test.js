@@ -13,7 +13,7 @@ import {
 } from "../js/shadowing/transcript.js"
 import { normalizeTranscriptRow } from "../js/shadowing/transcript-store.js"
 import { normalizeAiCacheRow } from "../js/shadowing/ai-cache.js"
-import { buildSpeechGuide, partOfSpeech } from "../js/shadowing/speech-guide.js"
+import { buildSpeechGuide, explainGuide, partOfSpeech } from "../js/shadowing/speech-guide.js"
 
 test("extractYouTubeId accepts watch, short, shorts and embed URLs", () => {
     assert.equal(extractYouTubeId("https://www.youtube.com/watch?v=Q5vAL799_BM"), "Q5vAL799_BM")
@@ -271,4 +271,49 @@ test("buildSpeechGuide estima la guía cuando la transcripción no trae palabras
     assert.equal(guide.spans.length, 2)
     assert.ok(guide.spans[1].to <= 1)
     assert.deepEqual(buildSpeechGuide(null).items, [])
+})
+
+test("explainGuide explica cada marca con palabras reales de la frase", () => {
+    const guide = buildSpeechGuide({
+        start: 0,
+        end: 4,
+        text: "So the company wants an app.",
+        words: [
+            { text: "So", from: 0, to: 0.25, measured: true },
+            { text: "the", from: 0.25, to: 0.4, measured: true },
+            { text: "company", from: 0.5, to: 1.3, measured: true },
+            { text: "wants", from: 1.35, to: 2, measured: true },
+            { text: "an", from: 2.05, to: 2.2, measured: true },
+            { text: "app", from: 2.9, to: 3.6, measured: true }
+        ]
+    })
+    const rows = explainGuide(guide)
+    assert.deepEqual(rows.map(row => row.key), ["primary", "secondary", "faded", "pause", "contour", "hover"])
+    const row = key => rows.find(entry => entry.key === key)
+    const words = new Set(guide.items.filter(item => item.isWord).map(item => item.token))
+    assert.equal(row("primary").sample, "company")
+    assert.ok(words.has(row("faded").sample), `la palabra ligera debe salir de la frase: ${row("faded").sample}`)
+    assert.equal(row("pause").sample, "||")
+    assert.equal(row("pause").label, "Pausa larga")
+    assert.equal(row("contour").sample, "↘")
+    assert.match(row("primary").description, /más fuerte/)
+    assert.ok(rows.every(entry => entry.label && entry.description && entry.sample))
+})
+
+test("explainGuide adapta la pausa breve y el tono ascendente", () => {
+    const guide = buildSpeechGuide({ start: 1, end: 3, text: "Are you coming?" }, { start: 3.5, end: 5, text: "Yes." })
+    const rows = explainGuide(guide)
+    const pause = rows.find(row => row.key === "pause")
+    const contour = rows.find(row => row.key === "contour")
+    assert.equal(pause.label, "Pausa breve")
+    assert.match(pause.description, /pausa corta/)
+    assert.equal(contour.sample, "↗")
+    assert.match(contour.description, /sube/)
+})
+
+test("explainGuide funciona con una guía vacía sin lanzar errores", () => {
+    const rows = explainGuide({ items: [], contour: "" })
+    assert.equal(rows.length, 6)
+    assert.ok(rows.every(row => row.sample && row.description))
+    assert.equal(rows.find(row => row.key === "contour").sample, "↘")
 })

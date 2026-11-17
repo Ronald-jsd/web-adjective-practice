@@ -2,7 +2,7 @@ import { store, GEMINI_KEY_STORAGE, GROQ_KEY_STORAGE } from "../config.js"
 import { resolveSessionUser } from "../offline/session.js"
 import { showToast } from "../cache.js"
 import { parseManualTranscript, splitTranscriptSegments, extractYouTubeId, suggestionWords, normalizeWord, looksLikeYouTubeUrl, activeWordIndex, retimeSegments } from "./model.js"
-import { buildSpeechGuide } from "./speech-guide.js"
+import { buildSpeechGuide, explainGuide } from "./speech-guide.js"
 import { TRANSCRIPT_PROVIDERS, findProvider, providerLabel, transcriptConfig, setTranscriptCredentials, clearTranscriptCredentials } from "./transcript.js"
 import { createTranscriptStore } from "./transcript-store.js"
 import { createAiCache } from "./ai-cache.js"
@@ -39,6 +39,8 @@ const state = {
     lookupCache: new Map(),
     selectedWord: "",
     wordSpans: [],
+    guideWindowShown: false,
+    guideDrag: null,
     speakingIndex: -1,
     recordings: new Map(),
     mediaRecorder: null,
@@ -48,6 +50,7 @@ const state = {
 }
 
 const TIMING_STORAGE = "shadowing_phrase_timing_v1"
+const GUIDE_POS_STORAGE = "shadowing_guide_window_v1"
 
 function timingKey(index) {
     return `${state.current?.videoId || ""}::${index}`
@@ -68,6 +71,88 @@ function saveTimingOffsets() {
     } catch (error) {
         console.warn("[shadowing] No se pudo guardar el ajuste de tiempos:", error)
     }
+}
+
+function readGuidePosition() {
+    try {
+        const value = JSON.parse(localStorage.getItem(GUIDE_POS_STORAGE) || "null")
+        return value && Number.isFinite(value.left) && Number.isFinite(value.top) ? value : null
+    } catch (error) {
+        return null
+    }
+}
+
+function saveGuidePosition(position) {
+    try {
+        localStorage.setItem(GUIDE_POS_STORAGE, JSON.stringify(position))
+    } catch (error) {
+        console.warn("[shadowing] No se pudo guardar la posición de la guía:", error)
+    }
+}
+
+function placeGuideWindow(node, position = readGuidePosition()) {
+    if (!node) return
+    if (!position) {
+        node.style.left = ""
+        node.style.top = ""
+        node.style.right = ""
+        node.style.bottom = ""
+        return
+    }
+    const width = node.offsetWidth || 320
+    const height = node.offsetHeight || 360
+    node.style.right = "auto"
+    node.style.bottom = "auto"
+    node.style.left = `${Math.max(8, Math.min(window.innerWidth - width - 8, position.left))}px`
+    node.style.top = `${Math.max(8, Math.min(window.innerHeight - height - 8, position.top))}px`
+}
+
+function toggleGuideWindow(open) {
+    const node = byId("shadowing-guide-window")
+    const button = byId("shadowing-guide-open")
+    if (!node) return
+    const visible = open ?? node.classList.contains("hidden")
+    node.classList.toggle("hidden", !visible)
+    button?.setAttribute("aria-expanded", String(visible))
+    button?.classList.toggle("active", visible)
+    if (visible) {
+        placeGuideWindow(node)
+        state.guideWindowShown = true
+    }
+}
+
+function wireGuideWindow() {
+    const node = byId("shadowing-guide-window")
+    if (!node) return
+    byId("shadowing-guide-open")?.addEventListener("click", () => toggleGuideWindow())
+    byId("shadowing-guide-close")?.addEventListener("click", () => toggleGuideWindow(false))
+    const handle = node.querySelector("[data-guide-drag]")
+    handle?.addEventListener("pointerdown", event => {
+        if (event.target.closest("button")) return
+        const rect = node.getBoundingClientRect()
+        state.guideDrag = { x: event.clientX - rect.left, y: event.clientY - rect.top }
+        handle.setPointerCapture?.(event.pointerId)
+        node.style.right = "auto"
+        node.style.bottom = "auto"
+        event.preventDefault()
+    })
+    handle?.addEventListener("pointermove", event => {
+        if (!state.guideDrag) return
+        placeGuideWindow(node, { left: event.clientX - state.guideDrag.x, top: event.clientY - state.guideDrag.y })
+    })
+    const stopDrag = () => {
+        if (!state.guideDrag) return
+        state.guideDrag = null
+        saveGuidePosition({ left: node.offsetLeft, top: node.offsetTop })
+    }
+    handle?.addEventListener("pointerup", stopDrag)
+    handle?.addEventListener("pointercancel", stopDrag)
+    window.addEventListener("resize", () => {
+        if (!node.classList.contains("hidden")) placeGuideWindow(node)
+    })
+    document.addEventListener("keydown", event => {
+        if (event.key === "Escape" && !node.classList.contains("hidden")) toggleGuideWindow(false)
+    })
 }
 
 function phraseAt(index = state.currentIndex) {
@@ -295,17 +380,7 @@ function renderTranscript(lesson = state.current) {
         }
     })
     state.wordSpans = guide.spans.map((span, index) => ({ ...span, element: buttons[index] }))
-    const legend = byId("shadowing-guide-legend")
-    if (legend) {
-        legend.classList.toggle("hidden", !guide.items.length)
-        const accuracyNote = legend.querySelector("[data-guide-source]")
-        if (accuracyNote) {
-            const timing = guide.pauseSource === "timing" ? "Las pausas salen de los huecos entre frases" : "Las pausas se estiman por puntuación"
-            accuracyNote.textContent = guide.source === "measured"
-                ? `Tiempos medidos palabra por palabra en los subtítulos del video. ${timing}.`
-                : `Duración y estrés estimados de los subtítulos; ${timing}.`
-        }
-    }
+    renderGuideWindow(guide, lesson)
     renderWordList(sentence)
     renderRecording()
 }
@@ -313,6 +388,53 @@ function renderTranscript(lesson = state.current) {
 async function fillPronunciation(word, node) {
     const data = await getPronunciation(word)
     if (data?.ipa && node.isConnected) node.textContent = data.ipa
+}
+
+function renderGuideWindow(guide, lesson) {
+    const node = byId("shadowing-guide-window")
+    const openButton = byId("shadowing-guide-open")
+    if (!guide?.items?.length) {
+        node?.classList.add("hidden")
+        openButton?.classList.add("hidden")
+        return
+    }
+    openButton?.classList.remove("hidden")
+    const sentence = String(lesson?.transcript?.[state.currentIndex]?.text || "")
+    const lead = node?.querySelector("[data-guide-lead]")
+    if (lead) lead.textContent = sentence
+        ? `En esta frase: «${sentence.length > 90 ? `${sentence.slice(0, 87)}…` : sentence}». Imita las marcas con tu voz.`
+        : "Imita las marcas con tu voz."
+
+    const host = byId("shadowing-guide-examples")
+    if (host) {
+        host.replaceChildren()
+        for (const entry of explainGuide(guide)) {
+            const row = document.createElement("div")
+            row.className = "shadowing-guide-row"
+            const sample = document.createElement("span")
+            sample.className = "shadowing-guide-sample"
+            sample.dataset.key = entry.key
+            sample.textContent = entry.sample
+            const body = document.createElement("div")
+            const title = document.createElement("strong")
+            title.textContent = entry.label
+            const detail = document.createElement("span")
+            detail.textContent = entry.description
+            body.append(title, detail)
+            row.append(sample, body)
+            host.append(row)
+        }
+    }
+    const source = node?.querySelector("[data-guide-source]")
+    if (source) {
+        const timing = guide.pauseSource === "timing"
+            ? "Las pausas salen de los huecos reales entre frases."
+            : "Las pausas se estiman por la puntuación."
+        source.textContent = guide.source === "measured"
+            ? `Tiempos medidos palabra por palabra en los subtítulos del video. ${timing}`
+            : `Duración y estrés estimados de los subtítulos, no medidos del audio. ${timing}`
+    }
+    if (!state.guideWindowShown) toggleGuideWindow(true)
 }
 
 function guidePauseTitle(item) {
@@ -1516,6 +1638,7 @@ function wireEvents() {
     byId("shadowing-transcript-save")?.addEventListener("click", saveTranscriptConfig)
     byId("shadowing-transcript-clear")?.addEventListener("click", clearTranscriptConfig)
     byId("shadowing-transcript-provider")?.addEventListener("change", syncTranscriptProviderHints)
+    wireGuideWindow()
     window.setInterval(() => pollShadowing(), 100)
     updateAutoButton()
 }

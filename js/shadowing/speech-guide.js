@@ -293,3 +293,55 @@ export function buildSpeechGuide(segment, nextSegment = null) {
         spans
     }
 }
+
+/* Explicación en lenguaje claro para la ventana flotante. Cada regla usa una
+ * palabra real de la frase actual, para que no haya que imaginar el ejemplo. */
+export function explainGuide(guide) {
+    const sample = stress => guide?.items?.find(item => item.isWord && item.stress === stress)?.token || ""
+    const pause = guide?.items?.find(item => item.pauseBefore || item.pauseAfter)
+    const pauseMark = pause ? (pause.pauseBefore || pause.pauseAfter) : "|"
+    const pauseIsLong = pauseMark === "||"
+    const contour = guide?.contour || "↘"
+    return [
+        {
+            key: "primary",
+            label: "Golpe principal",
+            sample: sample("primary") || "palabra",
+            description: "La palabra más fuerte de la frase. Dila un poco más alto y un poco más larga."
+        },
+        {
+            key: "secondary",
+            label: "Acento secundario",
+            sample: sample("secondary") || "palabra",
+            description: "También se destaca, pero menos que el golpe principal."
+        },
+        {
+            key: "faded",
+            label: "Palabra ligera",
+            sample: sample("faded") || "to",
+            description: "Dila rápido y pegada a la siguiente, casi sin hacer pausa."
+        },
+        {
+            key: "pause",
+            label: pauseIsLong ? "Pausa larga" : "Pausa breve",
+            sample: pauseMark,
+            description: pauseIsLong
+                ? "Para un momento y respira: el hablante se detiene medio segundo o más."
+                : "Haz una pausa corta antes de seguir, sin cambiar el ritmo de la frase."
+        },
+        {
+            key: "contour",
+            label: "Tono al terminar",
+            sample: contour,
+            description: contour === "↗"
+                ? "La voz sube al final, como cuando hacemos una pregunta."
+                : "La voz baja al final, como en una afirmación."
+        },
+        {
+            key: "hover",
+            label: "Si tienes duda",
+            sample: "ℹ",
+            description: "Pasa el cursor sobre cualquier palabra: verás su tipo y su duración exacta en milisegundos."
+        }
+    ]
+}
