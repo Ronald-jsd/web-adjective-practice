@@ -1971,7 +1971,9 @@
 #practice-section .practice-heading { grid-column: 1 / -1; grid-row: 2 }
 #practice-section .practice-controls { grid-column: 1; grid-row: 3 }
 #practice-section .practice-exercise { grid-column: 2; grid-row: 3 }
-#practice-section .practice-pane-audio .practice-audio-course { grid-column: 2; grid-row: 3 }
+#practice-section .practice-pane-audio .practice-audio-course { grid-column: 2; grid-row: 3; align-self: start; align-content: start }
+#practice-section .practice-audio-course-head,
+#practice-section .practice-audio-course-controls { align-self: start }
 #practice-section .practice-controls.hidden,
 #practice-section .practice-heading.hidden,
 #practice-section .practice-exercise.hidden { display: none !important }
@@ -1982,6 +1984,10 @@
     #practice-section .practice-controls { grid-column: 1; grid-row: 3 }
     #practice-section .practice-exercise,
     #practice-section .practice-pane-audio .practice-audio-course { grid-column: 1; grid-row: 4 }
+    /* En Escucha continua el reproductor va primero y los controles debajo,
+     * para que no quede tan lejos del título en pantallas estrechas. */
+    #practice-section.practice-section--audio .practice-pane-audio .practice-audio-course { grid-row: 3 }
+    #practice-section.practice-section--audio .practice-controls { grid-row: 4 }
 }
 
 /* Ventana flotante de celdas de verbos — paleta central, acciones separadas. */

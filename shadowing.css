@@ -374,7 +374,6 @@
 .shadowing-guide-foot { margin: 12px 0 0; color: #8a998f; font: 500 10px/1.5 "DM Sans", sans-serif }
 .shadowing-guide-grabber { display: none }
 .shadowing-config-button.active { background: var(--sh-primary); color: #fff; border-color: var(--sh-primary-dark) }
-.shadowing-guide-open-button { margin-top: 10px }
 
 /* Móvil: la guía deja de flotar y se convierte en una tarjeta dentro del
  * flujo, justo debajo de la frase. Así no tapa nada, se leen las 7 reglas
@@ -432,8 +431,6 @@
     line-height: 1.6;
     box-shadow: var(--sh-shadow-sm);
 }
-.shadowing-translate { min-height: 40px; border-radius: 11px; color: var(--sh-primary-dark); background: #fff; font-size: 12px }
-
 /* Grabación */
 .shadowing-recorder {
     display: grid;
@@ -641,7 +638,6 @@
 .shadowing-practice-field select:focus{border-color:var(--sh-primary);box-shadow:var(--sh-ring)}
 .shadowing-practice-status{flex:1 1 140px;min-width:120px;color:#5d7064;font:600 11px/1.45 "DM Sans",sans-serif}
 .shadowing-practice-bar .button{min-height:40px;border-radius:10px;font-size:12px}
-#shadowing-speak-line{margin-left:0}
 @media(max-width:600px){
     .shadowing-practice-bar{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:12px}
     .shadowing-practice-bar .button{grid-column:1/-1;min-height:46px}
@@ -659,6 +655,10 @@
 .shadowing-word-actions .button{white-space:nowrap}
 .icon-button-inline{display:grid;place-items:center;width:38px;height:38px;border:1px solid var(--sh-border);border-radius:10px;background:#f8fbf8;color:#4d6558;cursor:pointer;font-size:15px}
 .icon-button-inline:hover{border-color:var(--sh-primary);background:var(--sh-primary-soft)}
+.shadowing-phrase-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:10px}
+.shadowing-phrase-actions .icon-button-inline{width:40px;height:40px;font-size:16px}
+.shadowing-phrase-actions .icon-button-inline.is-busy{opacity:.55;cursor:wait}
+.shadowing-phrase-actions .icon-button-inline.active{color:#fff;background:var(--sh-primary);border-color:var(--sh-primary)}
 @media(max-width:600px){
     .shadowing-word-actions{grid-template-columns:1fr}
     .shadowing-word-actions .button{width:100%;min-height:44px}

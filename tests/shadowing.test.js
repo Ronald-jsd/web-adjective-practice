@@ -15,6 +15,7 @@ import { normalizeTranscriptRow } from "../js/shadowing/transcript-store.js"
 import { normalizeAiCacheRow } from "../js/shadowing/ai-cache.js"
 import { buildSpeechGuide, explainGuide, partOfSpeech } from "../js/shadowing/speech-guide.js"
 import { SAVE_TARGETS, saveTargetKind, saveTargetLabel, catalogRowFor } from "../js/shadowing/save-targets.js"
+import { resolveSavedLessonId } from "../js/shadowing/lesson-dedupe.js"
 
 test("extractYouTubeId accepts watch, short, shorts and embed URLs", () => {
     assert.equal(extractYouTubeId("https://www.youtube.com/watch?v=Q5vAL799_BM"), "Q5vAL799_BM")
@@ -355,4 +356,15 @@ test("catalogRowFor crea filas de verbo y adjetivo con el ejemplo de la frase", 
     assert.equal(adjective.example_adj, "Let's meet the team.")
     assert.equal(adjective.verb, undefined)
     assert.equal(adjective.id, 123)
+})
+
+test("resolveSavedLessonId reutiliza la lección guardada del mismo video", () => {
+    const lessons = [
+        { id: "a", videoId: "VID", transcript: [{ text: "x" }] },
+        { id: "b", videoId: "OTHER", transcript: [{ text: "y" }] }
+    ]
+    assert.equal(resolveSavedLessonId({ id: "", videoId: "VID" }, lessons), "a")
+    assert.equal(resolveSavedLessonId({ id: "b", videoId: "OTHER" }, lessons), "b")
+    assert.equal(resolveSavedLessonId({ id: "b", videoId: "OTHER" }, []), "")
+    assert.equal(resolveSavedLessonId({ id: "new", videoId: "NEW" }, lessons), "")
 })

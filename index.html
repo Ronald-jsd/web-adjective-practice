@@ -474,7 +474,11 @@
                                 <span id="shadowing-practice-status" class="shadowing-practice-status" aria-live="polite"></span>
                             </div>
                             <div id="shadowing-transcript" class="shadowing-transcript hidden" aria-label="Frase que practicarás"></div>
-                            <button id="shadowing-guide-open" class="shadowing-config-button shadowing-guide-open-button" type="button" aria-expanded="false">🎯 Guía de ritmo</button>
+                            <div id="shadowing-phrase-actions" class="shadowing-phrase-actions hidden" aria-label="Acciones de la frase">
+                                <button id="shadowing-guide-open" class="icon-button icon-button-inline" type="button" title="Guía de ritmo" aria-label="Guía de ritmo" aria-expanded="false">🎯</button>
+                                <button id="shadowing-translate" class="icon-button icon-button-inline" type="button" title="Traducir frase" aria-label="Traducir frase">🌐</button>
+                                <button id="shadowing-speak-line" class="icon-button icon-button-inline" type="button" title="Pronunciar con voz del dispositivo (gratis)" aria-label="Pronunciar con voz del dispositivo">🔊</button>
+                            </div>
                             <aside id="shadowing-guide-window" class="shadowing-guide-window hidden" role="dialog" aria-label="Guía de ritmo, estrés y pausas" aria-live="polite">
                                 <div class="shadowing-guide-grabber" aria-hidden="true"></div>
                                 <header class="shadowing-guide-head" data-guide-drag>
@@ -491,8 +495,6 @@
                                 </div>
                             </aside>
                             <div id="shadowing-translation" class="shadowing-translation hidden"></div>
-                            <button id="shadowing-translate" class="button secondary shadowing-translate hidden" type="button">Traducir frase</button>
-                            <button id="shadowing-speak-line" class="icon-button icon-button-inline shadowing-translate hidden" type="button" title="Pronunciar con la voz del dispositivo (gratis)" aria-label="Pronunciar con voz del dispositivo">🔊</button>
                             <section class="shadowing-recorder panel"><div><p class="practice-eyebrow">TU GRABACIÓN</p><h3>Graba esta frase</h3><p class="muted">Escucha al hablante nativo, luego mantén el ritmo y repite la frase.</p></div><div class="shadowing-recording-controls"><button id="shadowing-record" class="button secondary shadowing-record" type="button">● Grabar</button><button id="shadowing-play-recording" class="button secondary" type="button" disabled>▶ Tu grabación</button><span id="shadowing-recording-status" class="shadowing-recording-status" aria-live="polite"></span></div><div id="shadowing-score" class="shadowing-score"></div></section>
                         </div>
                         <aside class="shadowing-sidebar panel">

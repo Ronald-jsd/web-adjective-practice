@@ -10,6 +10,7 @@ import { playWordPronunciation, speakPhrase, getPronunciation } from "./pronunci
 import { createShadowingRepository } from "./repository.js"
 import { createSentenceRepository } from "../sentences/repository.js"
 import { SAVE_TARGETS, saveTargetKind, saveTargetLabel, catalogRowFor } from "./save-targets.js"
+import { resolveSavedLessonId } from "./lesson-dedupe.js"
 import { cacheRow, TABLES } from "../offline/cache.js"
 import { queueChange, isOnline } from "../offline/sync.js"
 import { generateLocalIntegerId } from "../offline/ids.js"
@@ -371,13 +372,11 @@ function renderLesson() {
 function renderTranscript(lesson = state.current) {
     const container = byId("shadowing-transcript")
     const translate = byId("shadowing-translation")
-    const translateButton = byId("shadowing-translate")
-    const speakButton = byId("shadowing-speak-line")
+    const actions = byId("shadowing-phrase-actions")
     if (!container || !lesson) return
     const sentence = lesson.transcript?.[state.currentIndex]?.text || ""
     container.classList.remove("hidden")
-    translateButton?.classList.toggle("hidden", !sentence)
-    speakButton?.classList.toggle("hidden", !sentence)
+    actions?.classList.toggle("hidden", !sentence)
     // Si ya tradujiste esta frase antes, se muestra sin volver a pedirla.
     if (sentence && !state.translation) {
         state.translation = readStoredCache(SENTENCE_CACHE_STORAGE, sentence)?.value || ""
@@ -1335,7 +1334,8 @@ async function translateCurrentSentence() {
     }
     if (button) {
         button.disabled = true
-        button.textContent = "Traduciendo…"
+        button.classList.add("is-busy")
+        button.title = "Traduciendo…"
     }
     try {
         const { translateEnglishSentence } = await import("../ai-translation.js")
@@ -1359,7 +1359,8 @@ async function translateCurrentSentence() {
     } finally {
         if (button) {
             button.disabled = false
-            button.textContent = "Traducir frase"
+            button.classList.remove("is-busy")
+            button.title = "Traducir frase"
         }
     }
 }
@@ -1660,10 +1661,17 @@ async function saveCurrentLesson() {
     if (!user) return showStatus("Inicia sesión para guardar la lección.", true)
     const current = state.current
     if (!current) return showStatus("Crea una lección antes de guardarla.", true)
-    const lesson = await shadowingRepository.save(user.id, { ...current, title: current.title || `Lección ${current.videoId}` })
+    // Si el video ya está en la biblioteca se actualiza esa fila; nunca se
+    // crea una segunda lección con el mismo videoId.
+    const existingId = resolveSavedLessonId(current, state.lessons)
+    const lesson = await shadowingRepository.save(user.id, {
+        ...current,
+        id: existingId || undefined,
+        title: current.title || `Lección ${current.videoId}`
+    })
     state.current = lesson
     await refreshLessons(lesson.id)
-    showToast("Lección guardada.", "success")
+    showToast(existingId ? "Lección actualizada (ya estaba guardada)." : "Lección guardada.", "success")
 }
 
 async function openLesson(id) {
@@ -1801,6 +1809,7 @@ function setupPracticePaneTabs() {
         ? [general.querySelector(".practice-heading"), general.querySelector(".practice-exercise")]
         : []
     const controls = document.querySelector("#practice-section .practice-controls")
+    const practiceSection = byId("practice-section")
     const audioPane = byId("practice-pane-audio")
     const shadowingPane = byId("shadowing-pane")
 
@@ -1814,6 +1823,7 @@ function setupPracticePaneTabs() {
         if (audioPane) audioPane.hidden = name !== "audio"
         if (shadowingPane) shadowingPane.hidden = name !== "shadowing"
         if (controls) controls.classList.toggle("hidden", name === "shadowing")
+        practiceSection?.classList.toggle("practice-section--audio", name === "audio")
     }
     tabs.forEach(tab => tab.addEventListener("click", () => switchPane(tab.dataset.practicePane)))
 }
