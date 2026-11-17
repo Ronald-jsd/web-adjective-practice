@@ -752,8 +752,8 @@ function updatePlayButton() {
     const auto = state.practiceMode === "auto"
     const running = state.autoActive || Boolean(state.phraseTimer)
     button.textContent = auto
-        ? (state.autoActive ? "■ Detener práctica" : "▶ Iniciar práctica")
-        : (running ? "■ Detener" : "▶ Escuchar frase")
+        ? (state.autoActive ? "■" : "▶")
+        : (running ? "■" : "▶")
     button.setAttribute("aria-pressed", String(running))
     button.title = auto
         ? (state.autoActive ? "Detener la práctica automática" : "Reproducir frase por frase")
