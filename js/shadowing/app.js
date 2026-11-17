@@ -667,7 +667,7 @@ async function createLesson() {
         })
     } catch (autoError) {
         console.warn("[shadowing] No se obtuvo la transcripción automática:", autoError)
-        byId("shadowing-manual")?.classList.remove("hidden")
+        showManualPanel()
         showStatus(transcriptFailureMessage(autoError, config), true)
         if (autoError.code === "invalid_key" || autoError.code === "quota") openTranscriptDialog()
         return null
@@ -932,8 +932,15 @@ function parseManual() {
     showStatus(`Transcripción procesada · ${segments.length} frases.`)
 }
 
-function loadManualState() {
-    byId("shadowing-manual")?.classList.remove("hidden")
+function showManualPanel(focus = false) {
+    const panel = byId("shadowing-manual")
+    if (!panel) return
+    panel.classList.remove("hidden")
+    panel.open = true
+    if (focus) {
+        panel.scrollIntoView({ block: "nearest", behavior: "smooth" })
+        byId("shadowing-transcript-input")?.focus()
+    }
 }
 
 /* Caché persistente de definiciones y traducciones.
@@ -1477,6 +1484,7 @@ function wireEvents() {
     })
     byId("shadowing-play-recording")?.addEventListener("click", playLastRecording)
     byId("shadowing-transcript-config")?.addEventListener("click", openTranscriptDialog)
+    byId("shadowing-manual-open")?.addEventListener("click", () => showManualPanel(true))
     byId("shadowing-transcript-close")?.addEventListener("click", closeTranscriptDialog)
     byId("shadowing-transcript-save")?.addEventListener("click", saveTranscriptConfig)
     byId("shadowing-transcript-clear")?.addEventListener("click", clearTranscriptConfig)
