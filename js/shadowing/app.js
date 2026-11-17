@@ -366,7 +366,15 @@ function renderLesson() {
         button.addEventListener("click", () => seekToLine(index, true))
         lines.append(button)
     })
-    lines.querySelector(".shadowing-line.active")?.scrollIntoView({ block: "nearest" })
+    // Desplaza solo la lista lateral: scrollIntoView también movería la página
+    // y sacaría de su sitio la barra de controles fija en móvil.
+    const activeLine = lines.querySelector(".shadowing-line.active")
+    if (activeLine) {
+        const lineRect = activeLine.getBoundingClientRect()
+        const listRect = lines.getBoundingClientRect()
+        if (lineRect.top < listRect.top) lines.scrollTop -= listRect.top - lineRect.top
+        else if (lineRect.bottom > listRect.bottom) lines.scrollTop += lineRect.bottom - listRect.bottom
+    }
     renderTranscript(current)
 }
 
