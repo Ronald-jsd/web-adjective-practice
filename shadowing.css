@@ -494,3 +494,18 @@
     .shadowing-word-actions .button { min-height: 44px }
 }
 .shadowing-transcript{overflow-wrap:anywhere}.shadowing-library-body{min-width:0}
+.shadowing-practice-bar{display:flex;align-items:center;gap:11px;flex-wrap:wrap;padding:11px 14px;border:1px solid var(--sh-border);border-radius:15px;background:linear-gradient(135deg,#f6fbf7,#fff);box-shadow:var(--sh-shadow-sm)}
+.shadowing-practice-field{display:grid;gap:5px;color:#87968d;font:800 10px "DM Sans",sans-serif;letter-spacing:.08em;text-transform:uppercase}
+.shadowing-practice-field select{min-height:38px;padding:6px 11px;border:1px solid var(--sh-border-strong);border-radius:9px;background:#fff;color:var(--sh-ink);font:700 12px "DM Sans",sans-serif;letter-spacing:normal;text-transform:none;outline:none}
+.shadowing-practice-field select:focus{border-color:var(--sh-primary);box-shadow:var(--sh-ring)}
+.shadowing-practice-status{flex:1 1 140px;min-width:120px;color:#5d7064;font:600 11px/1.45 "DM Sans",sans-serif}
+.shadowing-practice-bar .button{min-height:40px;border-radius:10px;font-size:12px}
+#shadowing-speak-line{margin-left:0}
+@media(max-width:600px){
+    .shadowing-practice-bar{display:grid;grid-template-columns:1fr 1fr;gap:9px;padding:12px}
+    .shadowing-practice-bar .button{grid-column:1/-1;min-height:46px}
+    .shadowing-practice-status{grid-column:1/-1;min-width:0;text-align:center}
+    .shadowing-practice-field select{width:100%;min-height:44px}
+    .shadowing-word-actions{flex-wrap:wrap}
+    .shadowing-word-actions .button{flex:1 1 45%}
+}

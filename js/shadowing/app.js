@@ -6,6 +6,7 @@ import { parseManualTranscript, splitTranscriptSegments, extractYouTubeId, sugge
 import { TRANSCRIPT_PROVIDERS, findProvider, providerLabel, transcriptConfig, setTranscriptCredentials, clearTranscriptCredentials } from "./transcript.js"
 import { createTranscriptStore } from "./transcript-store.js"
 import { createAiCache } from "./ai-cache.js"
+import { playWordPronunciation, speakPhrase } from "./pronunciation.js"
 import { createShadowingRepository } from "./repository.js"
 import { createSentenceRepository } from "../sentences/repository.js"
 
@@ -27,6 +28,11 @@ const state = {
     playerReady: false,
     speed: 1,
     loopLine: false,
+    practiceMode: "manual",
+    practiceDelay: 3,
+    autoActive: false,
+    autoTimer: null,
+    autoRecording: false,
     translation: "",
     lookupCache: new Map(),
     selectedWord: "",
@@ -186,10 +192,12 @@ function renderTranscript(lesson = state.current) {
     const container = byId("shadowing-transcript")
     const translate = byId("shadowing-translation")
     const translateButton = byId("shadowing-translate")
+    const speakButton = byId("shadowing-speak-line")
     if (!container || !lesson) return
     const sentence = lesson.transcript?.[state.currentIndex]?.text || ""
     container.classList.remove("hidden")
     translateButton?.classList.toggle("hidden", !sentence)
+    speakButton?.classList.toggle("hidden", !sentence)
     // Si ya tradujiste esta frase antes, se muestra sin volver a pedirla.
     if (sentence && !state.translation) {
         state.translation = readStoredCache(SENTENCE_CACHE_STORAGE, sentence)?.value || ""
@@ -300,6 +308,7 @@ function renderRecording() {
 function seekToLine(index, keepFrame = false) {
     const current = state.current
     if (!current?.transcript?.length) return
+    if (state.autoActive) stopAutoPractice("Práctica detenida.")
     state.currentIndex = Math.max(0, Math.min(current.transcript.length - 1, index))
     state.translation = ""
     state.selectedWord = ""
@@ -321,6 +330,7 @@ function renderPlayerState() {
     const transcript = byId("shadowing-transcript")
     if (state.current) {
         controls?.classList.remove("hidden")
+        byId("shadowing-practice-bar")?.classList.remove("hidden")
         player?.classList.remove("hidden")
         transcript?.classList.remove("hidden")
     }
@@ -374,15 +384,101 @@ function pollShadowing() {
     const segment = state.current.transcript?.[state.currentIndex]
     if (!segment) return
     const seconds = Number(state.player.getCurrentTime?.() || 0)
-    highlightSpokenWord(seconds, segment)
-    if (seconds >= segment.end - 0.05) {
-        if (state.loopLine) {
-            state.player.seekTo?.(segment.start, true)
-            state.player.playVideo?.()
-        } else {
-            state.player.pauseVideo?.()
-        }
+    // Pequeño adelanto: la palabra se enciende justo antes del sonido y así
+    // no se queda atrás cuando el video va rápido.
+    highlightSpokenWord(seconds + 0.12, segment)
+    if (seconds < segment.end - 0.05) return
+
+    if (state.autoActive && state.practiceMode !== "manual") {
+        state.player.pauseVideo?.()
+        handleAutoAdvance()
+        return
     }
+    if (state.loopLine) {
+        state.player.seekTo?.(segment.start, true)
+        state.player.playVideo?.()
+    } else {
+        state.player.pauseVideo?.()
+    }
+}
+
+function setPracticeStatus(message) {
+    const node = byId("shadowing-practice-status")
+    if (node) node.textContent = message || ""
+}
+
+function updateAutoButton() {
+    const button = byId("shadowing-auto-toggle")
+    if (!button) return
+    button.textContent = state.autoActive ? "■ Detener práctica" : "▶ Iniciar práctica"
+    button.setAttribute("aria-pressed", String(state.autoActive))
+}
+
+function stopAutoPractice(message = "") {
+    if (state.autoTimer) {
+        clearTimeout(state.autoTimer)
+        state.autoTimer = null
+    }
+    if (state.autoRecording && state.mediaRecorder) {
+        try { state.mediaRecorder.stop() } catch { /* ya detenido */ }
+        stopSpeechAssessment()
+    }
+    state.autoActive = false
+    state.awaitingTurn = false
+    state.autoRecording = false
+    state.player?.pauseVideo?.()
+    updateAutoButton()
+    setPracticeStatus(message)
+}
+
+function startAutoPractice() {
+    if (state.autoActive) {
+        stopAutoPractice("Práctica detenida.")
+        return
+    }
+    const segment = state.current?.transcript?.[state.currentIndex]
+    if (!segment || !state.playerReady) return
+    if (state.practiceMode === "manual") {
+        setPracticeStatus("Elige «Automático» o «Automático + grabar» para usar esta opción.")
+        return
+    }
+    state.autoActive = true
+    state.awaitingTurn = false
+    updateAutoButton()
+    state.player.seekTo?.(segment.start, true)
+    state.player.playVideo?.()
+    setPracticeStatus("Reproduciendo frase…")
+}
+
+function handleAutoAdvance() {
+    if (state.awaitingTurn) return
+    state.awaitingTurn = true
+    const record = state.practiceMode === "auto-record"
+    setPracticeStatus(record ? "Tu turno: graba tu frase…" : `Tu turno: espera ${state.practiceDelay} s…`)
+    if (record) {
+        startRecording().then(() => { state.autoRecording = Boolean(state.mediaRecorder) })
+    }
+    state.autoTimer = setTimeout(() => {
+        if (!state.autoActive) return
+        if (state.autoRecording && state.mediaRecorder) {
+            try { state.mediaRecorder.stop() } catch { /* ya detenido */ }
+            stopSpeechAssessment()
+            state.autoRecording = false
+        }
+        if (state.currentIndex >= state.current.transcript.length - 1) {
+            stopAutoPractice("Práctica terminada.")
+            return
+        }
+        state.awaitingTurn = false
+        const next = state.current.transcript[state.currentIndex + 1]
+        state.currentIndex += 1
+        state.translation = ""
+        state.selectedWord = ""
+        renderLesson()
+        state.player.seekTo?.(next.start, true)
+        state.player.playVideo?.()
+        setPracticeStatus("Reproduciendo frase…")
+    }, state.practiceDelay * 1000)
 }
 
 async function createLesson() {
@@ -1148,6 +1244,7 @@ async function saveCurrentLesson() {
 async function openLesson(id) {
     const lesson = state.lessons.find(item => item.id === id)
     if (!lesson) return
+    if (state.autoActive) stopAutoPractice("")
     state.current = { ...lesson }
     state.currentIndex = 0
     state.translation = ""
@@ -1184,16 +1281,38 @@ function wireEvents() {
     })
     byId("shadowing-save")?.addEventListener("click", () => saveCurrentLesson().catch(error => showStatus(error.message || "No se pudo guardar.", true)))
     byId("shadowing-translate")?.addEventListener("click", () => translateCurrentSentence())
+    byId("shadowing-speak-line")?.addEventListener("click", () => {
+        const sentence = state.current?.transcript?.[state.currentIndex]?.text || ""
+        if (sentence) speakPhrase(sentence, "en")
+    })
+    byId("shadowing-speak-word")?.addEventListener("click", () => {
+        const sentence = state.current?.transcript?.[state.currentIndex]?.text || ""
+        const word = state.selectedWord || suggestionWords(sentence)[0]
+        if (word) playWordPronunciation(word)
+    })
+    byId("shadowing-mode")?.addEventListener("change", event => {
+        state.practiceMode = event.target.value
+        if (state.autoActive) stopAutoPractice("Modo cambiado: práctica detenida.")
+        setPracticeStatus(state.practiceMode === "manual" ? "Modo manual: usa «Escuchar» y «Grabar» en cada frase." : "Pulsa «Iniciar práctica» para reproducir frase por frase.")
+    })
+    byId("shadowing-practice-delay")?.addEventListener("change", event => {
+        state.practiceDelay = Number(event.target.value) || 3
+    })
+    byId("shadowing-auto-toggle")?.addEventListener("click", startAutoPractice)
     byId("shadowing-add-vocabulary")?.addEventListener("click", () => saveSelectedWord())
     byId("shadowing-add-review")?.addEventListener("click", () => saveSelectedSentence())
-    byId("shadowing-record")?.addEventListener("click", () => startRecording())
+    byId("shadowing-record")?.addEventListener("click", () => {
+        if (state.autoActive) stopAutoPractice("Práctica detenida.")
+        startRecording()
+    })
     byId("shadowing-play-recording")?.addEventListener("click", playLastRecording)
     byId("shadowing-transcript-config")?.addEventListener("click", openTranscriptDialog)
     byId("shadowing-transcript-close")?.addEventListener("click", closeTranscriptDialog)
     byId("shadowing-transcript-save")?.addEventListener("click", saveTranscriptConfig)
     byId("shadowing-transcript-clear")?.addEventListener("click", clearTranscriptConfig)
     byId("shadowing-transcript-provider")?.addEventListener("change", syncTranscriptProviderHints)
-    window.setInterval(() => pollShadowing(), 250)
+    window.setInterval(() => pollShadowing(), 100)
+    updateAutoButton()
 }
 
 export async function initializeShadowing(supabase) {
