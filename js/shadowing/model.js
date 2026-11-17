@@ -35,15 +35,13 @@ function flushSentence(sentence, sentences, minimumWords = 1) {
     sentence.wordCount = 0
 }
 
-function sentencesInText(text) {
-    const clean = String(text || "").replace(/\s+/g, " ").trim()
-    const pieces = clean.match(/[^.!?]+[.!?]["'”)]*|[^.!?]+$/g) || [clean]
-    return pieces.map(piece => piece.trim()).filter(Boolean)
-}
-
-/* Cada pieza del proveedor puede contener varias frases. Repartimos su
- * duración entre las frases según cuántas palabras tiene cada una: así una
- * frase dentro de un bloque largo no hereda el final de todo el bloque. */
+/* Los subtítulos de Supadata/YouTube son de tipo "rolling": dos líneas están
+ * visibles a la vez y el `duration` de un bloque llega hasta el bloque DOS
+ * posiciones después. Ese duration NO es el tiempo de habla: si se usa como tal,
+ * cada frase se extiende sobre las dos siguientes y se oyen palabras ajenas.
+ * El tiempo de habla de un bloque termina cuando empieza el bloque siguiente.
+ * Repartimos ese intervalo entre sus palabras y agrupamos las palabras en
+ * frases usando sus tiempos reales. */
 export function splitTranscriptSegments(segments) {
     const cleaned = (segments || [])
         .filter(segment => segment && String(segment.text || "").trim())
@@ -52,30 +50,58 @@ export function splitTranscriptSegments(segments) {
             duration: Math.max(0.3, Number(segment.duration || 1)),
             text: String(segment.text).replace(/\s+/g, " ").trim()
         }))
+        .sort((a, b) => a.start - b.start)
     if (!cleaned.length) return []
 
-    const pieces = []
-    for (const segment of cleaned) {
-        const parts = sentencesInText(segment.text)
-        const weights = parts.map(part => Math.max(1, tokensizeSentence(part).length))
-        const total = weights.reduce((sum, weight) => sum + weight, 0) || 1
-        let cursor = segment.start
-        parts.forEach((part, index) => {
-            const duration = segment.duration * (weights[index] / total)
-            pieces.push({ start: cursor, end: cursor + duration, text: part, wordCount: weights[index] })
-            cursor += duration
+    const words = []
+    cleaned.forEach((cue, index) => {
+        const tokens = cue.text.split(/\s+/).filter(Boolean)
+        if (!tokens.length) return
+        const ownEnd = cue.start + cue.duration
+        const next = cleaned[index + 1]
+        // En SRT/texto plano el siguiente empieza DESPUÉS: ahí sí vale el
+        // duration propio. Si se solapa, estamos ante subtítulos rolling.
+        const cueEnd = next
+            ? (next.start >= ownEnd - 0.05 ? ownEnd : Math.max(cue.start + 0.2, next.start))
+            : ownEnd
+        const span = Math.max(0.2, cueEnd - cue.start)
+        tokens.forEach((token, position) => {
+            words.push({
+                text: token,
+                from: cue.start + span * (position / tokens.length),
+                to: cue.start + span * ((position + 1) / tokens.length)
+            })
         })
+    })
+    if (!words.length) return []
+
+    const sentences = []
+    let current = []
+    const flush = () => {
+        if (!current.length) return
+        sentences.push({
+            text: current.map(word => word.text).join(" ").replace(/\s+([,.!?;:])/g, "$1"),
+            start: current[0].from,
+            end: current[current.length - 1].to,
+            wordCount: current.length
+        })
+        current = []
     }
+    words.forEach(word => {
+        current.push(word)
+        if (/[.!?]["'”)]*$/.test(word.text)) flush()
+    })
+    flush()
 
     const merged = []
-    for (const piece of pieces) {
+    for (const sentence of sentences) {
         const previous = merged[merged.length - 1]
         if (previous && previous.wordCount < MIN_SEGMENT_SIZE) {
-            previous.text = `${previous.text} ${piece.text}`.trim()
-            previous.end = piece.end
-            previous.wordCount += piece.wordCount
+            previous.text = `${previous.text} ${sentence.text}`.trim()
+            previous.end = sentence.end
+            previous.wordCount += sentence.wordCount
         } else {
-            merged.push({ ...piece })
+            merged.push({ ...sentence })
         }
     }
     if (merged.length > 1) {
@@ -84,14 +110,21 @@ export function splitTranscriptSegments(segments) {
             const previous = merged[merged.length - 2]
             previous.text = `${previous.text} ${last.text}`.trim()
             previous.end = last.end
+            previous.wordCount += last.wordCount
             merged.pop()
         }
     }
+    for (let index = 0; index < merged.length - 1; index += 1) {
+        const next = merged[index + 1]
+        if (next.start > merged[index].start) {
+            merged[index].end = Math.min(merged[index].end, next.start)
+        }
+    }
 
-    return merged.map(piece => ({
-        start: Math.max(0, Number(piece.start.toFixed(2))),
-        end: Math.max(piece.start + 0.5, Number(piece.end.toFixed(2))),
-        text: piece.text
+    return merged.map(sentence => ({
+        start: Math.max(0, Number(sentence.start.toFixed(2))),
+        end: Math.max(sentence.start + 0.5, Number(sentence.end.toFixed(2))),
+        text: sentence.text
     }))
 }
 

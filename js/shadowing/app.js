@@ -443,18 +443,8 @@ function stopPhraseTimer() {
     }
 }
 
-function finishPhrase(force = false) {
+function finishPhrase() {
     if (!state.player) return
-    const segment = phraseAt()
-    const current = Number(state.player.getCurrentTime?.() || 0)
-    // Si el reproductor va retrasado respecto al temporizador, esperamos lo
-    // que falte antes de parar, para no cortar la última palabra.
-    if (!force && segment && current < segment.end - 0.05 && (state.phraseExtensions || 0) < 3) {
-        state.phraseExtensions = (state.phraseExtensions || 0) + 1
-        state.phraseTimer = setTimeout(() => finishPhrase(), Math.max(80, Math.ceil((segment.end - current) * 1000) + 60))
-        return
-    }
-    state.phraseExtensions = 0
     stopPhraseTimer()
     state.player.pauseVideo?.()
     if (state.autoActive && state.practiceMode !== "manual") {
@@ -464,20 +454,46 @@ function finishPhrase(force = false) {
     }
 }
 
-/* Reproduce exactamente una frase: va al inicio, mide su duración con un
- * temporizador propio y para al final, sin depender del tiempo que YouTube
- * informa (que a veces se retrasa o se adelanta). */
+/* El reloj del video es la única fuente válida: para en cuanto getCurrentTime
+ * alcanza el final de la frase. El tiempo transcurrido solo sirve como tope de
+ * seguridad si YouTube deja de informar (por ejemplo, durante un buffering). */
+function watchPhraseEnd(segment, startedAt) {
+    if (!state.player) return
+    const current = Number(state.player.getCurrentTime?.() || 0)
+    const elapsed = performance.now() - startedAt
+    // Justo después de un seek, YouTube puede seguir informando del tiempo
+    // anterior. Parar con ese valor dejaría la frase sin reproducir.
+    if (current < segment.start - 0.6 || current > segment.end + 0.6) {
+        if (elapsed > 8000) {
+            finishPhrase()
+            return
+        }
+        state.phraseTimer = setTimeout(() => watchPhraseEnd(segment, startedAt), 40)
+        return
+    }
+    if (current < segment.end - 0.03) {
+        const limit = Math.max(3000, (segment.end - segment.start) * 1000 / Math.max(0.5, state.speed || 1) + 6000)
+        if (elapsed > limit) {
+            finishPhrase()
+            return
+        }
+        state.phraseTimer = setTimeout(() => watchPhraseEnd(segment, startedAt), 40)
+        return
+    }
+    finishPhrase()
+}
+
+/* Va al inicio exacto de la frase y vigila su final con el tiempo del video. */
 function playPhrase(index = state.currentIndex) {
     const segment = phraseAt(index)
     if (!segment || !state.playerReady || !state.player) return
     stopPhraseTimer()
-    state.phraseExtensions = 0
     state.currentIndex = Math.max(0, Math.min(state.current.transcript.length - 1, index))
     state.player.seekTo(segment.start, true)
     state.player.playVideo()
-    const seconds = Math.max(0.5, segment.end - segment.start)
-    const wait = (seconds * 1000) / Math.max(0.5, state.speed || 1) + 180
-    state.phraseTimer = setTimeout(finishPhrase, wait)
+    const startedAt = performance.now()
+    state.phraseStartedAt = startedAt
+    state.phraseTimer = setTimeout(() => watchPhraseEnd(segment, startedAt), 40)
 }
 
 function pollShadowing() {
@@ -487,9 +503,11 @@ function pollShadowing() {
     const seconds = Number(state.player.getCurrentTime?.() || 0)
     // El resaltado es solo visual: nunca decide cuándo se detiene el video.
     highlightSpokenWord(seconds, segment)
-    if (seconds < segment.end) return
-    // Respaldo si el usuario reproduces con los controles del propio YouTube.
-    finishPhrase(true)
+    // Respaldo si el usuario reproduce con los controles del propio YouTube.
+    // Se ignoran valores fuera de la frase (tiempo anterior al terminar un seek).
+    if (seconds < segment.end || seconds > segment.end + 0.6 || !state.phraseTimer) return
+    if (performance.now() - (state.phraseStartedAt || 0) < 300) return
+    finishPhrase()
 }
 
 function setPracticeStatus(message) {
@@ -595,12 +613,17 @@ async function createLesson() {
     if (!force) {
         const cached = transcriptStore ? await transcriptStore.get(user?.id || null, videoId) : null
         if (cached?.segments?.length) {
+            let segments = cached.segments
+            if (needsTimingRebuild(segments)) {
+                const rebuilt = await fetchRebuiltSegments(videoId)
+                if (rebuilt) segments = rebuilt
+            }
             await applyLesson({
                 videoId,
                 videoUrl,
                 title: cached.title || "Lección de YouTube",
-                segments: cached.segments,
-                note: `Lección lista desde tus transcripciones · ${cached.segments.length} frases (sin gastar créditos).`
+                segments,
+                note: `Lección lista desde tus transcripciones · ${segments.length} frases (sin gastar créditos).`
             })
             return state.current
         }
@@ -658,6 +681,34 @@ async function createLesson() {
         note: `Lección lista · ${segments.length} frases ${providerName ? `(${providerLabel(providerName)})` : "(transcripción automática)"}.`
     })
     return state.current
+}
+
+/* Las lecciones antiguas guardaron el "duration" de Supadata como tiempo de
+ * habla. En ese formato casi todas las frases se solapan con la siguiente. */
+function needsTimingRebuild(transcript) {
+    if (!Array.isArray(transcript) || transcript.length < 3) return false
+    let overlapping = 0
+    for (let index = 0; index < transcript.length - 1; index += 1) {
+        const end = Number(transcript[index]?.end || 0)
+        const nextStart = Number(transcript[index + 1]?.start || 0)
+        if (end > nextStart + 0.8) overlapping += 1
+    }
+    return overlapping / (transcript.length - 1) > 0.2
+}
+
+/* La caché compartida guarda los bloques CRUDOS del proveedor, así que se
+ * pueden volver a dividir sin gastar créditos ni pedir una key. */
+async function fetchRebuiltSegments(videoId) {
+    if (!videoId || !supabaseClient) return null
+    try {
+        const { data, error } = await supabaseClient.functions.invoke("youtube-transcript", { body: { videoId } })
+        if (error || !data?.segments?.length) return null
+        const segments = retimeSegments(splitTranscriptSegments(data.segments))
+        return segments.length ? segments : null
+    } catch (error) {
+        console.warn("[shadowing] No se pudieron recalcular los tiempos:", error)
+        return null
+    }
 }
 
 async function applyLesson({ videoId, videoUrl, title, segments, note }) {
@@ -1318,6 +1369,27 @@ function assessSpeech(target) {
     // Compatibility shim kept for previous call sites.
 }
 
+async function retimeCurrentLesson() {
+    const lesson = state.current
+    if (!lesson?.videoId) return showStatus("Abre una lección de YouTube para corregir sus tiempos.", true)
+    showStatus("Recalculando los tiempos de las frases…")
+    const rebuilt = await fetchRebuiltSegments(lesson.videoId)
+    if (!rebuilt) return showStatus("No hay transcripción guardada para recalcular los tiempos.", true)
+    lesson.transcript = rebuilt
+    const user = await ensureUser()
+    if (user && lesson.id) {
+        await shadowingRepository?.save(user.id, { ...lesson, title: lesson.title || `Lección ${lesson.videoId}` })
+        await refreshLessons(lesson.id)
+    }
+    stopPhraseTimer()
+    state.currentIndex = 0
+    state.translation = ""
+    state.selectedWord = ""
+    renderLesson()
+    renderPlayerState()
+    showStatus("Tiempos corregidos: cada frase empieza y termina donde debe.")
+}
+
 async function saveCurrentLesson() {
     const user = await ensureUser()
     if (!user) return showStatus("Inicia sesión para guardar la lección.", true)
@@ -1330,9 +1402,23 @@ async function saveCurrentLesson() {
 }
 
 async function openLesson(id) {
-    const lesson = state.lessons.find(item => item.id === id)
+    let lesson = state.lessons.find(item => item.id === id)
     if (!lesson) return
     if (state.autoActive) stopAutoPractice("")
+    if (needsTimingRebuild(lesson.transcript)) {
+        showStatus("Ajustando los tiempos de las frases…")
+        const rebuilt = await fetchRebuiltSegments(lesson.videoId)
+        if (rebuilt) {
+            lesson.transcript = rebuilt
+            const user = await ensureUser()
+            if (user) {
+                await shadowingRepository?.save(user.id, { ...lesson, title: lesson.title || `Lección ${lesson.videoId}` })
+                await refreshLessons(lesson.id)
+                lesson = state.lessons.find(item => item.id === id) || lesson
+            }
+            showStatus("Tiempos de las frases corregidos.")
+        }
+    }
     state.current = { ...lesson, transcript: retimeSegments(lesson.transcript) }
     state.currentIndex = 0
     state.translation = ""
@@ -1366,6 +1452,7 @@ function wireEvents() {
         event.currentTarget.textContent = state.loopLine ? "↻ Frase en bucle" : "↻ Repetir frase"
     })
     byId("shadowing-save")?.addEventListener("click", () => saveCurrentLesson().catch(error => showStatus(error.message || "No se pudo guardar.", true)))
+    byId("shadowing-retime")?.addEventListener("click", () => retimeCurrentLesson().catch(error => showStatus(error.message || "No se pudieron corregir los tiempos.", true)))
     byId("shadowing-translate")?.addEventListener("click", () => translateCurrentSentence())
     byId("shadowing-speak-line")?.addEventListener("click", () => {
         const sentence = state.current?.transcript?.[state.currentIndex]?.text || ""

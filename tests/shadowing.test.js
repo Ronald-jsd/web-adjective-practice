@@ -166,6 +166,25 @@ test("splitTranscriptSegments reparte el tiempo de un bloque entre sus frases", 
     assert.ok(result[0].end <= result[1].start + 0.01)
 })
 
+test("los subtítulos rolling no extienden una frase hacia las siguientes", () => {
+    const result = splitTranscriptSegments([
+        { start: 66.7, duration: 4.5, text: ">> So the company wants an app and it wants" },
+        { start: 69.2, duration: 4.1, text: "it for the Spring Film Festival. We" },
+        { start: 71.2, duration: 4.1, text: "sponsor the festival and opening night" },
+        { start: 73.3, duration: 3.2, text: "is March 19th." },
+        { start: 75.3, duration: 5.1, text: "That's the date on the" }
+    ])
+    const phrase = result.find(item => item.text.includes("Spring Film Festival"))
+    assert.ok(phrase, "debe existir la frase completa")
+    assert.ok(phrase.start >= 66.6 && phrase.start <= 66.8)
+    assert.ok(phrase.end > 70.5 && phrase.end <= 71.1, `final real: ${phrase.end}`)
+    assert.ok(!phrase.text.includes("sponsor"))
+    const following = result.find(item => item.text.includes("sponsor the festival"))
+    assert.ok(following)
+    assert.ok(following.start >= phrase.start)
+    assert.ok(following.end <= 75.4, `final de la frase siguiente: ${following.end}`)
+})
+
 test("retimeSegments no corta una frase cuando los tiempos se solapan", () => {
     const overlapping = retimeSegments([
         { start: 0, end: 12, duration: 12, text: "a" },
