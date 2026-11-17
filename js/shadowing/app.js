@@ -130,10 +130,6 @@ function wireGuideWindow() {
     if (node.parentElement !== document.body) document.body.appendChild(node)
     byId("shadowing-guide-open")?.addEventListener("click", () => toggleGuideWindow())
     byId("shadowing-guide-close")?.addEventListener("click", () => toggleGuideWindow(false))
-    byId("shadowing-guide-examples")?.addEventListener("click", event => {
-        const row = event.target.closest(".shadowing-guide-row")
-        if (row) selectGuideRow(row)
-    })
     const handle = node.querySelector("[data-guide-drag]")
     handle?.addEventListener("pointerdown", event => {
         // En móvil la guía es una hoja fija abajo: no se arrastra.
@@ -408,21 +404,6 @@ async function fillPronunciation(word, node) {
     if (data?.ipa && node.isConnected) node.textContent = data.ipa
 }
 
-/* En móvil solo se muestra el detalle del chip elegido, para no apilar siete
- * explicaciones. En escritorio el panel queda oculto por CSS. */
-function selectGuideRow(row) {
-    const host = byId("shadowing-guide-examples")
-    if (!host || !row) return
-    host.querySelectorAll(".shadowing-guide-row").forEach(item => item.classList.toggle("selected", item === row))
-    const detail = byId("shadowing-guide-detail")
-    if (!detail) return
-    const title = detail.querySelector("[data-guide-detail-title]")
-    const text = detail.querySelector("[data-guide-detail-text]")
-    if (title) title.textContent = row.querySelector("strong")?.textContent || ""
-    if (text) text.textContent = row.querySelector(".shadowing-guide-row-body > span")?.textContent || ""
-    detail.hidden = false
-}
-
 function renderGuideWindow(guide, lesson) {
     const node = byId("shadowing-guide-window")
     const openButton = byId("shadowing-guide-open")
@@ -449,7 +430,6 @@ function renderGuideWindow(guide, lesson) {
             sample.dataset.key = entry.key
             sample.textContent = entry.sample
             const body = document.createElement("div")
-            body.className = "shadowing-guide-row-body"
             const title = document.createElement("strong")
             title.textContent = entry.label
             const detail = document.createElement("span")
@@ -458,7 +438,6 @@ function renderGuideWindow(guide, lesson) {
             row.append(sample, body)
             host.append(row)
         }
-        selectGuideRow(host.querySelector(".shadowing-guide-row"))
     }
     const source = node?.querySelector("[data-guide-source]")
     if (source) {
