@@ -118,6 +118,10 @@ function renderTranscript(lesson = state.current) {
     const sentence = lesson.transcript?.[state.currentIndex]?.text || ""
     container.classList.remove("hidden")
     translateButton?.classList.toggle("hidden", !sentence)
+    // Si ya tradujiste esta frase antes, se muestra sin volver a pedirla.
+    if (sentence && !state.translation) {
+        state.translation = readStoredCache(SENTENCE_CACHE_STORAGE, sentence)?.value || ""
+    }
     if (translate) translate.classList.toggle("hidden", !state.translation)
     if (translate) translate.textContent = state.translation
     container.replaceChildren()
@@ -136,13 +140,11 @@ function renderTranscript(lesson = state.current) {
             button.type = "button"
             button.className = "shadowing-word"
             button.textContent = token
+            button.title = "Escuchar pronunciación (no gasta IA)"
             const weight = wordWeight(token)
             spans.push({ element: button, from: elapsed / totalWeight, to: (elapsed + weight) / totalWeight })
             elapsed += weight
-            button.addEventListener("click", () => {
-                speakWord(token)
-                lookupWord(token)
-            })
+            button.addEventListener("click", () => speakWord(token))
             container.append(button)
             container.append(" ")
             return
@@ -209,6 +211,7 @@ function renderWordList(sentence) {
         button.type = "button"
         button.className = `shadowing-word${normalizeWord(state.selectedWord) === word ? " active" : ""}`
         button.textContent = word
+        button.title = "Escuchar y traducir con IA"
         button.addEventListener("click", () => {
             speakWord(word)
             lookupWord(word)
@@ -650,25 +653,74 @@ function loadManualState() {
     byId("shadowing-manual")?.classList.remove("hidden")
 }
 
+/* Caché persistente de definiciones y traducciones.
+ * Evita volver a pedir lo mismo a la IA al recargar la app o al cambiar de
+ * frase. Se guarda en el dispositivo (localStorage) con un límite de tamaño. */
+const WORD_CACHE_STORAGE = "shadowing_word_cache_v1"
+const WORD_CACHE_LIMIT = 800
+const SENTENCE_CACHE_STORAGE = "shadowing_sentence_cache_v1"
+const SENTENCE_CACHE_LIMIT = 400
+
+function readStoredCache(storageKey, id) {
+    try {
+        const raw = localStorage.getItem(storageKey)
+        if (!raw) return null
+        const cache = JSON.parse(raw)
+        return cache?.[id] || null
+    } catch (error) {
+        return null
+    }
+}
+
+function writeStoredCache(storageKey, id, value, limit) {
+    try {
+        const raw = localStorage.getItem(storageKey)
+        const cache = raw ? JSON.parse(raw) || {} : {}
+        cache[id] = { value, savedAt: Date.now() }
+        const keys = Object.keys(cache)
+        if (keys.length > limit) {
+            keys.sort((left, right) => (cache[left]?.savedAt || 0) - (cache[right]?.savedAt || 0))
+            for (const key of keys.slice(0, keys.length - limit)) delete cache[key]
+        }
+        localStorage.setItem(storageKey, JSON.stringify(cache))
+    } catch (error) {
+        console.warn("[shadowing] No se pudo guardar la caché local:", error)
+    }
+}
+
 async function lookupWord(word) {
     const term = normalizeWord(word)
     if (!term) return
     state.selectedWord = term
     const host = byId("shadowing-word-definition")
-    const cached = state.lookupCache.get(term)
-    if (cached) {
-        renderWordLookup(cached)
+    const hasAIKeys = Boolean(localStorage.getItem(GROQ_KEY_STORAGE) || localStorage.getItem(GEMINI_KEY_STORAGE))
+
+    const apply = lookup => {
+        renderWordLookup(lookup)
         updateWordActions(true)
+    }
+
+    const memory = state.lookupCache.get(term)
+    if (memory) {
+        apply(memory)
         return
     }
+
+    // Copia guardada en el dispositivo: la segunda vez no cuesta nada.
+    const stored = readStoredCache(WORD_CACHE_STORAGE, term)?.value
+    if (stored?.lookup && (stored.source === "ai" || !hasAIKeys)) {
+        state.lookupCache.set(term, stored.lookup)
+        apply(stored.lookup)
+        return
+    }
+
     if (host) host.innerHTML = `<p>Buscando “${term}”…</p>`
-    const hasAIKeys = Boolean(localStorage.getItem(GROQ_KEY_STORAGE) || localStorage.getItem(GEMINI_KEY_STORAGE))
     if (!hasAIKeys) {
         try {
             const lookup = await dictionaryFallback(term)
             state.lookupCache.set(term, lookup)
-            renderWordLookup(lookup)
-            updateWordActions(true)
+            writeStoredCache(WORD_CACHE_STORAGE, term, { lookup, source: "dictionary" }, WORD_CACHE_LIMIT)
+            apply(lookup)
         } catch (error) {
             if (host) host.textContent = "No se pudo buscar esa palabra."
         }
@@ -678,14 +730,14 @@ async function lookupWord(word) {
         const { lookupEnglishWord } = await import("../ai-translation.js")
         const lookup = await lookupEnglishWord(term, state.current?.transcript?.[state.currentIndex]?.text || "")
         state.lookupCache.set(term, lookup)
-        renderWordLookup(lookup)
-        updateWordActions(true)
+        writeStoredCache(WORD_CACHE_STORAGE, term, { lookup, source: "ai" }, WORD_CACHE_LIMIT)
+        apply(lookup)
     } catch (error) {
         console.warn("[shadowing] IA no disponible, usando diccionario:", error)
         const lookup = await dictionaryFallback(term)
         state.lookupCache.set(term, lookup)
-        renderWordLookup(lookup)
-        updateWordActions(true)
+        writeStoredCache(WORD_CACHE_STORAGE, term, { lookup, source: "dictionary" }, WORD_CACHE_LIMIT)
+        apply(lookup)
     }
 }
 
@@ -738,6 +790,18 @@ async function translateCurrentSentence() {
     if (!current) return
     const button = byId("shadowing-translate")
     const node = byId("shadowing-translation")
+
+    // Una traducción ya vista no se vuelve a pedir a la IA.
+    const stored = readStoredCache(SENTENCE_CACHE_STORAGE, current)?.value
+    if (stored) {
+        state.translation = stored
+        if (node) {
+            node.classList.remove("hidden")
+            node.textContent = stored
+        }
+        return
+    }
+
     if (!localStorage.getItem(GROQ_KEY_STORAGE) && !localStorage.getItem(GEMINI_KEY_STORAGE)) {
         const message = "Para traducir frases necesitas una API key de IA. Pulsa «🤖 Configurar IA» arriba y pega tu key gratuita de Groq o Gemini."
         if (node) {
@@ -755,6 +819,7 @@ async function translateCurrentSentence() {
         const { translateEnglishSentence } = await import("../ai-translation.js")
         const result = await translateEnglishSentence(current)
         state.translation = result.spanish
+        writeStoredCache(SENTENCE_CACHE_STORAGE, current, result.spanish, SENTENCE_CACHE_LIMIT)
         if (node) {
             node.classList.remove("hidden")
             node.textContent = result.spanish
