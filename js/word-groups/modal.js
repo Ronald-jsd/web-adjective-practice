@@ -152,7 +152,9 @@ export function renderGroupWordButton(text, payload, className = "", editItem = 
     const encoded = encodeURIComponent(JSON.stringify(payload || {}))
     const extra = className ? ` ${className}` : ""
     const editButton = renderInlineWordEditButton(text, editItem)
-    return `<button type="button" class="word-group-trigger${extra}" data-word-group-open="true" data-word-group-payload="${escapeAttr(encoded)}" title="Ver palabras similares y diferencias" aria-label="Ver palabras similares a ${escapeHtml(text)}"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false"><path fill="currentColor" d="M10.8 6.2l4.5 4.5-4.5 4.5-1.4-1.4 3.1-3.1-3.1-3.1 1.4-1.4zm5.2 1.4l1.4 1.4-2.9 2.9 2.9 2.9-1.4 1.4-4.3-4.3 4.3-4.3z"/></svg><span>${escapeHtml(text)}</span></button>${editButton}<button type="button" class="icon-button audio-button word-group-audio" onclick="window.playAudioFromGlobal('${String(text || "").replace(/'/g, "\\'").replace(/"/g, '&quot;')}', 'en')" title="Escuchar palabra" aria-label="Escuchar ${escapeHtml(text)}">🔊</button>`
+    const trigger = `<button type="button" class="word-group-trigger${extra}" data-word-group-open="true" data-word-group-payload="${escapeAttr(encoded)}" title="Ver palabras similares y diferencias" aria-label="Ver palabras similares a ${escapeHtml(text)}"><svg viewBox="0 0 24 24" width="14" height="14" aria-hidden="true" focusable="false"><path fill="currentColor" d="M10.8 6.2l4.5 4.5-4.5 4.5-1.4-1.4 3.1-3.1-3.1-3.1 1.4-1.4zm5.2 1.4l1.4 1.4-2.9 2.9 2.9 2.9-1.4 1.4-4.3-4.3 4.3-4.3z"/></svg><span>${escapeHtml(text)}</span></button>`
+    const audio = `<button type="button" class="icon-button audio-button word-group-audio" onclick="window.playAudioFromGlobal('${String(text || "").replace(/'/g, "\\'").replace(/"/g, '&quot;')}', 'en')" title="Escuchar palabra" aria-label="Escuchar ${escapeHtml(text)}">🔊</button>`
+    return `<span class="word-group-stack">${trigger}${editButton}${audio}</span>`
 }
 
 export function renderSpeakerButton(text, lang = "en", label = "Escuchar") {
@@ -521,6 +523,7 @@ function renderDialog() {
     })
     titleBlock.append(titleInput)
     const viewControls = el("div", "word-groups-view-controls")
+    const viewSwitch = el("div", "word-groups-view-switch")
     for (const [view, label] of [["table", "Tabla"], ["detail", "Detalle"]]) {
         const button = el("button", `word-groups-view-button${state.view === view ? " active" : ""}`, label)
         button.type = "button"
@@ -529,8 +532,9 @@ function renderDialog() {
             state.view = view
             renderDialog()
         })
-        viewControls.append(button)
+        viewSwitch.append(button)
     }
+    const viewActions = el("div", "word-groups-view-actions")
     const addWord = el("button", "button secondary word-groups-add-member", "＋ Agregar")
     addWord.type = "button"
     addWord.addEventListener("click", () => {
@@ -559,7 +563,8 @@ function renderDialog() {
             modalStatus("No hay coincidencias pendientes con esta traducción.", true)
         }
     })
-    viewControls.append(autoButton, addWord)
+    viewActions.append(addWord, autoButton)
+    viewControls.append(viewSwitch, viewActions)
     titleBlock.append(titleInput, viewControls)
     const close = el("button", "word-groups-close", "✕")
     close.type = "button"
@@ -671,13 +676,15 @@ function renderDialog() {
     }
 
     const footer = el("footer", "word-groups-footer")
+    const status = el("small", "word-groups-status")
+    status.id = "word-groups-status"
+    const deleteActions = el("div", "word-groups-delete-actions")
     const removeGroup = el("button", "button danger word-groups-delete-group", "Eliminar grupo")
     removeGroup.type = "button"
     const removeMemberButton = el("button", "button secondary word-groups-remove-member", "Quitar esta palabra del grupo")
     removeMemberButton.type = "button"
+    deleteActions.append(removeGroup, removeMemberButton)
     const actions = el("div", "word-groups-actions")
-    const status = el("small", "word-groups-status")
-    status.id = "word-groups-status"
     const cancel = el("button", "button secondary", "Descartar")
     cancel.type = "button"
     cancel.addEventListener("click", closeDialog)
@@ -685,9 +692,8 @@ function renderDialog() {
     save.id = "word-groups-save"
     save.type = "button"
     save.addEventListener("click", saveCurrentGroup)
-    actions.append(status, cancel, save)
-    footer.append(el("div", "word-groups-delete-actions"), actions)
-    footer.querySelector(".word-groups-delete-actions").append(removeGroup, removeMemberButton)
+    actions.append(cancel, save)
+    footer.append(status, deleteActions, actions)
     removeGroup.addEventListener("click", deleteCurrentGroup)
     removeMemberButton.addEventListener("click", removeCurrentMember)
 

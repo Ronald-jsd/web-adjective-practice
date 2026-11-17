@@ -2021,3 +2021,42 @@
     .verb-cell-viewer-actions button{min-height:46px;padding:10px 12px}
     .verb-cell-viewer-audio{grid-column:1/-1}
 }
+
+/* Palabra de verbo: se muestra completa y el botón de audio queda arriba. */
+#verbs-section .editable-cell[data-field="verb"] .verb-cell-content,
+#verbs-table-view .editable-cell[data-field="verb"] .verb-cell-content,
+#verbs-search-results .editable-cell[data-field="verb"] .verb-cell-content{
+    display:block;
+    -webkit-line-clamp:unset;
+    max-height:none;
+    overflow:visible;
+    padding-right:0;
+    line-height:1.45;
+}
+#verbs-section .editable-cell[data-field="verb"] .word-group-stack,
+#verbs-table-view .editable-cell[data-field="verb"] .word-group-stack,
+#verbs-search-results .editable-cell[data-field="verb"] .word-group-stack{
+    display:inline-flex;
+    align-items:flex-start;
+    max-width:100%;
+    vertical-align:top;
+}
+#verbs-section .editable-cell[data-field="verb"] .word-group-trigger,
+#verbs-table-view .editable-cell[data-field="verb"] .word-group-trigger,
+#verbs-search-results .editable-cell[data-field="verb"] .word-group-trigger{
+    display:inline-block;
+    max-width:calc(100% - 32px);
+    overflow-wrap:anywhere;
+}
+#verbs-section .editable-cell[data-field="verb"] .word-group-audio,
+#verbs-table-view .editable-cell[data-field="verb"] .word-group-audio,
+#verbs-search-results .editable-cell[data-field="verb"] .word-group-audio{
+    flex:0 0 auto;
+    align-self:flex-start;
+    margin:1px 0 0 2px;
+}
+#verbs-section .editable-cell[data-field="verb"] .verb-cell-expand,
+#verbs-table-view .editable-cell[data-field="verb"] .verb-cell-expand,
+#verbs-search-results .editable-cell[data-field="verb"] .verb-cell-expand{display:none!important}
+#verbs-section td[data-field="verb"],#verbs-table-view td[data-field="verb"],#verbs-search-results td[data-field="verb"]{min-width:240px;max-width:330px;vertical-align:top}
+#verbs-section td[data-field="verb"] .verb-cell-content,#verbs-table-view td[data-field="verb"] .verb-cell-content,#verbs-search-results td[data-field="verb"] .verb-cell-content{padding-top:2px}
