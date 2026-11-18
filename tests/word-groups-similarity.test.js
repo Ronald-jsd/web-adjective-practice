@@ -37,6 +37,28 @@ test("matchingTranslationCandidates returns candidates with an equivalent Spanis
     )
 })
 
+test("matchingTranslationCandidates keeps same-word catalog rows with different ids", () => {
+    const candidates = [
+        { source: "catalog", itemId: "5616", word: "throughout", spanish: "a lo largo de" },
+        { source: "custom", itemId: "-1144194855", word: "throughout", spanish: "durante todo / a lo largo / a lo largo de" },
+        { source: "catalog", itemId: "5646", word: "along", spanish: "a lo largo de" }
+    ]
+    assert.deepEqual(
+        matchingTranslationCandidates(candidates, candidates[0]).map(item => item.itemId),
+        ["-1144194855", "5646"]
+    )
+    const group = { members: [candidates[0], candidates[2]] }
+    assert.deepEqual(
+        missingTranslationCandidates(candidates, candidates[0], group).map(item => item.itemId),
+        ["-1144194855"]
+    )
+    // Sin identificadores no se puede demostrar que son filas distintas.
+    assert.deepEqual(
+        matchingTranslationCandidates(candidates, { word: "throughout", spanish: "a lo largo de" }).map(item => item.itemId),
+        ["5646"]
+    )
+})
+
 test("missingTranslationCandidates skips members already present in the group", () => {
     const candidates = [
         { source: "catalog", itemId: "1", word: "furthermore", spanish: "además" },

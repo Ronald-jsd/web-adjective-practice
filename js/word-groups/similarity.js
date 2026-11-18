@@ -56,6 +56,20 @@ export function sameTranslationWordCount(left, right) {
     return leftKeys.filter(key => rightKeys.has(key)).length
 }
 
+/* Dos filas del catálogo pueden tener la misma palabra con traducciones o
+ * ejemplos distintos (por ejemplo dos "throughout"). No son duplicados: se
+ * identifican por source+itemId y deben poder convivir en el mismo grupo. */
+function isDistinctEntry(leftIdentity, rightIdentity) {
+    return Boolean(leftIdentity && rightIdentity && leftIdentity !== rightIdentity)
+}
+
+const identityOf = item => {
+    const itemId = item?.itemId ?? item?.item_id
+    return itemId === undefined || itemId === null || itemId === ""
+        ? null
+        : `${item?.source || "catalog"}:${String(itemId)}`
+}
+
 /* Devuelve los candidatos con al menos una clave de traducción compartida y
  * sin repetir el término seleccionado desde otra colección. */
 export function matchingTranslationCandidates(candidates, selected, { excludeSeedWord = true } = {}) {
@@ -63,23 +77,18 @@ export function matchingTranslationCandidates(candidates, selected, { excludeSee
     if (!selectedKeys.length) return []
 
     const selectedWord = String(selected?.word || "").trim().toLowerCase()
-    const selectedIdentity = selected?.itemId ?? selected?.item_id
-        ? `${selected.source || "catalog"}:${String(selected.itemId ?? selected.item_id)}`
-        : null
+    const selectedIdentity = identityOf(selected)
     const blockedIds = new Set()
-    const blockedWords = new Set()
     if (selectedIdentity) blockedIds.add(selectedIdentity)
-    if (selectedWord) blockedWords.add(selectedWord)
 
     const matches = []
     for (const candidate of candidates || []) {
         if (!candidate?.word || !candidate?.spanish) continue
-        const candidateIdentity = candidate.itemId != null
-            ? `${candidate.source || "catalog"}:${String(candidate.itemId)}`
-            : null
+        const candidateIdentity = identityOf(candidate)
         const candidateWord = String(candidate.word).trim().toLowerCase()
         if (candidateIdentity && blockedIds.has(candidateIdentity)) continue
-        if (excludeSeedWord && selectedWord && candidateWord === selectedWord) continue
+        if (excludeSeedWord && selectedWord && candidateWord === selectedWord
+            && !isDistinctEntry(selectedIdentity, candidateIdentity)) continue
 
         if (!spanishTranslationsMatch(selected.spanish, candidate.spanish)) continue
         matches.push(candidate)
@@ -95,10 +104,13 @@ export function missingTranslationCandidates(candidates, selected, group) {
     }))
     const existingWords = new Set((group?.members || []).map(member => String(member.word || "").toLowerCase()))
     return matchingTranslationCandidates(candidates, selected).filter(candidate => {
-        const candidateIdentity = candidate.itemId != null
-            ? `${candidate.source || "catalog"}:${String(candidate.itemId)}`
-            : null
+        const candidateIdentity = identityOf(candidate)
         if (candidateIdentity && existingIdentities.has(candidateIdentity)) return false
-        return !existingWords.has(String(candidate.word || "").toLowerCase())
+        const candidateWord = String(candidate.word || "").toLowerCase()
+        if (!existingWords.has(candidateWord)) return true
+        // La misma palabra solo se descarta si no podemos probar que son filas
+        // distintas; dos entradas con IDs propios deben aparecer juntas.
+        const sameWordMember = (group?.members || []).find(member => String(member.word || "").toLowerCase() === candidateWord)
+        return isDistinctEntry(identityOf(sameWordMember), candidateIdentity)
     })
 }

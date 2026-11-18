@@ -40,6 +40,19 @@ test("word group draft normalizes source ids and standalone words without duplic
     assert.equal(duplicate.group.members.length, 1)
 })
 
+test("word group accepts two catalog rows with the same word and different translations", () => {
+    let draft = createDraftGroup({ source: "catalog", itemId: "5616", word: "throughout", spanish: "a lo largo de" })
+    const result = addMember(draft, {
+        source: "custom",
+        itemId: "-1144194855",
+        word: "throughout",
+        spanish: "durante todo / a lo largo / a lo largo de"
+    })
+    assert.equal(result.added, true)
+    assert.equal(result.group.members.length, 2)
+    assert.deepEqual(result.group.members.map(member => member.itemId), ["5616", "-1144194855"])
+})
+
 test("word group relationship marks interchangeability and survives member removal", () => {
     const draft = createDraftGroup({ source: "catalog", itemId: 1, word: "in addition", spanish: "además", partOfSpeech: "Conector" })
     const result = addMember(draft, { source: "catalog", itemId: 2, word: "besides", spanish: "además", partOfSpeech: "Conector" })
