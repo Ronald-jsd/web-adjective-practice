@@ -398,7 +398,7 @@ function bindEditor(onStructureChange = null) {
     bindField("word-group-pronunciation-input", "pronunciation")
     bindField("word-group-spanish-input", "spanish")
     bindField("word-group-part-input", "partOfSpeech", true)
-    bindField("word-group-position-input", "position", true)
+    bindField("word-group-position-input", "position")
     bindField("word-group-uses-input", "uses")
     bindField("word-group-difference-input", "difference")
 
@@ -572,7 +572,7 @@ const FIELD_LABELS = {
     spanish: "traducción al español",
     difference: "diferencia y usos",
     relationships: "intercambiabilidad",
-    position: "posición en la frase",
+    position: "posiciones válidas",
     examples: "ejemplos y traducciones",
     all: "todos los datos"
 }
@@ -645,10 +645,13 @@ function renderMemberEditor(member) {
     const positionGroup = el("div", "word-groups-field-group")
     positionGroup.dataset.field = "position"
     const positionWrap = el("label", "word-groups-field")
-    positionWrap.append(el("span", "word-groups-field-label", "Posición en la frase"))
-    const position = el("select", "word-groups-select")
+    positionWrap.append(el("span", "word-groups-field-label", "Posiciones válidas"))
+    const position = el("textarea", "word-groups-textarea")
     position.id = "word-group-position-input"
-    position.innerHTML = `<option>Inicio</option><option>Medio</option><option>Final</option><option>En cualquier posición</option>`
+    position.rows = 3
+    position.placeholder = "Inicio\nMedio\nDespués del verbo"
+    position.maxLength = 2000
+    position.setAttribute("aria-label", "Posiciones válidas, una por línea")
     positionWrap.append(position)
     positionGroup.append(positionWrap)
 

@@ -1,4 +1,3 @@
-const POSITION_LABELS = new Set(["Inicio", "Medio", "Final", "En cualquier posición"])
 const PART_OF_SPEECH_LABELS = new Set(["Adjetivo", "Verbo", "Sustantivo", "Adverbio", "Preposición", "Conector", "Frase", "Otro"])
 const MAX_TITLE = 160
 const MAX_TEXT = 2000
@@ -32,7 +31,7 @@ export function normalizeMember(member = {}, { createId = false } = {}) {
         pronunciation: trimText(member.pronunciation, 300),
         spanish: trimArea(member.spanish, 1000),
         partOfSpeech: PART_OF_SPEECH_LABELS.has(member.partOfSpeech || member.part_of_speech) ? (member.partOfSpeech || member.part_of_speech) : "Otro",
-        position: POSITION_LABELS.has(member.position) ? member.position : "En cualquier posición",
+        position: trimArea(member.position, MAX_TEXT) || "En cualquier posición",
         uses: trimArea(member.uses, MAX_TEXT),
         difference: trimArea(member.difference, MAX_TEXT),
         examples: normalizedExamples

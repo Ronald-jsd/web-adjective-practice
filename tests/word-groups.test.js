@@ -7,7 +7,8 @@ import {
     relationshipWith,
     removeMember,
     relationshipKey,
-    setRelationship
+    setRelationship,
+    updateMember
 } from "../js/word-groups/model.js"
 
 test("word group draft normalizes source ids and standalone words without duplicates", () => {
@@ -45,6 +46,15 @@ test("word group relationship marks interchangeability and survives member remov
     const removed = removeMember(next, result.member.id)
     assert.equal(removed.members.length, 1)
     assert.deepEqual(removed.relationships, {})
+})
+
+test("word group position accepts several free-text positions", () => {
+    const draft = createDraftGroup({ source: "catalog", itemId: 1, word: "provided", spanish: "provisto" })
+    const memberId = draft.members[0].id
+    const updated = updateMember(draft, memberId, { position: "Inicio\nMedio\nDespués del verbo" })
+    assert.equal(updated.members[0].position, "Inicio\nMedio\nDespués del verbo")
+    assert.equal(normalizeGroup(updated).members[0].position, "Inicio\nMedio\nDespués del verbo")
+    assert.equal(updateMember(updated, memberId, { position: "   " }).members[0].position, "En cualquier posición")
 })
 
 test("word group normalize removes relationships that reference missing members", () => {
