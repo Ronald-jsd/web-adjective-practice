@@ -190,29 +190,84 @@ function renderMemberButton(member) {
     return button
 }
 
+function candidateSourceInfo(candidate) {
+    const source = candidate.source
+    if (source === "verb") return { kind: "verbo", type: "Verbo", shortType: "Verbo", origin: "Verbos", shortOrigin: "V" }
+    if (source === "custom") return { kind: "personal", type: "Personal", shortType: "Tuyo", origin: "Tu lista", shortOrigin: "T" }
+    if (source === "inline") return { kind: "inline", type: "En línea", shortType: "Directo", origin: "En línea", shortOrigin: "D" }
+    return { kind: "adjetivo", type: candidate.partOfSpeech || "Adjetivo", shortType: "Adj.", origin: "Catálogo", shortOrigin: "C" }
+}
+
+function appendHighlightedText(parent, text, query) {
+    const value = String(text ?? "")
+    const needle = String(query ?? "").trim()
+    if (!needle) {
+        parent.textContent = value
+        return
+    }
+    const haystack = value.toLocaleLowerCase("es")
+    const target = needle.toLocaleLowerCase("es")
+    let from = 0
+    let index = haystack.indexOf(target, from)
+    while (index !== -1) {
+        if (index > from) parent.append(document.createTextNode(value.slice(from, index)))
+        parent.append(el("mark", "word-group-candidate-highlight", value.slice(index, index + target.length)))
+        from = index + target.length
+        index = haystack.indexOf(target, from)
+    }
+    if (from < value.length) parent.append(document.createTextNode(value.slice(from)))
+}
+
 function renderCandidates() {
     const host = byId("word-group-candidate-results")
     if (!host) return
+    const count = byId("word-group-candidate-count")
     const query = state.candidateQuery.trim()
     if (!query) {
-        host.replaceChildren(el("p", "word-group-search-hint", "Escribe para buscar en todas las listas."))
+        if (count) count.textContent = ""
+        host.replaceChildren(el("p", "word-group-search-hint", "Escribe para buscar en adjetivos, verbos y tus palabras guardadas."))
         return
     }
     const candidates = filterCandidates(state.candidates, query, 40)
+    if (count) count.textContent = candidates.length ? `${candidates.length} resultado${candidates.length === 1 ? "" : "s"}` : "0 resultados"
     host.replaceChildren()
     if (!candidates.length) {
-        host.append(el("p", "word-group-search-empty", "No hay resultados."))
+        host.append(el("p", "word-group-search-empty", "No hay resultados con ese texto."))
         return
     }
     for (const candidate of candidates) {
         const existing = findMemberByIdentity(state.draft, candidate)
-        const button = el("button", "word-group-candidate")
+        const info = candidateSourceInfo(candidate)
+        const button = el("button", `word-group-candidate word-group-candidate--${info.kind}`)
         button.type = "button"
         button.disabled = !!existing
-        const title = el("span", "word-group-candidate-word", candidate.word || "Palabra")
-        const meta = el("span", "word-group-candidate-meta", candidate.context ? `${candidate.context}${candidate.spanish ? ` · ${candidate.spanish}` : ""}` : candidate.spanish || "")
-        const status = el("span", "word-group-candidate-status", existing ? "Ya está" : "Agregar")
-        button.append(title, meta, status)
+        button.setAttribute("aria-label", `${existing ? "Ya está en el grupo" : "Agregar al grupo"}: ${candidate.word || "Palabra"} (${info.type}, ${info.origin})`)
+
+        const top = el("span", "word-group-candidate-top")
+        const type = el("span", "word-group-candidate-type", info.type)
+        type.dataset.short = info.shortType
+        const status = el("span", "word-group-candidate-status", existing ? "✓ Ya está" : "＋ Agregar")
+        status.dataset.short = existing ? "✓" : "＋"
+        top.append(type, status)
+
+        const word = el("span", "word-group-candidate-word")
+        appendHighlightedText(word, candidate.word || "Palabra", query)
+
+        const detail = el("span", "word-group-candidate-detail")
+        if (candidate.spanish) {
+            const translation = el("span", "word-group-candidate-translation")
+            appendHighlightedText(translation, candidate.spanish, query)
+            detail.append(translation)
+        }
+        if (candidate.pronunciation) detail.append(el("span", "word-group-candidate-pron", candidate.pronunciation))
+        if (!detail.childNodes.length) detail.append(el("span", "word-group-candidate-translation word-group-candidate-translation--empty", "Sin traducción"))
+
+        const context = el("span", "word-group-candidate-context")
+        appendHighlightedText(context, candidate.context || info.origin, query)
+        const origin = el("span", "word-group-candidate-origin", info.origin)
+        origin.dataset.short = info.shortOrigin
+
+        button.append(top, word, detail, context, origin)
         button.addEventListener("click", () => {
             const result = addMember(state.draft, candidate)
             if (!result.added) {
@@ -586,18 +641,22 @@ function renderDialog() {
     members.append(memberList)
     const searchLabel = el("label", "word-groups-search-label", "Buscar para agregar")
     const search = el("input", "word-groups-search")
+    search.id = "word-group-candidate-search"
     search.type = "search"
     search.placeholder = "in addition, además, thereby…"
     search.value = state.candidateQuery
     search.autocomplete = "off"
+    searchLabel.htmlFor = search.id
     search.addEventListener("input", event => {
         state.candidateQuery = event.target.value
         renderCandidates()
     })
+    const searchHead = el("div", "word-groups-search-head")
+    searchHead.append(searchLabel, el("span", "word-group-candidate-count"))
     const searchArea = el("div", "word-groups-search-area")
     const results = el("div", "word-groups-candidate-results")
     results.id = "word-group-candidate-results"
-    searchArea.append(searchLabel, search, results)
+    searchArea.append(searchHead, search, results)
     members.append(searchArea)
 
     if (state.view === "table") {
@@ -694,7 +753,7 @@ function renderDialog() {
     const cancel = el("button", "button secondary", "Descartar")
     cancel.type = "button"
     cancel.addEventListener("click", closeDialog)
-    const save = el("button", "button primary", "Guardar grupo")
+    const save = el("button", "button primary", state.dirty ? "Guardar cambios *" : "Guardar grupo")
     save.id = "word-groups-save"
     save.type = "button"
     save.addEventListener("click", saveCurrentGroup)
