@@ -35,8 +35,7 @@ const state = {
     statusMessage: "",
     statusError: false,
     candidates: [],
-    candidateQuery: "",
-    editorOpen: false
+    candidateQuery: ""
 }
 
 function escapeHtml(value) {
@@ -182,12 +181,7 @@ function renderMemberButton(member) {
     button.type = "button"
     button.textContent = member.word || "Palabra"
     button.classList.toggle("active", String(member.id) === String(state.activeMemberId))
-    button.addEventListener("click", () => {
-        state.activeMemberId = member.id
-        state.candidateQuery = ""
-        state.editorOpen = true
-        renderDialog()
-    })
+    button.addEventListener("click", () => openEditorDialog(member.id, "all"))
     return button
 }
 
@@ -286,7 +280,7 @@ function renderCandidates() {
     }
 }
 
-function renderExamples() {
+function renderExamples(onStructureChange = null) {
     const host = byId("word-group-examples-list")
     if (!host) return
     host.replaceChildren()
@@ -324,7 +318,8 @@ function renderExamples() {
         remove.addEventListener("click", () => {
             state.draft = removeExample(state.draft, member.id, example.id)
             setDirty(true)
-            renderDialog()
+            if (onStructureChange) onStructureChange()
+            else renderDialog()
         })
 
         const es = el("textarea", "word-group-example-es")
@@ -384,7 +379,7 @@ function renderRelationshipRows() {
     if (summary.textContent) host.append(summary)
 }
 
-function bindEditor() {
+function bindEditor(onStructureChange = null) {
     const member = currentMember()
     if (!member) return
 
@@ -412,16 +407,9 @@ function bindEditor() {
         const empty = { id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`, en: "", es: "" }
         state.draft = upsertExample(state.draft, member.id, empty)
         setDirty(true)
-        renderDialog()
+        if (onStructureChange) onStructureChange()
+        else renderDialog()
     })
-}
-
-function selectMember(memberId) {
-    state.activeMemberId = memberId
-    state.candidateQuery = ""
-    state.editorOpen = true
-    modalStatus("")
-    renderDialog()
 }
 
 function relationshipSummaryFor(member) {
@@ -467,7 +455,8 @@ function renderComparisonTable() {
     const thead = el("thead")
     const headRow = el("tr")
     const headings = [
-        "Conector y pronunciación",
+        "Palabra y pronunciación",
+        "Traducción",
         "Diferencia y uso exacto",
         "¿Con cuáles es intercambiable?",
         "Posiciones válidas",
@@ -484,24 +473,35 @@ function renderComparisonTable() {
     const tbody = el("tbody")
     for (const member of state.draft.members) {
         const row = el("tr", String(member.id) === String(state.activeMemberId) ? "is-active" : "")
-        row.tabIndex = 0
-        row.setAttribute("role", "button")
-        row.setAttribute("aria-label", `Comparar y editar ${member.word}`)
-        row.addEventListener("click", () => selectMember(member.id))
-        row.addEventListener("keydown", event => {
-            if (event.key === "Enter" || event.key === " ") {
-                event.preventDefault()
-                selectMember(member.id)
-            }
-        })
+        row.dataset.memberId = String(member.id)
 
-        const wordCell = el("td", "word-groups-table-word-cell")
+        const makeEditable = (cell, field, label) => {
+            cell.classList.add("word-groups-table-cell--editable")
+            cell.tabIndex = 0
+            cell.setAttribute("role", "button")
+            cell.setAttribute("aria-label", `Editar ${label} de ${member.word || "palabra"}`)
+            cell.title = `Clic para editar ${label}`
+            const open = event => {
+                if (event?.target?.closest?.("button")) return
+                event?.stopPropagation?.()
+                openEditorDialog(member.id, field)
+            }
+            cell.addEventListener("click", open)
+            cell.addEventListener("keydown", event => {
+                if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault()
+                    openEditorDialog(member.id, field)
+                }
+            })
+            return cell
+        }
+
+        const wordCell = makeEditable(el("td", "word-groups-table-word-cell"), "word", "palabra, pronunciación y tipo")
         const wordTop = el("div", "word-groups-table-word-top")
         const wordWrap = el("div", "word-groups-table-word-wrap")
         const word = el("strong", "word-groups-table-word", member.word || "Palabra")
         const meta = el("small", "word-groups-table-meta", [
             member.pronunciation ? member.pronunciation : "",
-            member.spanish ? member.spanish : "",
             member.partOfSpeech || ""
         ].filter(Boolean).join(" · "))
         wordWrap.append(word, meta)
@@ -516,12 +516,18 @@ function renderComparisonTable() {
         wordTop.append(wordWrap, audio)
         wordCell.append(wordTop)
 
-        const differenceCell = el("td", "word-groups-table-cell-wrap")
+        const translationCell = makeEditable(
+            el("td", `word-groups-table-translation${member.spanish ? "" : " is-empty"}`, member.spanish || "Sin traducción"),
+            "spanish",
+            "traducción"
+        )
+
+        const differenceCell = makeEditable(el("td", "word-groups-table-cell-wrap"), "difference", "diferencia y usos")
         const difference = el("p", "word-groups-table-difference", member.difference || "Sin diferencia registrada.")
         const uses = el("p", "word-groups-table-uses", member.uses || "Sin usos registrados.")
         differenceCell.append(difference, uses)
 
-        const relationshipsCell = el("td", "word-groups-table-cell-wrap word-groups-table-relationships")
+        const relationshipsCell = makeEditable(el("td", "word-groups-table-cell-wrap word-groups-table-relationships"), "relationships", "intercambiabilidad")
         const relations = relationshipSummaryFor(member)
         if (relations.interchangeable.length) {
             relationshipsCell.append(el("p", "word-groups-table-relation-yes", `Sí: ${relations.interchangeable.join(", ")}`))
@@ -533,25 +539,27 @@ function renderComparisonTable() {
             relationshipsCell.append(el("p", "word-groups-table-empty", "Todos sin marcar."))
         }
 
-        const positionCell = el("td", "word-groups-table-position", member.position || "En cualquier posición")
-        const examplesCell = el("td")
+        const positionCell = makeEditable(el("td", "word-groups-table-position", member.position || "En cualquier posición"), "position", "posición")
+        const examplesCell = makeEditable(el("td"), "examples", "ejemplos y traducciones")
         examplesCell.append(renderExamplesCell(member))
 
         const actionCell = el("td", "word-groups-table-actions")
-        const edit = el("button", "button secondary word-groups-table-edit", "Editar")
+        const edit = el("button", "button secondary word-groups-table-edit", "Editar todo")
         edit.type = "button"
         edit.addEventListener("click", event => {
             event.stopPropagation()
-            selectMember(member.id)
+            openEditorDialog(member.id, "all")
         })
         actionCell.append(edit)
+
         wordCell.dataset.label = headings[0]
-        differenceCell.dataset.label = headings[1]
-        relationshipsCell.dataset.label = headings[2]
-        positionCell.dataset.label = headings[3]
-        examplesCell.dataset.label = headings[4]
-        actionCell.dataset.label = headings[5]
-        row.append(wordCell, differenceCell, relationshipsCell, positionCell, examplesCell, actionCell)
+        translationCell.dataset.label = headings[1]
+        differenceCell.dataset.label = headings[2]
+        relationshipsCell.dataset.label = headings[3]
+        positionCell.dataset.label = headings[4]
+        examplesCell.dataset.label = headings[5]
+        actionCell.dataset.label = headings[6]
+        row.append(wordCell, translationCell, differenceCell, relationshipsCell, positionCell, examplesCell, actionCell)
         tbody.append(row)
     }
     table.append(thead, tbody)
@@ -559,23 +567,21 @@ function renderComparisonTable() {
     return wrap
 }
 
+const FIELD_LABELS = {
+    word: "palabra, pronunciación y tipo",
+    spanish: "traducción al español",
+    difference: "diferencia y usos",
+    relationships: "intercambiabilidad",
+    position: "posición en la frase",
+    examples: "ejemplos y traducciones",
+    all: "todos los datos"
+}
+
 function renderMemberEditor(member) {
-    const panel = el("section", "word-groups-inline-editor")
-    panel.setAttribute("aria-label", `Editar ${member.word || "palabra"}`)
+    const panel = el("div", "word-groups-editor")
 
-    const head = el("div", "word-groups-inline-editor-head")
-    head.append(el("h3", "word-groups-inline-editor-title", `Editar: ${member.word || "Palabra"}`))
-    const close = el("button", "word-groups-inline-editor-close", "✕")
-    close.type = "button"
-    close.setAttribute("aria-label", "Cerrar edición de esta palabra")
-    close.title = "Cerrar edición"
-    close.addEventListener("click", () => {
-        state.editorOpen = false
-        renderDialog()
-    })
-    head.append(close)
-
-    const editor = el("div", "word-groups-editor")
+    const identity = el("div", "word-groups-field-group")
+    identity.dataset.field = "word"
     const wordRow = el("div", "word-groups-word-row")
     const wordWrap = el("div", "word-groups-word-wrap")
     wordWrap.append(el("label", "word-groups-field-label", "Palabra"))
@@ -590,25 +596,34 @@ function renderMemberEditor(member) {
     audioButton.title = "Escuchar palabra"
     audioButton.setAttribute("aria-label", "Escuchar palabra")
     wordRow.append(wordWrap, audioButton)
-
-    const grid = el("div", "word-groups-grid")
+    const identityGrid = el("div", "word-groups-grid")
+    const pronunciationWrap = el("label", "word-groups-field")
+    pronunciationWrap.append(el("span", "word-groups-field-label", "Pronunciación"))
     const pronunciation = el("input", "word-groups-input")
     pronunciation.id = "word-group-pronunciation-input"
     pronunciation.placeholder = "/bɪˈsaɪdz/"
-    const spanish = el("input", "word-groups-input")
-    spanish.id = "word-group-spanish-input"
-    spanish.placeholder = "Traducción"
-    grid.append(pronunciation, spanish)
-
-    const selectGrid = el("div", "word-groups-grid word-groups-select-grid")
+    pronunciationWrap.append(pronunciation)
+    const partWrap = el("label", "word-groups-field")
+    partWrap.append(el("span", "word-groups-field-label", "Tipo de palabra"))
     const part = el("select", "word-groups-select")
     part.id = "word-group-part-input"
     part.innerHTML = `<option>Adjetivo</option><option>Verbo</option><option>Sustantivo</option><option>Adverbio</option><option>Preposición</option><option>Conector</option><option>Frase</option><option>Otro</option>`
-    const position = el("select", "word-groups-select")
-    position.id = "word-group-position-input"
-    position.innerHTML = `<option>Inicio</option><option>Medio</option><option>Final</option><option>En cualquier posición</option>`
-    selectGrid.append(part, position)
+    partWrap.append(part)
+    identityGrid.append(pronunciationWrap, partWrap)
+    identity.append(wordRow, identityGrid)
 
+    const translation = el("div", "word-groups-field-group")
+    translation.dataset.field = "spanish"
+    const spanishWrap = el("label", "word-groups-field")
+    spanishWrap.append(el("span", "word-groups-field-label", "Traducción al español"))
+    const spanish = el("input", "word-groups-input")
+    spanish.id = "word-group-spanish-input"
+    spanish.placeholder = "Traducción"
+    spanishWrap.append(spanish)
+    translation.append(spanishWrap)
+
+    const meaning = el("div", "word-groups-field-group")
+    meaning.dataset.field = "difference"
     const usesWrap = el("label", "word-groups-field")
     usesWrap.append(el("span", "word-groups-field-label", "Usos / dónde se coloca"))
     const uses = el("textarea", "word-groups-textarea")
@@ -617,7 +632,6 @@ function renderMemberEditor(member) {
     uses.placeholder = "Inicio de frase, antes del verbo, después del sujeto…"
     uses.maxLength = 2000
     usesWrap.append(uses)
-
     const differenceWrap = el("label", "word-groups-field")
     differenceWrap.append(el("span", "word-groups-field-label", "Diferencia frente a las otras"))
     const difference = el("textarea", "word-groups-textarea")
@@ -626,7 +640,20 @@ function renderMemberEditor(member) {
     difference.placeholder = "Explica cuándo usarla y cuándo no…"
     difference.maxLength = 2000
     differenceWrap.append(difference)
+    meaning.append(usesWrap, differenceWrap)
 
+    const positionGroup = el("div", "word-groups-field-group")
+    positionGroup.dataset.field = "position"
+    const positionWrap = el("label", "word-groups-field")
+    positionWrap.append(el("span", "word-groups-field-label", "Posición en la frase"))
+    const position = el("select", "word-groups-select")
+    position.id = "word-group-position-input"
+    position.innerHTML = `<option>Inicio</option><option>Medio</option><option>Final</option><option>En cualquier posición</option>`
+    positionWrap.append(position)
+    positionGroup.append(positionWrap)
+
+    const exampleGroup = el("div", "word-groups-field-group")
+    exampleGroup.dataset.field = "examples"
     const exampleHost = el("div", "word-groups-section")
     const exampleHeader = el("div", "word-groups-section-header")
     exampleHeader.append(el("p", "word-groups-section-label", "Ejemplos"))
@@ -637,16 +664,89 @@ function renderMemberEditor(member) {
     const examples = el("div", "word-groups-examples")
     examples.id = "word-group-examples-list"
     exampleHost.append(exampleHeader, examples)
+    exampleGroup.append(exampleHost)
 
+    const relationshipGroup = el("div", "word-groups-field-group")
+    relationshipGroup.dataset.field = "relationships"
     const relationshipHost = el("div", "word-groups-section")
     relationshipHost.append(el("p", "word-groups-section-label", "Intercambiabilidad"))
     const relationships = el("div", "word-groups-relationships")
     relationships.id = "word-group-relationships"
     relationshipHost.append(relationships)
+    relationshipGroup.append(relationshipHost)
 
-    editor.append(wordRow, grid, selectGrid, usesWrap, differenceWrap, exampleHost, relationshipHost)
-    panel.append(head, editor)
+    panel.append(identity, translation, meaning, positionGroup, exampleGroup, relationshipGroup)
     return panel
+}
+
+function openEditorDialog(memberId, field = "all") {
+    const member = state.draft?.members.find(row => String(row.id) === String(memberId))
+    if (!member) return
+
+    const snapshot = normalizeGroup(JSON.parse(JSON.stringify(state.draft)))
+    const wasDirty = state.dirty
+    state.activeMemberId = member.id
+    document.querySelectorAll("#word-groups-dialog .word-groups-table tbody tr").forEach(row => {
+        row.classList.toggle("is-active", row.dataset.memberId === String(member.id))
+    })
+
+    const dialog = el("dialog", "word-groups-field-dialog")
+    dialog.id = "word-groups-field-dialog"
+    const shell = el("div", "word-groups-field-shell")
+    const header = el("header", "word-groups-field-header")
+    const heading = el("div")
+    heading.append(el("p", "eyebrow word-groups-field-eyebrow", "EDITAR DATO"))
+    heading.append(el("h3", "word-groups-field-title", `${FIELD_LABELS[field] || "dato"}: ${member.word || "Palabra"}`))
+    const close = el("button", "word-groups-field-close", "✕")
+    close.type = "button"
+    close.setAttribute("aria-label", "Cerrar ventana de edición")
+    header.append(heading, close)
+
+    const body = el("div", "word-groups-field-body")
+    const footer = el("footer", "word-groups-field-footer")
+    const cancel = el("button", "button secondary", "Cancelar")
+    cancel.type = "button"
+    const save = el("button", "button primary", "Guardar")
+    save.type = "button"
+    footer.append(cancel, save)
+    shell.append(header, body, footer)
+    dialog.append(shell)
+    document.body.append(dialog)
+
+    const renderBody = () => {
+        body.replaceChildren()
+        const editor = renderMemberEditor(currentMember())
+        editor.querySelectorAll("[data-field]").forEach(group => {
+            group.hidden = field !== "all" && group.dataset.field !== field
+        })
+        body.append(editor)
+        bindEditor(renderBody)
+        renderExamples(renderBody)
+        renderRelationshipRows()
+        const firstField = [...body.querySelectorAll("input, select, textarea")].find(node => !node.closest("[hidden]"))
+        if (firstField) window.requestAnimationFrame(() => firstField.focus())
+    }
+
+    const closeWithRevert = () => {
+        state.draft = snapshot
+        setDirty(wasDirty)
+        dialog.close()
+    }
+    close.addEventListener("click", closeWithRevert)
+    cancel.addEventListener("click", closeWithRevert)
+    save.addEventListener("click", () => {
+        dialog.close()
+        renderDialog()
+        modalStatus("Cambios aplicados al grupo.")
+    })
+    dialog.addEventListener("cancel", event => {
+        event.preventDefault()
+        closeWithRevert()
+    })
+    dialog.addEventListener("close", () => dialog.remove())
+
+    renderBody()
+    dialog.showModal()
 }
 
 function renderDialog() {
@@ -676,12 +776,10 @@ function renderDialog() {
     titleBlock.append(titleInput)
     const viewControls = el("div", "word-groups-view-controls")
     const viewActions = el("div", "word-groups-view-actions")
-    viewActions.append(el("span", "word-groups-edit-hint", "Selecciona una palabra para editarla"))
+    viewActions.append(el("span", "word-groups-edit-hint", "Clic en una celda para editarla"))
     const addWord = el("button", "button secondary word-groups-add-member", "＋ Agregar")
     addWord.type = "button"
     addWord.addEventListener("click", () => {
-        state.editorOpen = false
-        renderDialog()
         window.requestAnimationFrame(() => {
             const input = byId("word-group-candidate-search")
             input?.focus()
@@ -745,7 +843,6 @@ function renderDialog() {
 
     const main = el("section", "word-groups-main")
     main.append(renderComparisonTable())
-    if (state.editorOpen && member) main.append(renderMemberEditor(member))
     body.append(members, main)
 
     const footer = el("footer", "word-groups-footer")
@@ -780,11 +877,6 @@ function renderDialog() {
     dialog.addEventListener("close", () => dialog.remove())
     dialog.showModal()
 
-    if (state.editorOpen && member) {
-        bindEditor()
-        renderExamples()
-        renderRelationshipRows()
-    }
     renderCandidates()
 }
 
@@ -881,7 +973,6 @@ export async function openWordGroup(payload) {
     }
     state.dirty = false
     state.candidateQuery = ""
-    state.editorOpen = false
     state.statusMessage = ""
     state.statusError = false
     renderDialog()

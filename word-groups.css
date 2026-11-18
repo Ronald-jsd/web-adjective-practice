@@ -265,3 +265,46 @@
 @media(prefers-reduced-motion:reduce){
     .word-groups-inline-editor{animation:none}
 }
+
+/* Columna de traducción y celdas editables de la tabla comparativa. */
+.word-groups-table{min-width:1160px}
+.word-groups-table .word-groups-table-translation{min-width:150px;color:#2f5d49;font-weight:700;overflow-wrap:anywhere}
+.word-groups-table .word-groups-table-translation.is-empty{color:#98a49b;font-style:italic;font-weight:500}
+.word-groups-table-cell--editable{position:relative;cursor:pointer;transition:background-color .15s ease}
+.word-groups-table-cell--editable:hover,
+.word-groups-table-cell--editable:focus-visible{background:#f0f8f2;outline:none}
+.word-groups-table-cell--editable:focus-visible{box-shadow:inset 0 0 0 2px #28745a}
+.word-groups-table-cell--editable::after{content:"✎";position:absolute;top:6px;right:6px;color:#2f8667;font-size:12px;opacity:0;transition:opacity .15s ease}
+.word-groups-table-cell--editable:hover::after,
+.word-groups-table-cell--editable:focus-visible::after{opacity:1}
+.word-groups-table-word-cell::after{display:none}
+
+/* Ventana modal independiente para editar la celda seleccionada. */
+.word-groups-field-dialog{width:min(560px,94vw);max-height:88vh;margin:auto;padding:0;border:1px solid #cfe0d4;border-radius:16px;background:#fff;color:#23352d;box-shadow:0 30px 80px rgba(13,40,28,.42);overflow:hidden}
+.word-groups-field-dialog::backdrop{background:rgba(8,28,19,.5);backdrop-filter:blur(3px)}
+.word-groups-field-shell{display:grid;grid-template-rows:auto minmax(0,1fr) auto;max-height:88vh}
+.word-groups-field-header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 18px;border-bottom:1px solid #dfe9e0;background:linear-gradient(135deg,#fff,#f4faf5)}
+.word-groups-field-eyebrow{margin:0;color:#a34f2d;font-weight:800;letter-spacing:.12em}
+.word-groups-field-title{margin:3px 0 0;color:#163a2d;font:800 18px/1.25 Manrope,sans-serif;letter-spacing:-.02em;overflow-wrap:anywhere}
+.word-groups-field-close{display:grid;place-items:center;width:36px;min-width:36px;height:36px;border:1px solid #d8e4da;border-radius:10px;background:#fff;color:#6d7d72;font:700 15px/1 "DM Sans",sans-serif;cursor:pointer}
+.word-groups-field-close:hover,.word-groups-field-close:focus-visible{border-color:#b9603f;color:#b9603f;outline:none}
+.word-groups-field-body{min-height:0;overflow-y:auto;padding:18px;background:#fbfdfb}
+.word-groups-field-body .word-groups-editor{gap:14px;padding:0;overflow:visible}
+.word-groups-field-body .word-groups-field-group{display:grid;gap:10px;padding:12px;border:1px solid #dfe9e0;border-radius:12px;background:#fff}
+.word-groups-field-body [hidden]{display:none!important}
+.word-groups-field-footer{display:flex;justify-content:flex-end;gap:10px;padding:13px 18px;border-top:1px solid #dfe9e0;background:#fff}
+.word-groups-field-footer .button{min-height:42px;padding:9px 18px;border-radius:11px;font:800 12px "DM Sans",sans-serif}
+
+@media(max-width:760px){
+    .word-groups-table{min-width:920px}
+    .word-groups-field-dialog{width:calc(100vw - 16px);max-height:92dvh;border-radius:14px}
+    .word-groups-field-shell{max-height:92dvh}
+    .word-groups-field-header{padding:13px 14px}
+    .word-groups-field-title{font-size:16px}
+    .word-groups-field-body{padding:13px}
+    .word-groups-field-footer{padding:11px 13px}
+    .word-groups-field-footer .button{flex:1}
+}
+@media(prefers-reduced-motion:reduce){
+    .word-groups-table-cell--editable,.word-groups-table-cell--editable::after{transition:none}
+}
