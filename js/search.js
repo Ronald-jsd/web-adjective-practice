@@ -162,7 +162,7 @@ export function setSearchMode(mode) {
         if (exactBtn) {
             exactBtn.className = 'px-4 py-1.5 rounded-md text-sm font-medium transition-all text-gray-600 hover:bg-gray-200'
         }
-        if (hint) hint.textContent = '(Contiene: "at first" encuentra las palabras at o first)'
+        if (hint) hint.textContent = '(Contiene: "eve" encuentra even y eventually)'
     } else {
         if (partialBtn) {
             partialBtn.className = 'px-4 py-1.5 rounded-md text-sm font-medium transition-all text-gray-600 hover:bg-gray-200'

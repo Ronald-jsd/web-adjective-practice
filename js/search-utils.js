@@ -1,8 +1,10 @@
 /* Búsqueda compartida por adjetivos y verbos: ignora tildes y mayúsculas.
- * "Contiene" encuentra cualquiera de las palabras completas escritas.
- * "Exacta" va sugiriendo mientras escribimos: coincide con palabras o frases
- * que EMPIEZAN por lo escrito ("event" → "eventually"), sin coincidencias
- * en mitad de palabra ("event" no coincide en "uneventful"). */
+ * "Contiene" busca cualquier término que EMPIECE por lo escrito
+ * ("eve" → "even", "eventually"; "at first" → at o first).
+ * "Exacta" aplica lo mismo a la frase completa
+ * ("event" → "eventually"; "at first" → "at first glance").
+ * En ambos casos se respeta el inicio de palabra: "at" no coincide en
+ * "Temperate" ni "event" en "uneventful". */
 
 export function normalizeSearchText(value) {
     return String(value || "")
@@ -35,5 +37,5 @@ export function matchesSearchTerms(text, query, mode = "partial") {
     if (!terms.length) return true
 
     if (mode === "exact") return hasWordMatch(normalizedText, terms, true)
-    return terms.some(term => hasWordMatch(normalizedText, [term]))
+    return terms.some(term => hasWordMatch(normalizedText, [term], true))
 }
