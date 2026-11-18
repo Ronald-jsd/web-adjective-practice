@@ -1,5 +1,6 @@
 import { store } from "../config.js"
 import { verbsData } from "../verbs/verbs-state.js"
+import { SYNCED_FIELDS, syncedFieldsFrom } from "./model.js"
 
 const sourceForAdjective = itemId => {
     const value = String(itemId ?? "")
@@ -37,6 +38,45 @@ export function pruneUnavailableMembers(group, identities, { preserveVerbs = fal
     })
     if (kept.length === members.length) return group
     return { ...group, members: kept }
+}
+
+const sameExamples = (left, right) => JSON.stringify((left || []).map(example => [example?.en || "", example?.es || ""]))
+    === JSON.stringify((right || []).map(example => [example?.en || "", example?.es || ""]))
+
+const sameSyncedValue = (field, left, right) => field === "examples"
+    ? sameExamples(left, right)
+    : String(left ?? "") === String(right ?? "")
+
+/* Actualiza los datos que vienen del catálogo. Si el usuario cambió ese campo
+ * dentro del grupo, su valor se conserva aunque la tabla general cambie. */
+export function syncGroupWithCatalog(group, candidates) {
+    if (!group) return { group, changed: 0 }
+    const byIdentity = new Map()
+    for (const candidate of candidates || []) byIdentity.set(candidateIdentity(candidate), candidate)
+    const preserveVerbs = !isVerbCatalogLoaded()
+    let changed = 0
+    const members = (group.members || []).map(member => {
+        if (!member?.itemId) return member
+        if (preserveVerbs && member.source === "verb") return member
+        const candidate = byIdentity.get(candidateIdentity(member))
+        if (!candidate) return member
+        const live = syncedFieldsFrom(candidate)
+        const baseline = member.synced || {}
+        const legacy = !Object.keys(baseline).length
+        const next = { ...member, synced: live }
+        let updated = false
+        for (const field of SYNCED_FIELDS) {
+            if (!legacy && !sameSyncedValue(field, member[field], baseline[field])) continue
+            if (sameSyncedValue(field, member[field], live[field])) continue
+            next[field] = field === "examples"
+                ? live.examples.map((example, index) => ({ id: `catalog-${candidateIdentity(candidate)}-${index}`, en: example.en, es: example.es }))
+                : live[field]
+            updated = true
+        }
+        if (updated) changed += 1
+        return next
+    })
+    return { group: changed ? { ...group, members } : group, changed }
 }
 
 export function collectWordCandidates() {

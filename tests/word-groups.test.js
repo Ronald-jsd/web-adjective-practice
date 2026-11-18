@@ -10,7 +10,7 @@ import {
     setRelationship,
     updateMember
 } from "../js/word-groups/model.js"
-import { availableMemberIdentities, candidateIdentity, pruneUnavailableMembers } from "../js/word-groups/candidates.js"
+import { availableMemberIdentities, candidateIdentity, pruneUnavailableMembers, syncGroupWithCatalog } from "../js/word-groups/candidates.js"
 
 test("word group draft normalizes source ids and standalone words without duplicates", () => {
     let draft = createDraftGroup({
@@ -72,6 +72,31 @@ test("word group pruning removes deleted catalog words but keeps manual ones", (
     assert.deepEqual(pruneUnavailableMembers(group, identities).members.map(member => member.id), ["a", "d"])
     assert.deepEqual(pruneUnavailableMembers(group, identities, { preserveVerbs: true }).members.map(member => member.id), ["a", "c", "d"])
     assert.equal(candidateIdentity({ source: "catalog", itemId: "1", word: "then" }), "catalog:1")
+})
+
+test("word group syncs catalog edits but keeps fields changed inside the group", () => {
+    const candidate = {
+        source: "catalog",
+        itemId: "1",
+        word: "then",
+        pronunciation: "/ðen/",
+        spanish: "luego / entonces",
+        examples: [{ en: "I ate, then I left.", es: "Comí, luego me fui." }]
+    }
+    const baseline = {
+        word: "then",
+        pronunciation: "/ðen/",
+        spanish: "luego",
+        examples: [{ en: "I ate, then I left.", es: "Comí, luego me fui." }]
+    }
+    const member = { id: "a", source: "catalog", itemId: "1", ...baseline, examples: [{ id: "old", ...baseline.examples[0] }], synced: baseline }
+    const synced = syncGroupWithCatalog({ members: [member] }, [candidate])
+    assert.equal(synced.changed, 1)
+    assert.equal(synced.group.members[0].spanish, "luego / entonces")
+
+    const custom = { ...member, spanish: "entonces (edición del grupo)" }
+    const preserved = syncGroupWithCatalog({ members: [custom] }, [candidate])
+    assert.equal(preserved.group.members[0].spanish, "entonces (edición del grupo)")
 })
 
 test("word group normalize removes relationships that reference missing members", () => {

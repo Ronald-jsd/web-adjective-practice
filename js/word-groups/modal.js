@@ -7,7 +7,8 @@ import {
     collectWordCandidates,
     filterCandidates,
     isVerbCatalogLoaded,
-    pruneUnavailableMembers
+    pruneUnavailableMembers,
+    syncGroupWithCatalog
 } from "./candidates.js"
 import { missingTranslationCandidates } from "./similarity.js"
 import {
@@ -41,7 +42,8 @@ const state = {
     statusMessage: "",
     statusError: false,
     candidates: [],
-    candidateQuery: ""
+    candidateQuery: "",
+    syncedCount: 0
 }
 
 function escapeHtml(value) {
@@ -93,13 +95,15 @@ function ensureCandidates() {
     return state.candidates
 }
 
-function pruneGroupAgainstCatalog(group, identities = null) {
+function reconcileGroupAgainstCatalog(group, candidates = null, report = false) {
     if (!store.categoriesData?.length) return group
-    const available = identities || availableMemberIdentities(ensureCandidates())
-    const pruned = pruneUnavailableMembers(group, available, {
-        preserveVerbs: !isVerbCatalogLoaded()
-    })
-    return pruned === group ? group : normalizeGroup(pruned)
+    const list = candidates || ensureCandidates()
+    const preserveVerbs = !isVerbCatalogLoaded()
+    const pruned = normalizeGroup(pruneUnavailableMembers(group, availableMemberIdentities(list), { preserveVerbs }))
+    const { group: synced, changed } = syncGroupWithCatalog(pruned, list)
+    const result = changed ? normalizeGroup(synced) : pruned
+    if (report) state.syncedCount = changed
+    return result
 }
 
 /* Agrega como miembros los términos con al menos una traducción equivalente.
@@ -142,8 +146,8 @@ async function ensureLoaded() {
     state.loadPromise = (async () => {
         state.user = state.user || await resolveSessionUser(supabaseClient)
         const groups = state.user && repository ? await repository.list(state.user.id) : []
-        const identities = store.categoriesData?.length ? availableMemberIdentities(ensureCandidates()) : null
-        state.groups = groups.map(group => pruneGroupAgainstCatalog(group, identities))
+        const candidates = store.categoriesData?.length ? ensureCandidates() : null
+        state.groups = groups.map(group => candidates ? reconcileGroupAgainstCatalog(group, candidates) : group)
         state.loaded = true
         state.loadPromise = null
         return true
@@ -916,7 +920,7 @@ async function saveCurrentGroup() {
         return
     }
     const source = { ...state.draft, title: byId("word-group-title-input")?.value || state.draft.title }
-    const clean = normalizeGroup(pruneGroupAgainstCatalog(source), { createId: true })
+    const clean = normalizeGroup(reconcileGroupAgainstCatalog(source), { createId: true })
     if (!clean.members.length) {
         modalStatus("Agrega al menos una palabra al grupo.", true)
         return
@@ -978,10 +982,11 @@ async function removeCurrentMember() {
 export async function openWordGroup(payload) {
     await ensureLoaded()
     if (!payload?.word) return
+    state.syncedCount = 0
     const matches = relatedGroups(payload).sort((left, right) => new Date(right.updatedAt || right.updated_at || 0) - new Date(left.updatedAt || left.updated_at || 0))
     let autoIncluded = 0
     if (matches.length) {
-        const group = pruneGroupAgainstCatalog(cloneGroup(matches[0]))
+        const group = reconcileGroupAgainstCatalog(cloneGroup(matches[0]), null, true)
         const member = findMemberForPayload(group, payload) || group.members[0]
         state.draft = group
         state.activeMemberId = member?.id || group.members[0]?.id || null
@@ -997,9 +1002,10 @@ export async function openWordGroup(payload) {
     state.statusMessage = ""
     state.statusError = false
     renderDialog()
-    if (autoIncluded) {
-        modalStatus(`Se incluyeron ${autoIncluded} términos con traducción equivalente.`)
-    }
+    const notes = []
+    if (autoIncluded) notes.push(`Se incluyeron ${autoIncluded} términos con traducción equivalente.`)
+    if (state.syncedCount) notes.push(`Se actualizaron ${state.syncedCount} palabras desde la tabla general.`)
+    if (notes.length) modalStatus(notes.join(" "))
 }
 
 async function handleDelegatedClick(event) {
@@ -1017,7 +1023,7 @@ export function invalidateWordGroupData() {
     state.groups = []
     state.loaded = false
     state.loadPromise = null
-    if (state.draft) state.draft = pruneGroupAgainstCatalog(state.draft)
+    if (state.draft) state.draft = reconcileGroupAgainstCatalog(state.draft)
     byId("word-groups-field-dialog")?.remove()
     if (byId("word-groups-dialog")) renderDialog()
 }

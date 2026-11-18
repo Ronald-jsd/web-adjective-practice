@@ -225,6 +225,7 @@ async function editCell(field, currentValue, item) {
             await loadUserCustomItems({ preferCache: true })
         }
         await refreshCategoryViewFromLocalCopy()
+        window.dispatchEvent(new CustomEvent('word-catalog-changed'))
     } catch (error) {
         console.error('No se pudo editar el término:', error)
         showToast(`No se pudo editar: ${error.message}`, 'error')

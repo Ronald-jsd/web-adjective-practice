@@ -10,6 +10,24 @@ function newId() {
 const trimText = (value, max = MAX_TEXT) => String(value ?? "").trim().replace(/\s+/g, " ").slice(0, max)
 const trimArea = (value, max = MAX_TEXT) => String(value ?? "").trim().slice(0, max)
 
+export const SYNCED_FIELDS = ["word", "pronunciation", "spanish", "examples"]
+
+const normalizeSyncedExamples = value => (Array.isArray(value) ? value : [])
+    .map(example => ({
+        en: trimArea(example?.en || example?.example_en || "", 1000),
+        es: trimArea(example?.es || example?.example_es || "", 1000)
+    }))
+    .slice(0, 30)
+
+export function syncedFieldsFrom(item = {}) {
+    return {
+        word: trimText(item.word, 300),
+        pronunciation: trimText(item.pronunciation, 300),
+        spanish: trimArea(item.spanish, 1000),
+        examples: normalizeSyncedExamples(item.examples)
+    }
+}
+
 export function normalizeMember(member = {}, { createId = false } = {}) {
     const itemIdValue = member.itemId ?? member.item_id ?? null
     const itemId = itemIdValue === undefined || itemIdValue === null || itemIdValue === "" ? null : String(itemIdValue)
@@ -34,7 +52,8 @@ export function normalizeMember(member = {}, { createId = false } = {}) {
         position: trimArea(member.position, MAX_TEXT) || "En cualquier posición",
         uses: trimArea(member.uses, MAX_TEXT),
         difference: trimArea(member.difference, MAX_TEXT),
-        examples: normalizedExamples
+        examples: normalizedExamples,
+        synced: syncedFieldsFrom(member.synced)
     }
 }
 
@@ -98,7 +117,8 @@ export function createDraftGroup(payload = {}) {
         position: payload.position,
         uses: payload.uses,
         difference: payload.difference,
-        examples: payload.examples?.length ? payload.examples : (payload.example_en ? [{ en: payload.example_en, es: payload.example_es || "" }] : [])
+        examples: payload.examples?.length ? payload.examples : (payload.example_en ? [{ en: payload.example_en, es: payload.example_es || "" }] : []),
+        synced: syncedFieldsFrom(payload)
     }, { createId: true })
     const title = trimText(payload.groupTitle || `${member.word || "Palabra"} · similares`, MAX_TITLE)
     return {
@@ -122,7 +142,8 @@ export function addMember(group, payload = {}) {
         position: payload.position,
         uses: payload.uses,
         difference: payload.difference,
-        examples: payload.examples?.length ? payload.examples : (payload.example_en ? [{ en: payload.example_en, es: payload.example_es || "" }] : [])
+        examples: payload.examples?.length ? payload.examples : (payload.example_en ? [{ en: payload.example_en, es: payload.example_es || "" }] : []),
+        synced: syncedFieldsFrom(payload)
     }, { createId: true })
     const existing = findMemberByIdentity(group, candidate)
     if (existing) return { group, member: existing, added: false }
