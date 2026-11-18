@@ -49,10 +49,13 @@ test("matchesSearchTerms partial mode finds any written word", () => {
     assert.equal(matchesSearchTerms("neither term here", "at first"), false)
 })
 
-test("matchesSearchTerms partial mode finds words starting with any term", () => {
+test("matchesSearchTerms partial mode prefixes single long words only", () => {
     assert.equal(matchesSearchTerms("eventually", "eve"), true)
     assert.equal(matchesSearchTerms("even so", "eve"), true)
     assert.equal(matchesSearchTerms("Temperate", "at"), false)
+    assert.equal(matchesSearchTerms("Sofocante", "so"), false)
+    assert.equal(matchesSearchTerms("Sofocante", "even so"), false)
+    assert.equal(matchesSearchTerms("even so", "even so"), true)
     assert.equal(matchesSearchTerms("at least", "at first"), true)
     assert.equal(matchesSearchTerms("first of all", "at first"), true)
     assert.equal(matchesSearchTerms("neither term here", "at first"), false)

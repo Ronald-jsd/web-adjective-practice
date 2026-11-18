@@ -1,10 +1,9 @@
 /* Búsqueda compartida por adjetivos y verbos: ignora tildes y mayúsculas.
- * "Contiene" busca cualquier término que EMPIECE por lo escrito
- * ("eve" → "even", "eventually"; "at first" → at o first).
- * "Exacta" aplica lo mismo a la frase completa
- * ("event" → "eventually"; "at first" → "at first glance").
- * En ambos casos se respeta el inicio de palabra: "at" no coincide en
- * "Temperate" ni "event" en "uneventful". */
+ * "Contiene": con una sola palabra larga busca por prefijo ("eve" → "even",
+ * "eventually"); con varias palabras o palabras cortas exige la palabra
+ * completa ("even so" → even o so, nunca "sofocante"; "at" no casa con
+ * "Temperate").
+ * "Exacta" aplica prefijo a la frase completa ("event" → "eventually"). */
 
 export function normalizeSearchText(value) {
     return String(value || "")
@@ -37,5 +36,10 @@ export function matchesSearchTerms(text, query, mode = "partial") {
     if (!terms.length) return true
 
     if (mode === "exact") return hasWordMatch(normalizedText, terms, true)
-    return terms.some(term => hasWordMatch(normalizedText, [term], true))
+
+    // Un término único y suficientemente largo se trata como prefijo para
+    // sugerir mientras se escribe. En cuanto hay varias palabras —o es una
+    // palabra corta como "so" o "at"— se exige la palabra completa.
+    const usePrefix = terms.length === 1 && terms[0].length >= 3
+    return terms.some(term => hasWordMatch(normalizedText, [term], usePrefix))
 }
