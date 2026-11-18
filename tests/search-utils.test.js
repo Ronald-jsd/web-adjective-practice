@@ -25,3 +25,17 @@ test("matchesSearchTerms keeps whole-word matching in exact mode", () => {
     assert.equal(matchesSearchTerms("feliz application", "aplicacion aplicacion", "exact"), false)
     assert.equal(matchesSearchTerms("feliz aplicación", "aplicacion", "exact"), true)
 })
+
+test("matchesSearchTerms exact mode requires the full phrase consecutively", () => {
+    assert.equal(matchesSearchTerms("At first, I was scared", "at first", "exact"), true)
+    assert.equal(matchesSearchTerms("ÁT FÍRST", "at first", "exact"), true)
+    assert.equal(matchesSearchTerms("I saw it first at home", "at first", "exact"), false)
+    assert.equal(matchesSearchTerms("format first", "at first", "exact"), false)
+    assert.equal(matchesSearchTerms("at least and first place", "at first", "exact"), false)
+})
+
+test("matchesSearchTerms partial mode finds any written word", () => {
+    assert.equal(matchesSearchTerms("at least", "at first"), true)
+    assert.equal(matchesSearchTerms("first of all", "at first"), true)
+    assert.equal(matchesSearchTerms("neither term here", "at first"), false)
+})

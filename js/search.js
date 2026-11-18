@@ -23,6 +23,9 @@ function performSearch(query) {
     const results = []
 
     const matchesSearch = (text) => matchesSearchTerms(text, query, searchMode)
+    const searchFields = (values) => values
+        .filter(value => value !== null && value !== undefined && String(value).trim())
+        .map(String)
 
     // Las tarjetas personales ya se agregan por separado más abajo; evitar
     // mostrar la misma copia una vez como «DB» y otra como «Personalizadas».
@@ -32,10 +35,14 @@ function performSearch(query) {
         ;(cat.subcategories || []).forEach(sub => {
             ;(sub.items || []).forEach(item => {
                 if (isCustomItemId(item[5])) return
-                const wordMatch = matchesSearch(item[0])
-                const spanishMatch = matchesSearch(item[2])
+                // Igual que en verbos: se busca en todas las columnas visibles,
+                // pero cada campo por separado para que una frase exacta no se
+                // forme cruzando el final de un campo con el siguiente.
+                const fields = searchFields([
+                    item[0], item[1], item[2], item[3], item[4], cat.title, sub.title
+                ])
 
-                if (wordMatch || spanishMatch) {
+                if (fields.some(matchesSearch)) {
                     results.push({
                         category: cat.title,
                         categoryId: cat.id,
@@ -57,10 +64,13 @@ function performSearch(query) {
 
     if (store.currentUser && store.userCustomItems?.length > 0) {
         store.userCustomItems.forEach(customItem => {
-            const wordMatch = matchesSearch(customItem.word || '')
-            const spanishMatch = matchesSearch(customItem.spanish || '')
+            const fields = searchFields([
+                customItem.word, customItem.pronunciation, customItem.spanish,
+                customItem.example_en, customItem.example_es,
+                customItem.category, customItem.subcategory
+            ])
 
-            if (wordMatch || spanishMatch) {
+            if (fields.some(matchesSearch)) {
                 results.push({
                     category: customItem.category || '📝 Mis Expresiones',
                     categoryId: null,
@@ -158,7 +168,7 @@ export function setSearchMode(mode) {
         if (exactBtn) {
             exactBtn.className = 'px-4 py-1.5 rounded-md text-sm font-medium transition-all text-gray-600 hover:bg-gray-200'
         }
-        if (hint) hint.textContent = '(Busca palabras que CONTENGAN el texto)'
+        if (hint) hint.textContent = '(Contiene: "at first" encuentra at o first)'
     } else {
         if (partialBtn) {
             partialBtn.className = 'px-4 py-1.5 rounded-md text-sm font-medium transition-all text-gray-600 hover:bg-gray-200'
@@ -166,7 +176,7 @@ export function setSearchMode(mode) {
         if (exactBtn) {
             exactBtn.className = 'px-4 py-1.5 rounded-md text-sm font-medium transition-all bg-amber-500 text-white'
         }
-        if (hint) hint.textContent = '(Busca palabras EXACTAS)'
+        if (hint) hint.textContent = '(Exacta: "at first" solo encuentra esa frase)'
     }
 
     if (store.lastSearchQuery?.trim()) {
