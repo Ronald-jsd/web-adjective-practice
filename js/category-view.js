@@ -6,6 +6,7 @@ import { initDragAndDrop } from "./drag-drop.js";
 import { makeClickableText } from "./audio.js";
 import { renderGroupWordButton } from "./word-groups/modal.js";
 import { getFavoriteKey } from "./favorites.js";
+import { renderExampleLines, splitCatalogExamples } from "./search-utils.js";
 
 const SUBCAT_PAGE_SIZE_OPTIONS = [10, 15, 25, 50, 100];
 const SUBCAT_DEFAULT_PAGE_SIZE = 15;
@@ -255,14 +256,17 @@ function openCategoryView(data) {
                     position: "En cualquier posición",
                     uses: "",
                     difference: "",
-                    examples: item[3] ? [{ id: `example-${groupSource}-${groupItemId || item[0]}-0`, en: item[3] || "", es: item[4] || "" }] : [],
+                    examples: splitCatalogExamples(item[3], item[4]).map((example, index) => ({
+                        id: `example-${groupSource}-${groupItemId || item[0]}-${index}`,
+                        ...example
+                    })).filter(example => example.en || example.es),
                     context: `${data.title || ""}${sub.title ? ` · ${sub.title}` : ""}`
                 }
 
                 const wordEn = renderGroupWordButton(item[0] || "", groupPayload, "", isTemporalId ? null : itemObj)
                 const wordEs = makeClickableText(item[2], 'es');
-                const exampleEn = makeClickableText(item[3], 'en');
-                const exampleEs = makeClickableText(item[4], 'es');
+                const exampleEn = renderExampleLines(item[3], item[4], 'en', makeClickableText);
+                const exampleEs = renderExampleLines(item[3], item[4], 'es', makeClickableText);
 
                 const itemObjStr = JSON.stringify(itemObj).replace(/"/g, '&quot;');
                 const escapedWord = (item[0] || '').replace(/'/g, "\\'");

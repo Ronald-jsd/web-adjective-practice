@@ -10,7 +10,14 @@ import {
     setRelationship,
     updateMember
 } from "../js/word-groups/model.js"
-import { availableMemberIdentities, candidateIdentity, pruneUnavailableMembers, syncGroupWithCatalog } from "../js/word-groups/candidates.js"
+import {
+    availableMemberIdentities,
+    candidateIdentity,
+    collectWordCandidates,
+    pruneUnavailableMembers,
+    syncGroupWithCatalog
+} from "../js/word-groups/candidates.js"
+import { store } from "../js/config.js"
 
 test("word group draft normalizes source ids and standalone words without duplicates", () => {
     let draft = createDraftGroup({
@@ -97,6 +104,34 @@ test("word group syncs catalog edits but keeps fields changed inside the group",
     const custom = { ...member, spanish: "entonces (edición del grupo)" }
     const preserved = syncGroupWithCatalog({ members: [custom] }, [candidate])
     assert.equal(preserved.group.members[0].spanish, "entonces (edición del grupo)")
+})
+
+test("word group syncs legacy members and splits combined catalog examples", () => {
+    const previous = store.categoriesData
+    store.categoriesData = [{
+        title: "T",
+        subcategories: [{ title: "S", items: [
+            ["then", "/ðen/", "luego / entonces", "I ate, then I left. / I ate dinner, then left.", "Comí, luego me fui./ Cené, entonces me fui.", "5361"]
+        ] }]
+    }]
+    const candidate = collectWordCandidates()[0]
+    store.categoriesData = previous
+    assert.equal(candidate.examples.length, 2)
+    assert.equal(candidate.examples[1].en, "I ate dinner, then left.")
+
+    const legacy = {
+        id: "a",
+        source: "catalog",
+        itemId: "5361",
+        word: "then",
+        pronunciation: "/ðen/",
+        spanish: "luego",
+        examples: [{ id: "old", en: "I ate, then I left.", es: "Comí, luego me fui." }]
+    }
+    const synced = syncGroupWithCatalog({ members: [legacy] }, [candidate])
+    assert.equal(synced.changed, 1)
+    assert.equal(synced.group.members[0].spanish, "luego / entonces")
+    assert.equal(synced.group.members[0].examples.length, 2)
 })
 
 test("word group normalize removes relationships that reference missing members", () => {

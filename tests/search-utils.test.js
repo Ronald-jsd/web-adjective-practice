@@ -1,6 +1,6 @@
 import test from "node:test"
 import assert from "node:assert/strict"
-import { matchesSearchTerms, normalizeSearchText, searchTerms } from "../js/search-utils.js"
+import { matchesSearchTerms, normalizeSearchText, searchTerms, splitCatalogExamples } from "../js/search-utils.js"
 
 test("normalizeSearchText ignores accents and letter case", () => {
     assert.equal(normalizeSearchText("Aplicación"), "aplicacion")
@@ -10,6 +10,23 @@ test("normalizeSearchText ignores accents and letter case", () => {
 test("searchTerms splits the query into independent words", () => {
     assert.deepEqual(searchTerms("  feliz   aplicacion "), ["feliz", "aplicacion"])
     assert.deepEqual(searchTerms(""), [])
+})
+
+test("splitCatalogExamples separates paired examples and keeps single ones", () => {
+    assert.deepEqual(splitCatalogExamples(
+        "I ate, then I left. / I ate dinner, then left.",
+        "Comí, luego me fui./ Cené, entonces me fui."
+    ), [
+        { en: "I ate, then I left.", es: "Comí, luego me fui." },
+        { en: "I ate dinner, then left.", es: "Cené, entonces me fui." }
+    ])
+    assert.deepEqual(splitCatalogExamples("I saw him then.", "Lo vi entonces."), [
+        { en: "I saw him then.", es: "Lo vi entonces." }
+    ])
+    // Si el número de partes no coincide, se mantiene el texto original.
+    assert.deepEqual(splitCatalogExamples("A / B", "Solo una"), [
+        { en: "A / B", es: "Solo una" }
+    ])
 })
 
 test("matchesSearchTerms finds any word and ignores accents", () => {

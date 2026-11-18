@@ -1,4 +1,5 @@
 import { store } from "../config.js"
+import { splitCatalogExamples } from "../search-utils.js"
 import { verbsData } from "../verbs/verbs-state.js"
 import { SYNCED_FIELDS, syncedFieldsFrom } from "./model.js"
 
@@ -40,6 +41,14 @@ export function pruneUnavailableMembers(group, identities, { preserveVerbs = fal
     return { ...group, members: kept }
 }
 
+/* La tabla general guarda varios ejemplos en una sola celda separados por "/". */
+function catalogExamples(en, es, idPrefix) {
+    return splitCatalogExamples(en, es).map((example, index) => ({
+        id: `${idPrefix}-${index}`,
+        ...example
+    }))
+}
+
 const sameExamples = (left, right) => JSON.stringify((left || []).map(example => [example?.en || "", example?.es || ""]))
     === JSON.stringify((right || []).map(example => [example?.en || "", example?.es || ""]))
 
@@ -62,7 +71,7 @@ export function syncGroupWithCatalog(group, candidates) {
         if (!candidate) return member
         const live = syncedFieldsFrom(candidate)
         const baseline = member.synced || {}
-        const legacy = !Object.keys(baseline).length
+        const legacy = !baseline.word && !baseline.pronunciation && !baseline.spanish && !(baseline.examples || []).length
         const next = { ...member, synced: live }
         let updated = false
         for (const field of SYNCED_FIELDS) {
@@ -105,7 +114,9 @@ export function collectWordCandidates() {
                     position: "En cualquier posición",
                     uses: "",
                     difference: "",
-                    examples: item[3] ? [{ id: `example-${source}-${rawId}-0`, en: item[3] || "", es: item[4] || "" }] : [],
+                    examples: item[3] || item[4]
+                        ? catalogExamples(item[3], item[4], `example-${source}-${rawId}`)
+                        : [],
                     context: [category.title || "", subcategory.title || ""].filter(Boolean).join(" · ")
                 })
             }

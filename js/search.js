@@ -4,7 +4,7 @@ import { renderGroupWordButton } from './word-groups/modal.js'
 import { renderCategories } from './data.js'
 import { editCell, getStatusBadge } from './editing.js'
 import { getFavoriteKey } from './favorites.js'
-import { matchesSearchTerms } from './search-utils.js'
+import { matchesSearchTerms, renderExampleLines, splitCatalogExamples } from './search-utils.js'
 
 const PAGE_SIZE_OPTIONS = [10, 15, 25, 50, 100]
 const DEFAULT_PAGE_SIZE = 15
@@ -239,7 +239,10 @@ function renderSearchResults() {
                     position: "En cualquier posición",
                     uses: "",
                     difference: "",
-                    examples: r.example_en ? [{ id: `example-${r.id}-0`, en: r.example_en || "", es: r.example_es || "" }] : [],
+                    examples: splitCatalogExamples(r.example_en, r.example_es).map((example, index) => ({
+                        id: `example-${r.id}-${index}`,
+                        ...example
+                    })).filter(example => example.en || example.es),
                     context: [r.category || "", r.subcategory || ""].filter(Boolean).join(" · ")
                 }
                 const itemObj = {
@@ -255,8 +258,8 @@ function renderSearchResults() {
                 }
                 const wordWithAudio = renderGroupWordButton(r.word || "", groupPayload, "", String(r.id).startsWith('temp_') ? null : itemObj)
                 const spanishWithAudio = makeClickableText(r.spanish, 'es')
-                const exampleWithAudio = makeClickableText(r.example_en, 'en')
-                const exampleEsWithAudio = makeClickableText(r.example_es || '', 'es')
+                const exampleWithAudio = renderExampleLines(r.example_en, r.example_es, 'en', makeClickableText)
+                const exampleEsWithAudio = renderExampleLines(r.example_en, r.example_es, 'es', makeClickableText)
 
                 const status = store.wordStatusMap.get(r.id.toString()) || 0
                 const statusBadge = getStatusBadge(status)

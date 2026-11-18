@@ -43,7 +43,8 @@ const state = {
     statusError: false,
     candidates: [],
     candidateQuery: "",
-    syncedCount: 0
+    syncedCount: 0,
+    syncedByGroup: new Map()
 }
 
 function escapeHtml(value) {
@@ -102,8 +103,18 @@ function reconcileGroupAgainstCatalog(group, candidates = null, report = false) 
     const pruned = normalizeGroup(pruneUnavailableMembers(group, availableMemberIdentities(list), { preserveVerbs }))
     const { group: synced, changed } = syncGroupWithCatalog(pruned, list)
     const result = changed ? normalizeGroup(synced) : pruned
-    if (report) state.syncedCount = changed
+    if (typeof report === "function") report(changed)
+    else if (report) state.syncedCount = changed
     return result
+}
+
+/* El catálogo se carga justo después de inicializar este módulo. Si el usuario
+ * abre un grupo muy rápido, esperamos unos instantes para comparar con los
+ * datos vivos en vez de mostrar la copia guardada. */
+async function waitForCatalog() {
+    for (let attempt = 0; attempt < 30 && !store.categoriesData?.length; attempt++) {
+        await new Promise(resolve => setTimeout(resolve, 100))
+    }
 }
 
 /* Agrega como miembros los términos con al menos una traducción equivalente.
@@ -147,7 +158,13 @@ async function ensureLoaded() {
         state.user = state.user || await resolveSessionUser(supabaseClient)
         const groups = state.user && repository ? await repository.list(state.user.id) : []
         const candidates = store.categoriesData?.length ? ensureCandidates() : null
-        state.groups = groups.map(group => candidates ? reconcileGroupAgainstCatalog(group, candidates) : group)
+        state.groups = groups.map(group => {
+            if (!candidates) return group
+            let changed = 0
+            const reconciled = reconcileGroupAgainstCatalog(group, candidates, count => { changed = count })
+            if (changed) state.syncedByGroup.set(group.id, changed)
+            return reconciled
+        })
         state.loaded = true
         state.loadPromise = null
         return true
@@ -927,6 +944,7 @@ async function saveCurrentGroup() {
     }
     try {
         const saved = await repository.save(state.user.id, clean)
+        state.syncedByGroup.delete(saved.id)
         state.groups = [saved, ...state.groups.filter(group => group.id !== saved.id)]
         state.draft = cloneGroup(saved)
         state.activeMemberId = currentMember()?.id || state.draft.members[0]?.id || null
@@ -981,12 +999,15 @@ async function removeCurrentMember() {
 
 export async function openWordGroup(payload) {
     await ensureLoaded()
+    await waitForCatalog()
     if (!payload?.word) return
     state.syncedCount = 0
     const matches = relatedGroups(payload).sort((left, right) => new Date(right.updatedAt || right.updated_at || 0) - new Date(left.updatedAt || left.updated_at || 0))
     let autoIncluded = 0
     if (matches.length) {
-        const group = reconcileGroupAgainstCatalog(cloneGroup(matches[0]), null, true)
+        state.syncedCount = state.syncedByGroup.get(matches[0].id) || 0
+        state.syncedByGroup.delete(matches[0].id)
+        const group = reconcileGroupAgainstCatalog(cloneGroup(matches[0]), null, count => { state.syncedCount += count })
         const member = findMemberForPayload(group, payload) || group.members[0]
         state.draft = group
         state.activeMemberId = member?.id || group.members[0]?.id || null
@@ -1021,6 +1042,7 @@ async function handleDelegatedClick(event) {
 export function invalidateWordGroupData() {
     state.candidates = []
     state.groups = []
+    state.syncedByGroup.clear()
     state.loaded = false
     state.loadPromise = null
     if (state.draft) state.draft = reconcileGroupAgainstCatalog(state.draft)
