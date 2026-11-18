@@ -34,6 +34,15 @@ test("matchesSearchTerms exact mode requires the full phrase consecutively", () 
     assert.equal(matchesSearchTerms("at least and first place", "at first", "exact"), false)
 })
 
+test("matchesSearchTerms exact mode suggests as the word is typed", () => {
+    assert.equal(matchesSearchTerms("even", "even", "exact"), true)
+    assert.equal(matchesSearchTerms("eventually", "even", "exact"), true)
+    assert.equal(matchesSearchTerms("eventually", "event", "exact"), true)
+    assert.equal(matchesSearchTerms("eventually he arrived", "eventually", "exact"), true)
+    assert.equal(matchesSearchTerms("at first glance", "at first", "exact"), true)
+    assert.equal(matchesSearchTerms("uneventful", "event", "exact"), false)
+})
+
 test("matchesSearchTerms partial mode finds any written word", () => {
     assert.equal(matchesSearchTerms("at least", "at first"), true)
     assert.equal(matchesSearchTerms("first of all", "at first"), true)

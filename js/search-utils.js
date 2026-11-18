@@ -1,7 +1,8 @@
 /* Búsqueda compartida por adjetivos y verbos: ignora tildes y mayúsculas.
- * "Contiene" encuentra cualquiera de las palabras completas escritas;
- * "exacta" exige la frase completa consecutiva. En ambos casos se respetan
- * los límites de palabra: "at" no coincide dentro de "weather". */
+ * "Contiene" encuentra cualquiera de las palabras completas escritas.
+ * "Exacta" va sugiriendo mientras escribimos: coincide con palabras o frases
+ * que EMPIEZAN por lo escrito ("event" → "eventually"), sin coincidencias
+ * en mitad de palabra ("event" no coincide en "uneventful"). */
 
 export function normalizeSearchText(value) {
     return String(value || "")
@@ -18,9 +19,13 @@ function escapeRegExp(value) {
     return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 }
 
-function hasWholeMatch(normalizedText, parts) {
+function hasWordMatch(normalizedText, parts, prefixOnly = false) {
     const phrase = parts.map(escapeRegExp).join("[^a-z0-9]+")
-    const pattern = new RegExp(`(^|[^a-z0-9])${phrase}(?=$|[^a-z0-9])`)
+    // El límite inicial evita coincidencias en mitad de palabra. En modo
+    // exacto no cerramos el final para que "event" sugiera "eventually" y
+    // "eventually" siga encontrando "eventually he".
+    const trailingBoundary = prefixOnly ? "" : "(?=$|[^a-z0-9])"
+    const pattern = new RegExp(`(^|[^a-z0-9])${phrase}${trailingBoundary}`)
     return pattern.test(normalizedText)
 }
 
@@ -29,6 +34,6 @@ export function matchesSearchTerms(text, query, mode = "partial") {
     const terms = searchTerms(query)
     if (!terms.length) return true
 
-    if (mode === "exact") return hasWholeMatch(normalizedText, terms)
-    return terms.some(term => hasWholeMatch(normalizedText, [term]))
+    if (mode === "exact") return hasWordMatch(normalizedText, terms, true)
+    return terms.some(term => hasWordMatch(normalizedText, [term]))
 }
