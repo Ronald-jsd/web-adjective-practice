@@ -331,19 +331,10 @@ function renderExamples(onStructureChange = null) {
     member.examples.forEach((example, index) => {
         const item = el("div", "word-group-example")
 
-        const exampleRow = el("div", "word-group-example-row")
-        const en = el("textarea", "word-group-example-en")
-        en.value = example.en || ""
-        en.rows = 2
-        en.maxLength = 1000
-        en.setAttribute("aria-label", `Ejemplo en inglés ${index + 1}`)
-        en.addEventListener("input", () => {
-            const updated = state.draft.members.map(row => String(row.id) === String(member.id)
-                ? { ...row, examples: row.examples.map(ex => String(ex.id) === String(example.id) ? { ...ex, en: en.value } : ex) }
-                : row)
-            state.draft = { ...state.draft, members: updated }
-            setDirty(true)
-        })
+        const head = el("div", "word-group-example-head")
+        head.append(el("span", "word-group-example-index", String(index + 1)))
+        head.append(el("span", "word-group-example-caption", index === 0 ? "Ejemplo principal" : `Ejemplo ${index + 1}`))
+        const tools = el("div", "word-group-example-tools")
         const audio = el("button", "icon-button audio-button", "🔊")
         audio.type = "button"
         audio.title = "Escuchar ejemplo"
@@ -359,11 +350,34 @@ function renderExamples(onStructureChange = null) {
             if (onStructureChange) onStructureChange()
             else renderDialog()
         })
+        tools.append(audio, remove)
+        head.append(tools)
 
+        const fields = el("div", "word-group-example-fields")
+        const enWrap = el("label", "word-group-example-field")
+        enWrap.append(el("span", "word-group-example-lang", "EN · Inglés"))
+        const en = el("textarea", "word-group-example-en")
+        en.value = example.en || ""
+        en.rows = 2
+        en.maxLength = 1000
+        en.placeholder = "Escribe el ejemplo en inglés…"
+        en.setAttribute("aria-label", `Ejemplo en inglés ${index + 1}`)
+        en.addEventListener("input", () => {
+            const updated = state.draft.members.map(row => String(row.id) === String(member.id)
+                ? { ...row, examples: row.examples.map(ex => String(ex.id) === String(example.id) ? { ...ex, en: en.value } : ex) }
+                : row)
+            state.draft = { ...state.draft, members: updated }
+            setDirty(true)
+        })
+        enWrap.append(en)
+
+        const esWrap = el("label", "word-group-example-field")
+        esWrap.append(el("span", "word-group-example-lang", "ES · Español"))
         const es = el("textarea", "word-group-example-es")
         es.value = example.es || ""
         es.rows = 2
         es.maxLength = 1000
+        es.placeholder = "Su traducción al español…"
         es.setAttribute("aria-label", `Traducción del ejemplo ${index + 1}`)
         es.addEventListener("input", () => {
             const updated = state.draft.members.map(row => String(row.id) === String(member.id)
@@ -372,9 +386,10 @@ function renderExamples(onStructureChange = null) {
             state.draft = { ...state.draft, members: updated }
             setDirty(true)
         })
+        esWrap.append(es)
 
-        exampleRow.append(en, audio, remove)
-        item.append(exampleRow, es)
+        fields.append(enWrap, esWrap)
+        item.append(head, fields)
         host.append(item)
     })
 }
@@ -615,11 +630,43 @@ const FIELD_LABELS = {
     all: "todos los datos"
 }
 
+const SECTION_META = {
+    word: { icon: "🔤", title: "Palabra y pronunciación", hint: "Cómo se escribe, se pronuncia y qué tipo de palabra es." },
+    spanish: { icon: "🌐", title: "Traducción al español", hint: "El significado que aparece en la tabla general." },
+    difference: { icon: "🧭", title: "Diferencia y uso exacto", hint: "Cuándo conviene esta palabra y cuándo no." },
+    position: { icon: "📐", title: "Posiciones válidas", hint: "Escribe una posición por línea; puedes indicar varias." },
+    examples: { icon: "💬", title: "Ejemplos y traducciones", hint: "Cada ejemplo en inglés junto a su traducción." },
+    relationships: { icon: "🔁", title: "Intercambiabilidad", hint: "Marca con qué otras palabras se puede sustituir." }
+}
+
+const SECTION_ORDER = Object.keys(SECTION_META)
+const SECTION_SHORT = {
+    word: "Palabra",
+    spanish: "Traducción",
+    difference: "Uso",
+    position: "Posiciones",
+    examples: "Ejemplos",
+    relationships: "Relaciones"
+}
+
+function fieldSection(field) {
+    const meta = SECTION_META[field]
+    const section = el("div", "word-groups-field-group")
+    section.dataset.field = field
+    const heading = el("div", "word-groups-field-heading")
+    heading.append(el("span", "word-groups-field-icon", meta.icon))
+    const text = el("div", "word-groups-field-heading-text")
+    text.append(el("h4", "word-groups-field-heading-title", meta.title))
+    text.append(el("p", "word-groups-field-heading-hint", meta.hint))
+    heading.append(text)
+    section.append(heading)
+    return section
+}
+
 function renderMemberEditor(member) {
     const panel = el("div", "word-groups-editor")
 
-    const identity = el("div", "word-groups-field-group")
-    identity.dataset.field = "word"
+    const identity = fieldSection("word")
     const wordRow = el("div", "word-groups-word-row")
     const wordWrap = el("div", "word-groups-word-wrap")
     wordWrap.append(el("label", "word-groups-field-label", "Palabra"))
@@ -650,8 +697,7 @@ function renderMemberEditor(member) {
     identityGrid.append(pronunciationWrap, partWrap)
     identity.append(wordRow, identityGrid)
 
-    const translation = el("div", "word-groups-field-group")
-    translation.dataset.field = "spanish"
+    const translation = fieldSection("spanish")
     const spanishWrap = el("label", "word-groups-field")
     spanishWrap.append(el("span", "word-groups-field-label", "Traducción al español"))
     const spanish = el("input", "word-groups-input")
@@ -660,8 +706,7 @@ function renderMemberEditor(member) {
     spanishWrap.append(spanish)
     translation.append(spanishWrap)
 
-    const meaning = el("div", "word-groups-field-group")
-    meaning.dataset.field = "difference"
+    const meaning = fieldSection("difference")
     const usesWrap = el("label", "word-groups-field")
     usesWrap.append(el("span", "word-groups-field-label", "Usos / dónde se coloca"))
     const uses = el("textarea", "word-groups-textarea")
@@ -680,8 +725,7 @@ function renderMemberEditor(member) {
     differenceWrap.append(difference)
     meaning.append(usesWrap, differenceWrap)
 
-    const positionGroup = el("div", "word-groups-field-group")
-    positionGroup.dataset.field = "position"
+    const positionGroup = fieldSection("position")
     const positionWrap = el("label", "word-groups-field")
     positionWrap.append(el("span", "word-groups-field-label", "Posiciones válidas"))
     const position = el("textarea", "word-groups-textarea")
@@ -693,28 +737,19 @@ function renderMemberEditor(member) {
     positionWrap.append(position)
     positionGroup.append(positionWrap)
 
-    const exampleGroup = el("div", "word-groups-field-group")
-    exampleGroup.dataset.field = "examples"
-    const exampleHost = el("div", "word-groups-section")
-    const exampleHeader = el("div", "word-groups-section-header")
-    exampleHeader.append(el("p", "word-groups-section-label", "Ejemplos"))
-    const addExample = el("button", "button secondary word-groups-add-example", "＋ Add example")
+    const exampleGroup = fieldSection("examples")
+    const addExample = el("button", "button secondary word-groups-add-example", "＋ Agregar ejemplo")
     addExample.id = "word-group-add-example"
     addExample.type = "button"
-    exampleHeader.append(addExample)
+    exampleGroup.querySelector(".word-groups-field-heading")?.append(addExample)
     const examples = el("div", "word-groups-examples")
     examples.id = "word-group-examples-list"
-    exampleHost.append(exampleHeader, examples)
-    exampleGroup.append(exampleHost)
+    exampleGroup.append(examples)
 
-    const relationshipGroup = el("div", "word-groups-field-group")
-    relationshipGroup.dataset.field = "relationships"
-    const relationshipHost = el("div", "word-groups-section")
-    relationshipHost.append(el("p", "word-groups-section-label", "Intercambiabilidad"))
+    const relationshipGroup = fieldSection("relationships")
     const relationships = el("div", "word-groups-relationships")
     relationships.id = "word-group-relationships"
-    relationshipHost.append(relationships)
-    relationshipGroup.append(relationshipHost)
+    relationshipGroup.append(relationships)
 
     panel.append(identity, translation, meaning, positionGroup, exampleGroup, relationshipGroup)
     return panel
@@ -731,40 +766,79 @@ function openEditorDialog(memberId, field = "all") {
         row.classList.toggle("is-active", row.dataset.memberId === String(member.id))
     })
 
-    const dialog = el("dialog", "word-groups-field-dialog")
+    const dialog = el("dialog", `word-groups-field-dialog word-groups-field-dialog--${field === "all" ? "full" : "single"}`)
     dialog.id = "word-groups-field-dialog"
     const shell = el("div", "word-groups-field-shell")
     const header = el("header", "word-groups-field-header")
-    const heading = el("div")
-    heading.append(el("p", "eyebrow word-groups-field-eyebrow", "EDITAR DATO"))
+    const headerIcon = el("span", "word-groups-field-badge", field === "all" ? "🗂️" : (SECTION_META[field]?.icon || "✏️"))
+    const heading = el("div", "word-groups-field-heading-main")
+    const eyebrowRow = el("div", "word-groups-field-eyebrow-row")
+    eyebrowRow.append(el("p", "eyebrow word-groups-field-eyebrow", "EDITAR DATO"))
+    eyebrowRow.append(el("span", "word-groups-field-count", field === "all" ? `${SECTION_ORDER.length} secciones` : (SECTION_META[field]?.title || "Campo")))
+    heading.append(eyebrowRow)
     heading.append(el("h3", "word-groups-field-title", `${FIELD_LABELS[field] || "dato"}: ${member.word || "Palabra"}`))
+    const subtitle = [member.pronunciation, member.spanish].filter(Boolean).join(" · ")
+    heading.append(el("p", "word-groups-field-subtitle", subtitle || "Sin pronunciación ni traducción registradas."))
     const close = el("button", "word-groups-field-close", "✕")
     close.type = "button"
+    close.title = "Cerrar y descartar cambios"
     close.setAttribute("aria-label", "Cerrar ventana de edición")
-    header.append(heading, close)
+    header.append(headerIcon, heading, close)
 
     const body = el("div", "word-groups-field-body")
     const footer = el("footer", "word-groups-field-footer")
-    const cancel = el("button", "button secondary", "Cancelar")
+    footer.append(el("span", "word-groups-field-hint", "Esc para descartar · se aplica al grupo"))
+    const actions = el("div", "word-groups-field-actions")
+    const cancel = el("button", "button secondary", "✕ Descartar")
     cancel.type = "button"
-    const save = el("button", "button primary", "Guardar")
+    const save = el("button", "button primary", "✓ Guardar cambios")
     save.type = "button"
-    footer.append(cancel, save)
+    actions.append(cancel, save)
+    footer.append(actions)
     shell.append(header, body, footer)
     dialog.append(shell)
     document.body.append(dialog)
 
     const renderBody = () => {
         body.replaceChildren()
-        const editor = renderMemberEditor(currentMember())
+        const activeMember = currentMember()
+        if (field === "all") {
+            const nav = el("nav", "word-groups-field-nav")
+            nav.setAttribute("aria-label", "Ir a una sección")
+            SECTION_ORDER.forEach((key, index) => {
+                const button = el("button", "word-groups-field-nav-item", `${SECTION_META[key].icon} ${SECTION_SHORT[key]}`)
+                button.type = "button"
+                button.dataset.scrollField = key
+                if (index === 0) button.classList.add("active")
+                nav.append(button)
+            })
+            body.append(nav)
+        }
+        const content = el("div", "word-groups-field-content")
+        const context = el("div", "word-groups-field-context")
+        context.append(el("span", "word-groups-field-context-label", "Editando"))
+        context.append(el("strong", "word-groups-field-context-word", activeMember?.word || member.word || "Palabra"))
+        if (activeMember?.partOfSpeech) context.append(el("span", "word-groups-field-context-tag", activeMember.partOfSpeech))
+        content.append(context)
+
+        const editor = renderMemberEditor(activeMember)
         editor.querySelectorAll("[data-field]").forEach(group => {
             group.hidden = field !== "all" && group.dataset.field !== field
         })
-        body.append(editor)
+        content.append(editor)
+        body.append(content)
+
+        body.querySelectorAll("[data-scroll-field]").forEach(button => {
+            button.addEventListener("click", () => {
+                const target = content.querySelector(`[data-field="${button.dataset.scrollField}"]`)
+                target?.scrollIntoView({ behavior: "smooth", block: "start" })
+                body.querySelectorAll("[data-scroll-field]").forEach(item => item.classList.toggle("active", item === button))
+            })
+        })
         bindEditor(renderBody)
         renderExamples(renderBody)
         renderRelationshipRows()
-        const firstField = [...body.querySelectorAll("input, select, textarea")].find(node => !node.closest("[hidden]"))
+        const firstField = [...content.querySelectorAll("input, select, textarea")].find(node => !node.closest("[hidden]"))
         if (firstField) window.requestAnimationFrame(() => firstField.focus())
     }
 
