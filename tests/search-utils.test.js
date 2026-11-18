@@ -59,4 +59,7 @@ test("matchesSearchTerms partial mode prefixes single long words only", () => {
     assert.equal(matchesSearchTerms("at least", "at first"), true)
     assert.equal(matchesSearchTerms("first of all", "at first"), true)
     assert.equal(matchesSearchTerms("neither term here", "at first"), false)
+    assert.equal(matchesSearchTerms("even so", "even s"), true)
+    assert.equal(matchesSearchTerms("It's sunny today.", "even s"), false)
+    assert.equal(matchesSearchTerms("It's sunny today.", "s"), false)
 })

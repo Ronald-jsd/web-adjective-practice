@@ -32,8 +32,13 @@ function hasWordMatch(normalizedText, parts, prefixOnly = false) {
 
 export function matchesSearchTerms(text, query, mode = "partial") {
     const normalizedText = normalizeSearchText(text)
-    const terms = searchTerms(query)
-    if (!terms.length) return true
+    const rawTerms = searchTerms(query)
+    if (!rawTerms.length) return true
+
+    // Una sola letra no es una palabra buscable: en "It's" el apóstrofo
+    // dejaría la "s" como palabra suelta y ensuciaría búsquedas como "even s".
+    const terms = rawTerms.filter(term => term.length >= 2)
+    if (!terms.length) return false
 
     if (mode === "exact") return hasWordMatch(normalizedText, terms, true)
 
