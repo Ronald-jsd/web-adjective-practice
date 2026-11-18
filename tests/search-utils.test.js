@@ -39,3 +39,11 @@ test("matchesSearchTerms partial mode finds any written word", () => {
     assert.equal(matchesSearchTerms("first of all", "at first"), true)
     assert.equal(matchesSearchTerms("neither term here", "at first"), false)
 })
+
+test("matchesSearchTerms partial mode respects word boundaries", () => {
+    assert.equal(matchesSearchTerms("Weather & Climate", "at"), false)
+    assert.equal(matchesSearchTerms("It is a sunny day.", "at"), false)
+    assert.equal(matchesSearchTerms("firstly", "first"), false)
+    assert.equal(matchesSearchTerms("at the end", "at"), true)
+    assert.equal(matchesSearchTerms("Primero, lava tus manos.", "primero"), true)
+})
