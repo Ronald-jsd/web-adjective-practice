@@ -36,7 +36,7 @@ const state = {
     statusError: false,
     candidates: [],
     candidateQuery: "",
-    view: "table"
+    editorOpen: false
 }
 
 function escapeHtml(value) {
@@ -185,6 +185,7 @@ function renderMemberButton(member) {
     button.addEventListener("click", () => {
         state.activeMemberId = member.id
         state.candidateQuery = ""
+        state.editorOpen = true
         renderDialog()
     })
     return button
@@ -415,10 +416,10 @@ function bindEditor() {
     })
 }
 
-function selectMember(memberId, view = "detail") {
+function selectMember(memberId) {
     state.activeMemberId = memberId
     state.candidateQuery = ""
-    state.view = view
+    state.editorOpen = true
     modalStatus("")
     renderDialog()
 }
@@ -486,11 +487,11 @@ function renderComparisonTable() {
         row.tabIndex = 0
         row.setAttribute("role", "button")
         row.setAttribute("aria-label", `Comparar y editar ${member.word}`)
-        row.addEventListener("click", () => selectMember(member.id, "detail"))
+        row.addEventListener("click", () => selectMember(member.id))
         row.addEventListener("keydown", event => {
             if (event.key === "Enter" || event.key === " ") {
                 event.preventDefault()
-                selectMember(member.id, "detail")
+                selectMember(member.id)
             }
         })
 
@@ -541,7 +542,7 @@ function renderComparisonTable() {
         edit.type = "button"
         edit.addEventListener("click", event => {
             event.stopPropagation()
-            selectMember(member.id, "detail")
+            selectMember(member.id)
         })
         actionCell.append(edit)
         wordCell.dataset.label = headings[0]
@@ -556,6 +557,96 @@ function renderComparisonTable() {
     table.append(thead, tbody)
     wrap.append(table)
     return wrap
+}
+
+function renderMemberEditor(member) {
+    const panel = el("section", "word-groups-inline-editor")
+    panel.setAttribute("aria-label", `Editar ${member.word || "palabra"}`)
+
+    const head = el("div", "word-groups-inline-editor-head")
+    head.append(el("h3", "word-groups-inline-editor-title", `Editar: ${member.word || "Palabra"}`))
+    const close = el("button", "word-groups-inline-editor-close", "✕")
+    close.type = "button"
+    close.setAttribute("aria-label", "Cerrar edición de esta palabra")
+    close.title = "Cerrar edición"
+    close.addEventListener("click", () => {
+        state.editorOpen = false
+        renderDialog()
+    })
+    head.append(close)
+
+    const editor = el("div", "word-groups-editor")
+    const wordRow = el("div", "word-groups-word-row")
+    const wordWrap = el("div", "word-groups-word-wrap")
+    wordWrap.append(el("label", "word-groups-field-label", "Palabra"))
+    const wordInput = el("input", "word-groups-word-input")
+    wordInput.id = "word-group-word-input"
+    wordInput.autocomplete = "off"
+    wordInput.maxLength = 300
+    wordWrap.append(wordInput)
+    const audioButton = el("button", "icon-button audio-button word-groups-inline-audio", "🔊")
+    audioButton.id = "word-group-audio-button"
+    audioButton.type = "button"
+    audioButton.title = "Escuchar palabra"
+    audioButton.setAttribute("aria-label", "Escuchar palabra")
+    wordRow.append(wordWrap, audioButton)
+
+    const grid = el("div", "word-groups-grid")
+    const pronunciation = el("input", "word-groups-input")
+    pronunciation.id = "word-group-pronunciation-input"
+    pronunciation.placeholder = "/bɪˈsaɪdz/"
+    const spanish = el("input", "word-groups-input")
+    spanish.id = "word-group-spanish-input"
+    spanish.placeholder = "Traducción"
+    grid.append(pronunciation, spanish)
+
+    const selectGrid = el("div", "word-groups-grid word-groups-select-grid")
+    const part = el("select", "word-groups-select")
+    part.id = "word-group-part-input"
+    part.innerHTML = `<option>Adjetivo</option><option>Verbo</option><option>Sustantivo</option><option>Adverbio</option><option>Preposición</option><option>Conector</option><option>Frase</option><option>Otro</option>`
+    const position = el("select", "word-groups-select")
+    position.id = "word-group-position-input"
+    position.innerHTML = `<option>Inicio</option><option>Medio</option><option>Final</option><option>En cualquier posición</option>`
+    selectGrid.append(part, position)
+
+    const usesWrap = el("label", "word-groups-field")
+    usesWrap.append(el("span", "word-groups-field-label", "Usos / dónde se coloca"))
+    const uses = el("textarea", "word-groups-textarea")
+    uses.id = "word-group-uses-input"
+    uses.rows = 3
+    uses.placeholder = "Inicio de frase, antes del verbo, después del sujeto…"
+    uses.maxLength = 2000
+    usesWrap.append(uses)
+
+    const differenceWrap = el("label", "word-groups-field")
+    differenceWrap.append(el("span", "word-groups-field-label", "Diferencia frente a las otras"))
+    const difference = el("textarea", "word-groups-textarea")
+    difference.id = "word-group-difference-input"
+    difference.rows = 5
+    difference.placeholder = "Explica cuándo usarla y cuándo no…"
+    difference.maxLength = 2000
+    differenceWrap.append(difference)
+
+    const exampleHost = el("div", "word-groups-section")
+    const exampleHeader = el("div", "word-groups-section-header")
+    exampleHeader.append(el("p", "word-groups-section-label", "Ejemplos"))
+    const addExample = el("button", "button secondary word-groups-add-example", "＋ Add example")
+    addExample.id = "word-group-add-example"
+    addExample.type = "button"
+    exampleHeader.append(addExample)
+    const examples = el("div", "word-groups-examples")
+    examples.id = "word-group-examples-list"
+    exampleHost.append(exampleHeader, examples)
+
+    const relationshipHost = el("div", "word-groups-section")
+    relationshipHost.append(el("p", "word-groups-section-label", "Intercambiabilidad"))
+    const relationships = el("div", "word-groups-relationships")
+    relationships.id = "word-group-relationships"
+    relationshipHost.append(relationships)
+
+    editor.append(wordRow, grid, selectGrid, usesWrap, differenceWrap, exampleHost, relationshipHost)
+    panel.append(head, editor)
+    return panel
 }
 
 function renderDialog() {
@@ -584,25 +675,18 @@ function renderDialog() {
     })
     titleBlock.append(titleInput)
     const viewControls = el("div", "word-groups-view-controls")
-    const viewSwitch = el("div", "word-groups-view-switch")
-    for (const [view, label] of [["table", "Tabla"], ["detail", "Detalle"]]) {
-        const button = el("button", `word-groups-view-button${state.view === view ? " active" : ""}`, label)
-        button.type = "button"
-        button.setAttribute("aria-pressed", String(state.view === view))
-        button.addEventListener("click", () => {
-            state.view = view
-            renderDialog()
-        })
-        viewSwitch.append(button)
-    }
     const viewActions = el("div", "word-groups-view-actions")
+    viewActions.append(el("span", "word-groups-edit-hint", "Selecciona una palabra para editarla"))
     const addWord = el("button", "button secondary word-groups-add-member", "＋ Agregar")
     addWord.type = "button"
     addWord.addEventListener("click", () => {
-        state.view = "detail"
-        state.candidateQuery = ""
+        state.editorOpen = false
         renderDialog()
-        window.requestAnimationFrame(() => byId("word-groups-dialog")?.querySelector(".word-groups-search")?.focus())
+        window.requestAnimationFrame(() => {
+            const input = byId("word-group-candidate-search")
+            input?.focus()
+            input?.scrollIntoView({ block: "nearest" })
+        })
     })
     const autoButton = el("button", "button secondary word-groups-add-member word-groups-auto-button", missingByTranslation ? `＋ Autos ${missingByTranslation}` : "＋ Autos")
     autoButton.type = "button"
@@ -625,7 +709,7 @@ function renderDialog() {
         }
     })
     viewActions.append(addWord, autoButton)
-    viewControls.append(viewSwitch, viewActions)
+    viewControls.append(viewActions)
     titleBlock.append(titleInput, viewControls)
     const close = el("button", "word-groups-close", "✕")
     close.type = "button"
@@ -633,7 +717,7 @@ function renderDialog() {
     close.addEventListener("click", closeDialog)
     header.append(titleBlock, close)
 
-    const body = el("div", `word-groups-body${state.view === "table" ? " word-groups-body-table" : " word-groups-body-detail"}`)
+    const body = el("div", "word-groups-body")
     const members = el("aside", "word-groups-members")
     members.append(el("p", "word-groups-section-label", "Palabras del grupo"))
     const memberList = el("div", "word-groups-member-list")
@@ -659,86 +743,10 @@ function renderDialog() {
     searchArea.append(searchHead, search, results)
     members.append(searchArea)
 
-    if (state.view === "table") {
-        body.append(renderComparisonTable())
-    } else {
-        const editor = el("section", "word-groups-editor")
-        if (!member) {
-            editor.append(el("p", "word-groups-empty-state", "No hay palabra seleccionada."))
-        } else {
-            const wordRow = el("div", "word-groups-word-row")
-            const wordWrap = el("div", "word-groups-word-wrap")
-            wordWrap.append(el("label", "word-groups-field-label", "Palabra"))
-            const wordInput = el("input", "word-groups-word-input")
-            wordInput.id = "word-group-word-input"
-            wordInput.autocomplete = "off"
-            wordInput.maxLength = 300
-            wordWrap.append(wordInput)
-            const audioButton = el("button", "icon-button audio-button word-groups-inline-audio", "🔊")
-            audioButton.id = "word-group-audio-button"
-            audioButton.type = "button"
-            audioButton.title = "Escuchar palabra"
-            audioButton.setAttribute("aria-label", "Escuchar palabra")
-            wordRow.append(wordWrap, audioButton)
-
-            const grid = el("div", "word-groups-grid")
-            const pronunciation = el("input", "word-groups-input")
-            pronunciation.id = "word-group-pronunciation-input"
-            pronunciation.placeholder = "/bɪˈsaɪdz/"
-            const spanish = el("input", "word-groups-input")
-            spanish.id = "word-group-spanish-input"
-            spanish.placeholder = "Traducción"
-            grid.append(pronunciation, spanish)
-
-            const selectGrid = el("div", "word-groups-grid word-groups-select-grid")
-            const part = el("select", "word-groups-select")
-            part.id = "word-group-part-input"
-            part.innerHTML = `<option>Adjetivo</option><option>Verbo</option><option>Sustantivo</option><option>Adverbio</option><option>Preposición</option><option>Conector</option><option>Frase</option><option>Otro</option>`
-            const position = el("select", "word-groups-select")
-            position.id = "word-group-position-input"
-            position.innerHTML = `<option>Inicio</option><option>Medio</option><option>Final</option><option>En cualquier posición</option>`
-            selectGrid.append(part, position)
-
-            const usesWrap = el("label", "word-groups-field")
-            usesWrap.append(el("span", "word-groups-field-label", "Usos / dónde se coloca"))
-            const uses = el("textarea", "word-groups-textarea")
-            uses.id = "word-group-uses-input"
-            uses.rows = 3
-            uses.placeholder = "Inicio de frase, antes del verbo, después del sujeto…"
-            uses.maxLength = 2000
-            usesWrap.append(uses)
-
-            const differenceWrap = el("label", "word-groups-field")
-            differenceWrap.append(el("span", "word-groups-field-label", "Diferencia frente a las otras"))
-            const difference = el("textarea", "word-groups-textarea")
-            difference.id = "word-group-difference-input"
-            difference.rows = 5
-            difference.placeholder = "Explica cuándo usarla y cuándo no…"
-            difference.maxLength = 2000
-            differenceWrap.append(difference)
-
-            const exampleHost = el("div", "word-groups-section")
-            const exampleHeader = el("div", "word-groups-section-header")
-            exampleHeader.append(el("p", "word-groups-section-label", "Ejemplos"))
-            const addExample = el("button", "button secondary word-groups-add-example", "＋ Add example")
-            addExample.id = "word-group-add-example"
-            addExample.type = "button"
-            exampleHeader.append(addExample)
-            const examples = el("div", "word-groups-examples")
-            examples.id = "word-group-examples-list"
-            exampleHost.append(exampleHeader, examples)
-
-            const relationshipHost = el("div", "word-groups-section")
-            relationshipHost.append(el("p", "word-groups-section-label", "Intercambiabilidad"))
-            const relationships = el("div", "word-groups-relationships")
-            relationships.id = "word-group-relationships"
-            relationshipHost.append(relationships)
-
-            editor.append(wordRow, grid, selectGrid, usesWrap, differenceWrap, exampleHost, relationshipHost)
-        }
-
-        body.append(members, editor)
-    }
+    const main = el("section", "word-groups-main")
+    main.append(renderComparisonTable())
+    if (state.editorOpen && member) main.append(renderMemberEditor(member))
+    body.append(members, main)
 
     const footer = el("footer", "word-groups-footer")
     const status = el("small", `word-groups-status${state.statusError ? " error" : ""}`, state.statusMessage || "")
@@ -772,12 +780,12 @@ function renderDialog() {
     dialog.addEventListener("close", () => dialog.remove())
     dialog.showModal()
 
-    if (state.view === "detail") {
+    if (state.editorOpen && member) {
         bindEditor()
         renderExamples()
         renderRelationshipRows()
-        renderCandidates()
     }
+    renderCandidates()
 }
 
 function closeDialog() {
@@ -873,6 +881,7 @@ export async function openWordGroup(payload) {
     }
     state.dirty = false
     state.candidateQuery = ""
+    state.editorOpen = false
     state.statusMessage = ""
     state.statusError = false
     renderDialog()
