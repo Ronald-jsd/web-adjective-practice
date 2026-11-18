@@ -32,6 +32,8 @@ const state = {
     draft: null,
     activeMemberId: null,
     dirty: false,
+    statusMessage: "",
+    statusError: false,
     candidates: [],
     candidateQuery: "",
     view: "table"
@@ -58,9 +60,11 @@ function el(tag, className = "", text) {
 }
 
 function modalStatus(message, isError = false) {
+    state.statusMessage = message || ""
+    state.statusError = isError
     const status = byId("word-groups-status")
     if (status) {
-        status.textContent = message || ""
+        status.textContent = state.statusMessage
         status.classList.toggle("error", isError)
     }
 }
@@ -678,7 +682,7 @@ function renderDialog() {
     }
 
     const footer = el("footer", "word-groups-footer")
-    const status = el("small", "word-groups-status")
+    const status = el("small", `word-groups-status${state.statusError ? " error" : ""}`, state.statusMessage || "")
     status.id = "word-groups-status"
     const deleteActions = el("div", "word-groups-delete-actions")
     const removeGroup = el("button", "button danger word-groups-delete-group", "Eliminar grupo")
@@ -743,9 +747,8 @@ async function saveCurrentGroup() {
         state.draft = cloneGroup(saved)
         state.activeMemberId = currentMember()?.id || state.draft.members[0]?.id || null
         setDirty(false)
-        modalStatus("Grupo guardado.")
-        showToast("Grupo guardado.", "success")
         renderDialog()
+        modalStatus("Grupo guardado.")
     } catch (error) {
         console.error("[word-groups] No se pudo guardar:", error)
         modalStatus(error?.message || "No se pudo guardar el grupo.", true)
@@ -811,6 +814,8 @@ export async function openWordGroup(payload) {
     }
     state.dirty = false
     state.candidateQuery = ""
+    state.statusMessage = ""
+    state.statusError = false
     renderDialog()
     if (autoIncluded) {
         modalStatus(`Se incluyeron ${autoIncluded} términos con traducción equivalente.`)
