@@ -1,9 +1,7 @@
 /* Búsqueda compartida por adjetivos y verbos: ignora tildes y mayúsculas.
- * "Contiene": con una sola palabra larga busca por prefijo ("eve" → "even",
- * "eventually"); con varias palabras o palabras cortas exige la palabra
- * completa ("even so" → even o so, nunca "sofocante"; "at" no casa con
- * "Temperate").
- * "Exacta" aplica prefijo a la frase completa ("event" → "eventually"). */
+ * Siempre se busca desde el principio del campo: "g" → palabras que empiezan
+ * por g; "go" → "go out", "gone"; "go out" → "go out", "go outside".
+ * No se busca en medio de la frase: "out" no encuentra "go out". */
 
 export function normalizeSearchText(value) {
     return String(value || "")
@@ -45,31 +43,19 @@ function escapeRegExp(value) {
     return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
 }
 
-function hasWordMatch(normalizedText, parts, prefixOnly = false) {
-    const phrase = parts.map(escapeRegExp).join("[^a-z0-9]+")
-    // El límite inicial evita coincidencias en mitad de palabra. En modo
-    // exacto no cerramos el final para que "event" sugiera "eventually" y
-    // "eventually" siga encontrando "eventually he".
-    const trailingBoundary = prefixOnly ? "" : "(?=$|[^a-z0-9])"
-    const pattern = new RegExp(`(^|[^a-z0-9])${phrase}${trailingBoundary}`)
+function startsWithPhrase(normalizedText, parts) {
+    // Anclado al inicio del campo: "go" encuentra "go out" y "gone", pero
+    // "out" no encuentra "go out". Sin límite final para sugerir textos más
+    // largos ("go out" → "go outside", "event" → "eventually").
+    const phrase = parts.map(escapeRegExp).join("[^a-z0-9']+")
+    const pattern = new RegExp(`^${phrase}`)
     return pattern.test(normalizedText)
 }
 
+/* `mode` se mantiene por compatibilidad con la interfaz; ambos modos buscan
+ * ahora por prefijo de frase. */
 export function matchesSearchTerms(text, query, mode = "partial") {
-    const normalizedText = normalizeSearchText(text)
-    const rawTerms = searchTerms(query)
-    if (!rawTerms.length) return true
-
-    // Una sola letra no es una palabra buscable: en "It's" el apóstrofo
-    // dejaría la "s" como palabra suelta y ensuciaría búsquedas como "even s".
-    const terms = rawTerms.filter(term => term.length >= 2)
-    if (!terms.length) return false
-
-    if (mode === "exact") return hasWordMatch(normalizedText, terms, true)
-
-    // Un término único y suficientemente largo se trata como prefijo para
-    // sugerir mientras se escribe. En cuanto hay varias palabras —o es una
-    // palabra corta como "so" o "at"— se exige la palabra completa.
-    const usePrefix = terms.length === 1 && terms[0].length >= 3
-    return terms.some(term => hasWordMatch(normalizedText, [term], usePrefix))
+    const terms = searchTerms(query)
+    if (!terms.length) return true
+    return startsWithPhrase(normalizeSearchText(text), terms)
 }

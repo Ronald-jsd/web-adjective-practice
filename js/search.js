@@ -162,7 +162,7 @@ export function setSearchMode(mode) {
         if (exactBtn) {
             exactBtn.className = 'px-4 py-1.5 rounded-md text-sm font-medium transition-all text-gray-600 hover:bg-gray-200'
         }
-        if (hint) hint.textContent = '(Contiene: "eve" encuentra even y eventually)'
+        if (hint) hint.textContent = '(Empieza por: "go" encuentra "go out" y "gone")'
     } else {
         if (partialBtn) {
             partialBtn.className = 'px-4 py-1.5 rounded-md text-sm font-medium transition-all text-gray-600 hover:bg-gray-200'
@@ -170,7 +170,7 @@ export function setSearchMode(mode) {
         if (exactBtn) {
             exactBtn.className = 'px-4 py-1.5 rounded-md text-sm font-medium transition-all bg-amber-500 text-white'
         }
-        if (hint) hint.textContent = '(Exacta: "event" sugiere "eventually")'
+        if (hint) hint.textContent = '(Empieza por frase: "go out" encuentra "go out" y "go outside")'
     }
 
     if (store.lastSearchQuery?.trim()) {
@@ -221,7 +221,7 @@ function renderSearchResults() {
                     <td colspan="9" class="py-8 text-center text-gray-500">
                         No se encontraron resultados para "<strong>${store.lastSearchQuery}</strong>"
                         <br>
-                        <span class="text-xs text-gray-400">Modo: ${searchMode === 'exact' ? 'Palabra exacta' : 'Contiene'}</span>
+                        <span class="text-xs text-gray-400">Modo: ${searchMode === 'exact' ? 'Empieza por frase' : 'Empieza por'}</span>
                     </td>
                 </tr>
             `

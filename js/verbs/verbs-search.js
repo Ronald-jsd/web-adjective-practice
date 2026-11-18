@@ -40,12 +40,16 @@ window.searchVerbs = function () {
     if (grid) grid.classList.add('hidden')
     if (view) view.classList.add('hidden')
 
-    let results = filterFavoriteVerbs(verbsData.filter(v =>
-        matchesSearchTerms([
-            v.verb, v.translation, v.past_simple, v.pronunciation_ps,
-            v.past_participle, v.pronunciation_pp, v.adjective,
-            v.pronunciation_adj, v.adverb, v.pronunciation_adv, v.category
-        ].join(' '), query)
+    const searchableFields = verb => [
+        verb.verb, verb.translation, verb.past_simple, verb.pronunciation_ps,
+        verb.past_participle, verb.pronunciation_pp, verb.adjective,
+        verb.pronunciation_adj, verb.adverb, verb.pronunciation_adv, verb.category
+    ].filter(Boolean)
+
+    // Cada columna se evalúa por separado: el prefijo puede estar en el
+    // infinitivo, en la traducción, en el participio, etc.
+    let results = filterFavoriteVerbs(verbsData.filter(verb =>
+        searchableFields(verb).some(value => matchesSearchTerms(value, query))
     ))
 
     console.log(`Resultados filtrados: ${results.length} verbos`)
