@@ -6,7 +6,7 @@ import { buildSpeechGuide, explainGuide } from "./speech-guide.js"
 import { TRANSCRIPT_PROVIDERS, findProvider, providerLabel, transcriptConfig, setTranscriptCredentials, clearTranscriptCredentials } from "./transcript.js"
 import { createTranscriptStore } from "./transcript-store.js"
 import { createAiCache } from "./ai-cache.js"
-import { playWordPronunciation, speakPhrase, getPronunciation } from "./pronunciation.js"
+import { playWordPronunciation, speakPhrase, stopPhrasePronunciation, getPronunciation } from "./pronunciation.js"
 import { createShadowingRepository } from "./repository.js"
 import { createSentenceRepository } from "../sentences/repository.js"
 import { SAVE_TARGETS, saveTargetKind, saveTargetLabel, catalogRowFor } from "./save-targets.js"
@@ -40,6 +40,10 @@ const state = {
     autoTimer: null,
     countdownTimer: null,
     phraseTimer: null,
+    speechUtterance: null,
+    speechActive: false,
+    speechStartedAt: 0,
+    videoUnavailable: false,
     timingOffsets: new Map(),
     translation: "",
     lookupCache: new Map(),
@@ -642,18 +646,86 @@ function handlePlaybackState(data) {
     pollShadowing()
 }
 
+/* Sin red (o sin YouTube disponible) la frase se reproduce con la voz del
+ * sistema. Las lecciones guardadas viven en IndexedDB, así que siguen
+ * funcionando aunque no haya conexión. */
+function useSystemVoice() {
+    return !isOnline() || state.videoUnavailable === true
+}
+
+function stopSpeechPlayback() {
+    const utterance = state.speechUtterance
+    state.speechUtterance = null
+    state.speechActive = false
+    if (utterance) {
+        utterance.onend = null
+        utterance.onerror = null
+    }
+    stopPhrasePronunciation()
+}
+
 function stopPhraseTimer() {
     if (state.phraseTimer) {
         clearTimeout(state.phraseTimer)
         state.phraseTimer = null
     }
+    stopSpeechPlayback()
     updatePlayButton()
 }
 
+function waitForPlayerReady(timeoutMs = 10000) {
+    if (state.playerReady && state.player) return Promise.resolve(true)
+    return new Promise(resolve => {
+        const deadline = Date.now() + timeoutMs
+        const check = () => {
+            if (state.playerReady && state.player) return resolve(true)
+            if (Date.now() >= deadline) return resolve(false)
+            setTimeout(check, 100)
+        }
+        check()
+    })
+}
+
+async function ensureVideoReady() {
+    if (state.playerReady && state.player) return true
+    if (!state.current?.videoId) return false
+    if (!state.player) {
+        await mountVideo(state.current.videoId).catch(error => {
+            console.warn("[shadowing] No se pudo montar el video:", error)
+        })
+    }
+    return waitForPlayerReady()
+}
+
+function playPhraseWithVoice(segment) {
+    const utterance = speakPhrase(segment.text, "en")
+    if (!utterance) {
+        showStatus("Este navegador no ofrece voz del sistema para reproducir sin conexión.", true)
+        updatePlayButton()
+        syncMediaSession("paused")
+        return false
+    }
+    state.speechUtterance = utterance
+    state.speechActive = true
+    state.phraseStartedAt = performance.now()
+    // La voz avisa al terminar; el temporizador evita quedarse colgado si el
+    // navegador no dispara onend (ocurre en algunos móviles).
+    const words = String(segment.text || "").trim().split(/\s+/).filter(Boolean).length
+    const safetyMs = Math.max(2000, words * 550)
+    utterance.onend = () => { if (state.speechActive) finishPhrase() }
+    utterance.onerror = () => { if (state.speechActive) finishPhrase() }
+    state.phraseTimer = setTimeout(() => { if (state.speechActive) finishPhrase() }, safetyMs)
+    updatePlayButton()
+    setPracticeStatus(useSystemVoice() && !isOnline()
+        ? "Sin conexión: reproduciendo con la voz del sistema."
+        : "Reproduciendo con la voz del sistema.")
+    return true
+}
+
 function finishPhrase() {
-    if (!state.player) return
+    if (!state.current) return
     stopPhraseTimer()
-    state.player.pauseVideo?.()
+    if (!useSystemVoice()) state.player?.pauseVideo?.()
     if (state.autoActive && state.practiceMode !== "manual") {
         handleAutoAdvance()
     } else if (state.loopLine) {
@@ -690,12 +762,11 @@ function watchPhraseEnd(segment, startedAt) {
     finishPhrase()
 }
 
-/* Va al inicio exacto de la frase y vigila su final con el tiempo del video.
- * La frase escrita y el audio deben moverse juntos: si el índice cambia se
- * vuelve a renderizar antes de lanzar el seek. */
+/* Con internet se usa el video; sin él, la misma frase con voz del sistema.
+ * Texto y audio avanzan juntos porque el índice se fija antes de reproducir. */
 function playPhrase(index = state.currentIndex) {
     const segment = phraseAt(index)
-    if (!segment || !state.playerReady || !state.player) return
+    if (!segment) return
     stopPhraseTimer()
     const nextIndex = Math.max(0, Math.min(state.current.transcript.length - 1, index))
     const indexChanged = nextIndex !== state.currentIndex
@@ -705,12 +776,33 @@ function playPhrase(index = state.currentIndex) {
         state.selectedWord = ""
         renderLesson()
     }
+    updatePlayButton()
+
+    if (useSystemVoice()) {
+        if (playPhraseWithVoice(segment)) syncMediaSession("playing")
+        return
+    }
+
+    if (!state.playerReady || !state.player) {
+        setPracticeStatus("Preparando el video…")
+        ensureVideoReady().then(ready => {
+            if (!ready) {
+                state.videoUnavailable = true
+                showStatus("YouTube no está disponible; se usa la voz del sistema.", true)
+            }
+            if (state.currentIndex !== nextIndex) return
+            playPhrase(nextIndex)
+        })
+        return
+    }
+
     state.player.seekTo(segment.start, true)
     state.player.playVideo()
     const startedAt = performance.now()
     state.phraseStartedAt = startedAt
     state.phraseTimer = setTimeout(() => watchPhraseEnd(segment, startedAt), 40)
     updatePlayButton()
+    setPracticeStatus("")
     syncMediaSession("playing")
 }
 
@@ -821,7 +913,7 @@ function startAutoPractice() {
         return
     }
     const segment = state.current?.transcript?.[state.currentIndex]
-    if (!segment || !state.playerReady) return
+    if (!segment) return
     state.autoActive = true
     state.awaitingTurn = false
     playPhrase(state.currentIndex)
@@ -1787,7 +1879,41 @@ async function openLesson(id) {
     showStatus("Lección abierta.")
 }
 
+/* Al perder la red se detiene YouTube y la frase en curso sigue con la voz. */
+function handleConnectionLost() {
+    if (!state.current) return
+    const wasPlaying = Boolean(state.phraseTimer) || state.autoActive
+    stopPhraseTimer()
+    state.player?.pauseVideo?.()
+    updatePlayButton()
+    if (wasPlaying) {
+        playPhrase(state.currentIndex)
+    } else {
+        setPracticeStatus("Sin conexión: tus lecciones guardadas se reproducen con la voz del sistema.")
+    }
+}
+
+/* Al volver la red se descarta la voz y se retoma el video en la misma frase. */
+async function handleConnectionRestored() {
+    if (!state.current) return
+    const wasPlaying = Boolean(state.phraseTimer) || state.autoActive || state.speechActive
+    stopPhraseTimer()
+    state.videoUnavailable = false
+    const ready = await ensureVideoReady()
+    if (!ready) {
+        state.videoUnavailable = true
+        showStatus("YouTube no responde; se mantiene la voz del sistema.", true)
+    } else if (wasPlaying) {
+        playPhrase(state.currentIndex)
+        setPracticeStatus("Conexión restaurada: usando el video.")
+    } else {
+        setPracticeStatus("Conexión restaurada.")
+    }
+}
+
 function wireEvents() {
+    window.addEventListener("offline", handleConnectionLost)
+    window.addEventListener("online", () => { handleConnectionRestored().catch(error => console.warn("[shadowing] Error al restaurar el video:", error)) })
     byId("shadowing-load-video")?.addEventListener("click", () => createLesson().catch(error => showStatus(error.message || "No se pudo crear la lección.", true)))
     byId("shadowing-parse-manual")?.addEventListener("click", parseManual)
     byId("shadowing-lessons")?.addEventListener("change", event => openLesson(event.target.value))

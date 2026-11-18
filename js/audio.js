@@ -107,6 +107,18 @@ export function playAudioEnhanced(text, lang = "en", options = {}) {
     }
 }
 
+/* Detiene cualquier voz en curso (por ejemplo al pasar de voz a video). */
+export function cancelSpeech() {
+    const synth = window.speechSynthesis
+    if (!synth) return
+    try {
+        synth.cancel()
+    } catch (error) {
+        console.warn("[voz] No se pudo detener la reproducción:", error)
+    }
+    currentUtterance = null
+}
+
 export function makeClickableText(text, lang) {
     if (!text) return ""
     const escapedText = String(text).replace(/'/g, "\\'").replace(/"/g, "&quot;")

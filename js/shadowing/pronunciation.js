@@ -1,4 +1,4 @@
-import { playAudioEnhanced } from "../audio.js"
+import { playAudioEnhanced, cancelSpeech } from "../audio.js"
 
 /* Pronunciación gratuita sin IA:
  *  1) voz del navegador (funciona sin internet con voces locales),
@@ -26,8 +26,12 @@ function remember(term, data) {
     }
 }
 
-export function speakPhrase(text, lang = "en") {
-    return playAudioEnhanced(text, lang)
+export function speakPhrase(text, lang = "en", options = {}) {
+    return playAudioEnhanced(text, lang, options)
+}
+
+export function stopPhrasePronunciation() {
+    cancelSpeech()
 }
 
 export function speakWordInstant(word) {

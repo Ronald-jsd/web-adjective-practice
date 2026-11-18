@@ -216,6 +216,12 @@ async function initApp() {
     initOfflineSync(supabase, { getUserId: () => store.currentUser?.id || null });
     initSyncStatus();
     initPWA();
+    // El módulo de Mi aprendizaje se carga una vez con conexión. Así, al
+    // pulsar la pestaña sin internet, el import dynamic se resuelve desde la
+    // caché del navegador/service worker en vez de intentar ir a la red.
+    preloadMySentencesModule().catch(error => {
+        console.warn("No se pudo precargar Mi aprendizaje:", error);
+    });
     startAutoSync();
     initAuthSession();
     await checkUser();
@@ -265,21 +271,56 @@ async function initApp() {
 }
 
 let mySentencesInitialized = false;
+let mySentencesFailed = false;
+let mySentencesModulePromise = null;
+
+function preloadMySentencesModule() {
+    if (!mySentencesModulePromise) {
+        mySentencesModulePromise = import("./sentences/app.js").catch(error => {
+            mySentencesModulePromise = null;
+            throw error;
+        });
+    }
+    return mySentencesModulePromise;
+}
+
+function showMySentencesError() {
+    mySentencesFailed = true;
+    const target = document.getElementById("sentences-loading-indicator");
+    if (!target) return;
+    target.classList.remove("hidden");
+    target.setAttribute("role", "status");
+    target.innerHTML = '<span>Mi aprendizaje no está disponible en este momento. ' +
+        'Tus datos siguen guardados en el dispositivo.</span> ' +
+        '<button type="button" id="retry-mysentences" class="text-button">Reintentar</button>';
+    target.querySelector("#retry-mysentences")?.addEventListener("click", () => {
+        window.initializeMySentences();
+    });
+}
+
 window.initializeMySentences = async function () {
     if (mySentencesInitialized) return;
     mySentencesInitialized = true;
+    mySentencesFailed = false;
     showLoading("sentences-loading-indicator", "Cargando tu aprendizaje…");
     try {
-        const { initializeSentencesApp } = await import("./sentences/app.js");
+        const { initializeSentencesApp } = await preloadMySentencesModule();
         await initializeSentencesApp();
     } catch (error) {
         mySentencesInitialized = false;
         console.error("Unable to initialize MySentences", error);
-        window.alert("No se pudo abrir MySentences. Recarga la página e inténtalo de nuevo.");
-    } finally {
-        hideLoading("sentences-loading-indicator");
+        showMySentencesError();
+        return;
     }
+    hideLoading("sentences-loading-indicator");
 };
+
+// Si la apertura falló porque no había red, se reintenta solo al recuperarla.
+window.addEventListener("online", () => {
+    if (mySentencesFailed && document.getElementById("mysentences-section")?.classList.contains("active")) {
+        window.initializeMySentences();
+    }
+});
 
 initApp();
 
