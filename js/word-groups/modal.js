@@ -2,7 +2,13 @@ import { store } from "../config.js"
 import { resolveSessionUser } from "../offline/session.js"
 import { playAudioEnhanced } from "../audio.js"
 import { showToast } from "../cache.js"
-import { collectWordCandidates, filterCandidates } from "./candidates.js"
+import {
+    availableMemberIdentities,
+    collectWordCandidates,
+    filterCandidates,
+    isVerbCatalogLoaded,
+    pruneUnavailableMembers
+} from "./candidates.js"
 import { missingTranslationCandidates } from "./similarity.js"
 import {
     addMember,
@@ -83,8 +89,17 @@ function cloneGroup(group) {
 }
 
 function ensureCandidates() {
-    if (!state.candidates.length) state.candidates = collectWordCandidates()
+    state.candidates = collectWordCandidates()
     return state.candidates
+}
+
+function pruneGroupAgainstCatalog(group, identities = null) {
+    if (!store.categoriesData?.length) return group
+    const available = identities || availableMemberIdentities(ensureCandidates())
+    const pruned = pruneUnavailableMembers(group, available, {
+        preserveVerbs: !isVerbCatalogLoaded()
+    })
+    return pruned === group ? group : normalizeGroup(pruned)
 }
 
 /* Agrega como miembros los términos con al menos una traducción equivalente.
@@ -126,7 +141,9 @@ async function ensureLoaded() {
     if (state.loadPromise) return state.loadPromise
     state.loadPromise = (async () => {
         state.user = state.user || await resolveSessionUser(supabaseClient)
-        state.groups = state.user && repository ? await repository.list(state.user.id) : []
+        const groups = state.user && repository ? await repository.list(state.user.id) : []
+        const identities = store.categoriesData?.length ? availableMemberIdentities(ensureCandidates()) : null
+        state.groups = groups.map(group => pruneGroupAgainstCatalog(group, identities))
         state.loaded = true
         state.loadPromise = null
         return true
@@ -898,7 +915,8 @@ async function saveCurrentGroup() {
         modalStatus("Inicia sesión para guardar en tu cuenta.", true)
         return
     }
-    const clean = normalizeGroup({ ...state.draft, title: byId("word-group-title-input")?.value || state.draft.title }, { createId: true })
+    const source = { ...state.draft, title: byId("word-group-title-input")?.value || state.draft.title }
+    const clean = normalizeGroup(pruneGroupAgainstCatalog(source), { createId: true })
     if (!clean.members.length) {
         modalStatus("Agrega al menos una palabra al grupo.", true)
         return
@@ -963,7 +981,7 @@ export async function openWordGroup(payload) {
     const matches = relatedGroups(payload).sort((left, right) => new Date(right.updatedAt || right.updated_at || 0) - new Date(left.updatedAt || left.updated_at || 0))
     let autoIncluded = 0
     if (matches.length) {
-        const group = cloneGroup(matches[0])
+        const group = pruneGroupAgainstCatalog(cloneGroup(matches[0]))
         const member = findMemberForPayload(group, payload) || group.members[0]
         state.draft = group
         state.activeMemberId = member?.id || group.members[0]?.id || null
@@ -993,11 +1011,23 @@ async function handleDelegatedClick(event) {
     if (payload) await openWordGroup(payload)
 }
 
+/* Llamado cuando se elimina una palabra del catálogo principal. */
+export function invalidateWordGroupData() {
+    state.candidates = []
+    state.groups = []
+    state.loaded = false
+    state.loadPromise = null
+    if (state.draft) state.draft = pruneGroupAgainstCatalog(state.draft)
+    byId("word-groups-field-dialog")?.remove()
+    if (byId("word-groups-dialog")) renderDialog()
+}
+
 export async function initializeWordGroups(supabase) {
     if (initialized) return
     initialized = true
     supabaseClient = supabase
     repository = createWordGroupRepository(supabase)
+    window.addEventListener("word-catalog-changed", invalidateWordGroupData)
     document.addEventListener("click", event => {
         handleDelegatedClick(event).catch(error => {
             console.error("[word-groups] No se pudo abrir el grupo:", error)

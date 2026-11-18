@@ -394,6 +394,7 @@ async function deleteAdjectiveRow(item) {
         }
         await refreshCategoryViewFromLocalCopy()
         window.refreshSearchResults?.()
+        window.dispatchEvent(new CustomEvent("word-catalog-changed"))
 
         try {
             await window.refreshPracticeCategories?.()

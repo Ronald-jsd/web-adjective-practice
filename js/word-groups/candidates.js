@@ -13,12 +13,38 @@ const adjectiveItemId = itemId => {
     return sourceForAdjective(value) === "custom" ? value.slice("custom_".length) : value
 }
 
+export function candidateIdentity(item) {
+    return `${item?.source || "inline"}:${item?.itemId ?? `word:${String(item?.word || "").toLowerCase()}`}`
+}
+
+export function isVerbCatalogLoaded() {
+    return (verbsData || []).length > 0
+}
+
+export function availableMemberIdentities(candidates = collectWordCandidates()) {
+    return new Set((candidates || []).map(candidateIdentity))
+}
+
+/* Quita del grupo las palabras que ya no están en el catálogo. Las palabras
+ * sin ID son propias del usuario y se conservan siempre. */
+export function pruneUnavailableMembers(group, identities, { preserveVerbs = false } = {}) {
+    if (!group) return group
+    const members = group.members || []
+    const kept = members.filter(member => {
+        if (!member?.itemId) return true
+        if (preserveVerbs && member.source === "verb") return true
+        return identities.has(candidateIdentity(member))
+    })
+    if (kept.length === members.length) return group
+    return { ...group, members: kept }
+}
+
 export function collectWordCandidates() {
     const candidates = []
     const seen = new Set()
     const add = item => {
         if (!item?.word) return
-        const key = `${item.source}:${item.itemId ?? `word:${item.word.toLowerCase()}`}`
+        const key = candidateIdentity(item)
         if (seen.has(key)) return
         seen.add(key)
         candidates.push(item)

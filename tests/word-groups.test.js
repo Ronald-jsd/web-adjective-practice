@@ -10,6 +10,7 @@ import {
     setRelationship,
     updateMember
 } from "../js/word-groups/model.js"
+import { availableMemberIdentities, candidateIdentity, pruneUnavailableMembers } from "../js/word-groups/candidates.js"
 
 test("word group draft normalizes source ids and standalone words without duplicates", () => {
     let draft = createDraftGroup({
@@ -55,6 +56,22 @@ test("word group position accepts several free-text positions", () => {
     assert.equal(updated.members[0].position, "Inicio\nMedio\nDespués del verbo")
     assert.equal(normalizeGroup(updated).members[0].position, "Inicio\nMedio\nDespués del verbo")
     assert.equal(updateMember(updated, memberId, { position: "   " }).members[0].position, "En cualquier posición")
+})
+
+test("word group pruning removes deleted catalog words but keeps manual ones", () => {
+    const identities = availableMemberIdentities([{ source: "catalog", itemId: "1", word: "then" }])
+    const group = {
+        title: "then · similares",
+        members: [
+            { id: "a", source: "catalog", itemId: "1", word: "then" },
+            { id: "b", source: "catalog", itemId: "2", word: "borrada" },
+            { id: "c", source: "verb", itemId: "9", word: "next" },
+            { id: "d", source: "inline", itemId: null, word: "manual" }
+        ]
+    }
+    assert.deepEqual(pruneUnavailableMembers(group, identities).members.map(member => member.id), ["a", "d"])
+    assert.deepEqual(pruneUnavailableMembers(group, identities, { preserveVerbs: true }).members.map(member => member.id), ["a", "c", "d"])
+    assert.equal(candidateIdentity({ source: "catalog", itemId: "1", word: "then" }), "catalog:1")
 })
 
 test("word group normalize removes relationships that reference missing members", () => {

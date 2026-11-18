@@ -208,6 +208,7 @@ window.deleteVerbRow = async function (verbId) {
         )
         const { loadVerbsFromSupabase } = await import('./verbs-loader.js')
         await loadVerbsFromSupabase(true)
+        window.dispatchEvent(new CustomEvent("word-catalog-changed"))
 
         const searchInput = document.getElementById('verbs-search-input')
         if (searchInput?.value.trim()) {
