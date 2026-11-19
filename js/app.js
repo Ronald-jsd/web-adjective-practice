@@ -241,9 +241,10 @@ async function initApp() {
     });
     startAutoSync();
     initAuthSession();
+    // El plan diario se muestra aunque la sesión remota tarde o falle.
+    initializeDailyStudy({ userId: store.currentUser?.id, navigate: navigateToDailyActivity });
     await checkUser();
     updateFavoriteFilterHints();
-    initializeDailyStudy({ userId: store.currentUser?.id, navigate: navigateToDailyActivity });
     initializeBrowserAI();
     initializeNotionIntegration(supabase);
     initializeNotionEmbeds(supabase);

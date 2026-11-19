@@ -11,6 +11,7 @@ import {
     ensureDailyMission,
     recordCommitment,
     recordCompletion,
+    resetMission,
     saveReminderSettings,
     normalizeDailyState,
     getActivityMinutes,
@@ -118,7 +119,14 @@ test("one mission is created per day and a completed review schedules the next o
     const completed = recordCompletion(committed.state, "2026-11-19", { grade: "good", recall: "reasonable" }, now)
     assert.equal(completed.recorded, true)
     assert.equal(completed.mission.grade, "good")
-    assert.ok(new Date(completed.card.nextReviewAt).getTime() > now.getTime())
+    assert.ok(new Date(completed.card.nextReviewAt).getTime() - now.getTime() >= 24 * 60 * 60 * 1000 - 1000)
+
+    const restarted = resetMission(completed.state, "2026-11-19")
+    assert.equal(restarted.reset, true)
+    assert.equal(restarted.mission.commitmentAt, null)
+    assert.equal(restarted.mission.completedAt, null)
+    assert.equal(restarted.mission.activityId, completed.mission.activityId)
+    assert.equal(recordCommitment(restarted.state, "2026-11-19", "Estudiaré otro", now).valid, true)
 
     const nextDay = ensureDailyMission(completed.state, { dateKey: "2026-11-20", now, random: () => 0.1 })
     assert.equal(nextDay.created, true)

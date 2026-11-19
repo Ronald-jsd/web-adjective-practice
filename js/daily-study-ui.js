@@ -14,6 +14,7 @@ import {
     ensureDailyMission,
     recordCommitment,
     recordCompletion,
+    resetMission,
     saveReminderSettings,
     findMission,
     getLocalDateKey
@@ -72,6 +73,7 @@ function injectStyles() {
         .ds-primary { border: 0; border-radius: 10px; padding: 11px 16px; background: #4f46e5;
             color: #fff; font: inherit; font-size: 14px; font-weight: 700; cursor: pointer; }
         .ds-primary:disabled { opacity: .45; cursor: not-allowed; }
+        .ds-step .ds-primary { margin-top: 12px; }
         .ds-grade { border: 1px solid #c7d2fe; border-radius: 10px; padding: 10px 13px; background: #eef2ff;
             color: #3730a3; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; }
         .ds-grade[data-grade="again"] { border-color: #fecaca; background: #fef2f2; color: #b91c1c; }
@@ -284,6 +286,17 @@ function render() {
         const doneStep = overlay.querySelectorAll(".ds-step")[2];
         doneStep.textContent = "";
         doneStep.appendChild(element("p", "ds-subtitle", `✅ Completaste ${activity.label}. Próximo repaso: ${nextReviewLabel()}`));
+        const again = element("button", "ds-primary", "🔄 Hacer otro hoy");
+        again.type = "button";
+        again.addEventListener("click", () => {
+            const result = resetMission(state, mission.date);
+            state = result.state;
+            mission = result.mission;
+            persist();
+            render();
+            show();
+        });
+        doneStep.appendChild(again);
     }
     if (!mission.completedAt && !mission.commitmentAt) {
         const input = overlay.querySelector("#ds-commit-input");

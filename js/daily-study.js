@@ -200,7 +200,13 @@ export function recordCompletion(state, dateKey, { grade, recall } = {}, now = n
     if (!mission || !mission.commitmentAt || mission.completedAt || String(recall || "").trim().length < 2) {
         return { state: normalized, mission: mission ? { ...mission } : null, recorded: false, card: null };
     }
-    const card = scheduleReview(normalized.cards[mission.activityId] || { memoryState: "new" }, grade, now);
+    // Esta misión es diaria: el repaso más pronto posible es mañana, no en 1 minuto.
+    const card = scheduleReview(
+        normalized.cards[mission.activityId] || { memoryState: "new" },
+        grade,
+        now,
+        { learningSteps: [1440] }
+    );
     const updated = {
         ...mission,
         completedAt: now.toISOString(),
@@ -216,6 +222,20 @@ export function recordCompletion(state, dateKey, { grade, recall } = {}, now = n
         recorded: true,
         card: normalizeCard(card)
     };
+}
+
+export function resetMission(state, dateKey) {
+    const normalized = normalizeDailyState(state);
+    const mission = normalized.history.find(entry => entry.date === dateKey);
+    if (!mission) return { state: normalized, mission: null, reset: false };
+    const updated = {
+        ...mission,
+        commitmentAt: null,
+        completedAt: null,
+        grade: null,
+        recall: ""
+    };
+    return { state: replaceMission(normalized, updated), mission: { ...updated }, reset: true };
 }
 
 export function saveReminderSettings(state, { enabled = false, time = "20:00" } = {}) {
