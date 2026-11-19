@@ -22,15 +22,14 @@ function updateAuthUI() {
             ? (window.hasApiKey('groq') || window.hasApiKey('gemini'))
             : false
         authContainer.innerHTML = `
-            <div class="flex items-center gap-1.5 lg:gap-3">
-                <button id="ai-provider-btn" onclick="window.manageAIKeys()" class="flex items-center gap-1.5 px-2 lg:px-3 py-1.5 lg:py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg text-xs lg:text-sm font-medium transition-colors border border-purple-200 whitespace-nowrap" title="Gestionar proveedores de IA">
-                    <span class="lg:hidden">${hasKey ? '⚡' : '🤖'}</span>
+            <div class="flex items-center gap-1 lg:gap-3">
+                <button id="ai-provider-btn" onclick="window.manageAIKeys()" class="inline-flex items-center h-9 gap-1.5 px-2 lg:px-3 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg text-xs lg:text-sm font-medium transition-colors border border-purple-200 whitespace-nowrap" title="Gestionar proveedores de IA">
+                    <span class="lg:hidden">IA</span>
                     <span class="hidden lg:inline">${hasKey ? '⚡ IA' : '🤖 Configurar IA'}</span>
                 </button>
                 <span class="text-xs lg:text-sm text-gray-600 hidden lg:block">${store.currentUser.email}</span>
-                <button onclick="window.logout()" class="px-2 lg:px-3 py-1.5 bg-red-500 text-white rounded-lg text-xs lg:text-sm hover:bg-red-600 whitespace-nowrap" title="Salir">
-                    <span class="lg:hidden">🚪</span>
-                    <span class="hidden lg:inline">Salir</span>
+                <button onclick="window.logout()" class="inline-flex items-center h-9 px-2 lg:px-3 bg-red-500 text-white rounded-lg text-xs lg:text-sm hover:bg-red-600 whitespace-nowrap" title="Salir">
+                    Salir
                 </button>
             </div>
         `
@@ -39,8 +38,8 @@ function updateAuthUI() {
         })
     } else {
         authContainer.innerHTML = `
-            <button onclick="window.abrirModalLogin()" class="px-2 sm:px-4 py-1.5 sm:py-2 bg-amber-500 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-amber-600 transition-colors whitespace-nowrap" title="Iniciar sesión">
-                🔐<span class="hidden sm:inline"> Iniciar sesión</span>
+            <button onclick="window.abrirModalLogin()" class="inline-flex items-center h-9 px-2 sm:px-4 bg-amber-500 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-amber-600 transition-colors whitespace-nowrap" title="Iniciar sesión">
+                🔐<span class="hidden sm:inline"> Iniciar sesión</span><span class="sm:hidden"> Entrar</span>
             </button>
         `
     }

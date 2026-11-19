@@ -104,7 +104,7 @@ function injectStyles() {
         .ds-link { border: 0; background: transparent; color: #4f46e5; font: inherit; font-size: 13px; cursor: pointer; }
         .ds-link.hidden, .ds-error.hidden { display: none !important; }
         .ds-badge { display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 999px;
-            max-width: 240px; padding: 8px 12px; background: #4338ca; color: #fff; overflow: hidden;
+            max-width: 240px; height: 36px; padding: 0 12px; background: #4338ca; color: #fff; overflow: hidden;
             font: inherit; font-size: 12px; font-weight: 700; white-space: nowrap;
             box-shadow: 0 4px 12px rgba(67,56,202,.25); cursor: pointer; }
         .ds-badge-short { display: inline; }
@@ -113,7 +113,7 @@ function injectStyles() {
             .ds-badge-short { display: none; }
             .ds-badge-full { display: inline; }
         }
-        @media (max-width: 639px) { .ds-badge { padding: 7px 9px; font-size: 11px; } }
+        @media (max-width: 639px) { .ds-badge { padding: 0 9px; font-size: 11px; } }
         @media (max-width: 480px) { .ds-card { padding: 20px; } .ds-card h2 { font-size: 19px; } }
     `;
     document.head.appendChild(style);
