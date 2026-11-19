@@ -387,6 +387,7 @@ function render() {
     reminderTime.value = state.notifications.time;
     updateVerificationUi();
     updateBadge();
+    emitSession();
 }
 
 function nextReviewLabel(mission) {
@@ -461,6 +462,29 @@ function updateVerificationUi() {
     overlay.querySelectorAll(".ds-grade").forEach(button => { button.disabled = !ready; });
 }
 
+function sessionSnapshot() {
+    const mission = currentMission();
+    const activity = session?.activity || (mission ? getActivity(mission.activityId) : null);
+    return {
+        activityId: mission?.activityId || null,
+        slot: mission?.slot || null,
+        label: mission ? missionLabel(mission) : "",
+        remainingMs: session ? session.remainingMs : null,
+        totalMs: activity ? getActivityMinutes(activity.id) * 60000 : 0,
+        running: Boolean(session?.running),
+        paused: Boolean(session?.paused),
+        interactions: mission?.interactions || 0,
+        requiredInteractions: MIN_REAL_INTERACTIONS,
+        completed: Boolean(mission?.completedAt)
+    };
+}
+
+/* Otras secciones (por ejemplo Exercise) muestran el mismo reloj dentro de su
+ * panel para que no parezca que llevan un sistema de progreso distinto. */
+function emitSession() {
+    window.dispatchEvent(new CustomEvent("daily-study-session", { detail: sessionSnapshot() }));
+}
+
 function updateBadge() {
     if (!badge) return;
     if (session && session.running) {
@@ -489,6 +513,7 @@ function tick() {
     }
     updateVerificationUi();
     updateBadge();
+    emitSession();
 }
 
 function stopSession() {
@@ -497,6 +522,7 @@ function stopSession() {
     tickTimer = null;
     interactionTimer = null;
     session = null;
+    emitSession();
 }
 
 function startSession(mission) {
@@ -512,6 +538,7 @@ function startSession(mission) {
     tickTimer = setInterval(tick, TICK_MS);
     updateVerificationUi();
     updateBadge();
+    emitSession();
 }
 
 function onRealInteraction(event) {
@@ -686,6 +713,7 @@ export function initializeDailyStudy(options = {}) {
         getMission: () => ({ ...(currentMission() || {}) }),
         getMissions: () => ({ main: { ...(missions.main || {}) }, review: { ...(missions.review || {}) } }),
         getState: () => state,
+        getSession: sessionSnapshot,
         openTarget: id => typeof openStudyTarget === "function" ? openStudyTarget(id) : false
     };
     return api;

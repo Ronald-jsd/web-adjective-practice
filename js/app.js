@@ -246,7 +246,7 @@ async function initApp() {
     startAutoSync();
     initAuthSession();
     // El plan diario se muestra aunque la sesión remota tarde o falle.
-    initializeDailyStudy({
+    window.dailyStudy = initializeDailyStudy({
         userId: store.currentUser?.id,
         navigate: navigateToDailyActivity,
         getStudyQueries,

@@ -184,15 +184,29 @@ function exerciseTypeAccuracy(type) {
     return stats?.attempts ? stats.correct / stats.attempts : null;
 }
 
+function formatPracticeClock(ms) {
+    const total = Math.max(0, Math.ceil(ms / 1000));
+    return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
+}
+
+/* Antes aquí se mostraba un porcentaje de aciertos acumulado desde siempre,
+ * que parecía un progreso distinto al del resto de actividades. Ahora Exercise
+ * muestra el mismo reloj del reto diario: tiempo restante y acciones reales. */
 function updateExerciseStats() {
     const target = document.getElementById("practice-exercise-stats");
     if (!target) return;
-    const icons = { listening: "🎧", translation: "↔", choice: "☑", fill: "✍", build: "🧩", "dictation-choice": "🎙" };
-    const entries = Object.entries(exerciseStats)
-        .filter(([, value]) => value.attempts > 0)
-        .map(([type, value]) => `${icons[type] || "📝"} ${value.correct}/${value.attempts}${value.attempts >= 4 ? ` · ${Math.round((value.correct / value.attempts) * 100)}%` : ""}`);
-    target.textContent = entries.length ? `Tus ejercicios: ${entries.join("  ·  ")}` : "";
-    target.classList.toggle("hidden", !entries.length);
+    const session = window.dailyStudy?.getSession?.();
+    if (!session || session.activityId !== "practice" || session.completed || session.remainingMs == null) {
+        target.textContent = "";
+        target.classList.add("hidden");
+        return;
+    }
+    const clock = formatPracticeClock(session.remainingMs);
+    const actions = `${session.interactions}/${session.requiredInteractions}`;
+    target.textContent = session.paused
+        ? `⏸ Ejercicios en pausa · ${clock} restantes · ${actions} acciones`
+        : `⏱ Ejercicios de hoy · ${clock} restantes · ${actions} acciones reales`;
+    target.classList.remove("hidden");
 }
 
 function loadProgress() {
@@ -1315,6 +1329,9 @@ async function initializePractice(categories = [], options = {}) {
 }
 
 export { initializePractice };
+
+window.addEventListener("daily-study-session", () => updateExerciseStats());
+updateExerciseStats();
 
 export function setNotionPracticeCategories(categories) {
     practiceNotionCache = categories;
