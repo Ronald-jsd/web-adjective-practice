@@ -202,10 +202,13 @@ function updateExerciseStats() {
         return;
     }
     const clock = formatPracticeClock(session.remainingMs);
-    const actions = `${session.interactions}/${session.requiredInteractions}`;
+    const goal = session.answerTarget
+        ? `${session.answers}/${session.answerTarget} ejercicios`
+        : "ejercicios";
+    const actions = `${session.interactions}/${session.requiredInteractions} acciones`;
     target.textContent = session.paused
-        ? `⏸ Ejercicios en pausa · ${clock} restantes · ${actions} acciones`
-        : `⏱ Ejercicios de hoy · ${clock} restantes · ${actions} acciones reales`;
+        ? `⏸ Ejercicios en pausa · ${goal} · ${clock} restantes`
+        : `⏱ Ejercicios de hoy · ${goal} · ${clock} restantes · ${actions}`;
     target.classList.remove("hidden");
 }
 
@@ -773,6 +776,7 @@ function recordAnswer(submittedAnswer, selectedButton = null) {
     }
     answeredQuestions += 1;
     if (isCorrect) correctAnswers += 1;
+    window.dailyStudy?.recordPracticeAnswer?.();
 
     const progress = { ...getItemProgress(currentItem) };
     const now = Date.now();

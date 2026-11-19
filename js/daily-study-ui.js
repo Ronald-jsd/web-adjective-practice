@@ -1,13 +1,16 @@
-/* Plan diario de estudio: dos retos cortos (uno principal y uno de repaso) con
- * su tiempo, tema concreto de IA y verificación: el reloj se pausa al salir de
- * la sección y hay que interactuar de verdad antes de poder puntuar. */
+/* Plan diario de estudio: tres retos cortos (principal, repaso y extra) con su
+ * tiempo, tema concreto de IA y verificación: el reloj se pausa al salir de la
+ * sección y hay que interactuar de verdad antes de poder puntuar. */
 
 import { showToast } from "./cache.js";
 import { formatInterval, isDue } from "./sentences/scheduler.js";
 import {
     MAIN_SLOT,
     REVIEW_SLOT,
+    EXTRA_SLOT,
+    DAILY_SLOTS,
     MIN_REAL_INTERACTIONS,
+    PRACTICE_ANSWER_TARGET,
     getActivity,
     getActivityMinutes,
     getDailyTotalMinutes,
@@ -18,6 +21,7 @@ import {
     refreshMissionTarget,
     recordCommitment,
     recordInteraction,
+    recordPracticeAnswer,
     recordCompletion,
     resetMission,
     saveReminderSettings,
@@ -30,7 +34,7 @@ const BADGE_ID = "daily-study-badge";
 const TICK_MS = 1000;
 
 let state = null;
-let missions = { main: null, review: null };
+let missions = { main: null, review: null, extra: null };
 let activeSlot = MAIN_SLOT;
 let storage = null;
 let userId = "";
@@ -282,8 +286,8 @@ function missionLabel(mission) {
 function renderPlan(now) {
     const host = overlay.querySelector(".ds-plan");
     host.textContent = "";
-    host.appendChild(element("div", "ds-plan-head", `HOY · ${getDailyTotalMinutes(missions)} MIN EN 2 RETOS`));
-    for (const [slot, tag] of [[MAIN_SLOT, "Principal"], [REVIEW_SLOT, "Repaso"]]) {
+    host.appendChild(element("div", "ds-plan-head", `HOY · ${getDailyTotalMinutes(missions)} MIN EN 3 RETOS`));
+    for (const [slot, tag] of [[MAIN_SLOT, "Principal"], [REVIEW_SLOT, "Repaso"], [EXTRA_SLOT, "Extra"]]) {
         const mission = missions[slot];
         if (!mission) continue;
         const activity = getActivity(mission.activityId);
@@ -306,7 +310,6 @@ function renderPlan(now) {
 }
 
 function renderDone(mission) {
-    const activity = getActivity(mission.activityId);
     const step = overlay.querySelectorAll(".ds-step")[2];
     step.textContent = "";
     step.appendChild(element("p", "ds-subtitle",
@@ -324,13 +327,14 @@ function renderDone(mission) {
     });
     step.appendChild(again);
 
-    const otherSlot = mission.slot === MAIN_SLOT ? REVIEW_SLOT : MAIN_SLOT;
-    const other = missions[otherSlot];
-    if (other && !other.completedAt) {
-        const next = element("button", "ds-link", `➡️ Hacer el otro reto (${getActivityMinutes(other.activityId)} min)`);
+    for (const slot of DAILY_SLOTS) {
+        const other = missions[slot];
+        if (!other || other.completedAt || slot === mission.slot) continue;
+        const next = element("button", "ds-link",
+            `➡️ Hacer ${missionLabel(other)} (${getActivityMinutes(other.activityId)} min)`);
         next.type = "button";
         next.addEventListener("click", () => {
-            activeSlot = otherSlot;
+            activeSlot = slot;
             render();
         });
         step.appendChild(next);
@@ -346,7 +350,7 @@ function render() {
     const now = new Date();
     const title = overlay.querySelector("#ds-title");
     const subtitle = overlay.querySelector(".ds-subtitle");
-    title.textContent = `🎯 Hoy: ${getDailyTotalMinutes(missions)} min · 2 retos cortos`;
+    title.textContent = `🎯 Hoy: ${getDailyTotalMinutes(missions)} min · 3 retos cortos`;
     if (mission.completedAt) {
         subtitle.textContent = "Buen trabajo. Puedes hacer el otro reto o reiniciar este.";
     } else if (mission.commitmentAt) {
@@ -470,6 +474,8 @@ function sessionSnapshot() {
         paused: Boolean(session?.paused),
         interactions: mission?.interactions || 0,
         requiredInteractions: MIN_REAL_INTERACTIONS,
+        answers: mission?.answers || 0,
+        answerTarget: mission?.activityId === "practice" ? PRACTICE_ANSWER_TARGET : 0,
         completed: Boolean(mission?.completedAt)
     };
 }
@@ -486,7 +492,7 @@ function updateBadge() {
         const stateText = session.paused ? "⏸" : "⏱";
         badge.textContent = `${stateText} ${formatRemaining(session.remainingMs)} · ${session.activity.label}`;
     } else {
-        const pending = [missions.main, missions.review].filter(mission => mission && !mission.completedAt).length;
+        const pending = DAILY_SLOTS.filter(slot => missions[slot] && !missions[slot].completedAt).length;
         badge.textContent = pending
             ? `🎯 Hoy: ${getDailyTotalMinutes(missions)} min · ${pending} reto${pending === 1 ? "" : "s"}`
             : "✅ Retos de hoy completados";
@@ -602,12 +608,14 @@ function finish(grade) {
 function handleStudyQueries(event) {
     const targets = Array.isArray(event?.detail?.queries) ? event.detail.queries : (getStudyQueries() || []);
     const dateKey = getLocalDateKey(new Date());
-    const slot = missions.review?.activityId === "ai" ? REVIEW_SLOT : MAIN_SLOT;
-    const result = refreshMissionTarget(state, dateKey, targets, new Date(), slot);
-    if (result.changed) {
-        state = result.state;
-        missions[slot] = result.mission;
-        persist();
+    for (const slot of DAILY_SLOTS) {
+        if (missions[slot]?.activityId !== "ai") continue;
+        const result = refreshMissionTarget(state, dateKey, targets, new Date(), slot);
+        if (result.changed) {
+            state = result.state;
+            missions[slot] = result.mission;
+            persist();
+        }
     }
     render();
 }
@@ -645,7 +653,8 @@ function scheduleNotification() {
     reminderTimer = setTimeout(async () => {
         const fresh = loadDailyState({ storage, userId });
         const current = findDailyMissions(fresh, getLocalDateKey(new Date()));
-        const labels = [current.main, current.review]
+        const labels = DAILY_SLOTS
+            .map(slot => current[slot])
             .filter(mission => mission && !mission.completedAt)
             .map(missionLabel);
         if (!labels.length) return;
@@ -662,7 +671,7 @@ function scheduleNotification() {
         }
         state = fresh;
         missions = current;
-        activeSlot = current.main && !current.main.completedAt ? MAIN_SLOT : REVIEW_SLOT;
+        activeSlot = DAILY_SLOTS.find(slot => current[slot] && !current[slot].completedAt) || MAIN_SLOT;
         render();
         show();
         scheduleNotification();
@@ -684,9 +693,7 @@ export function initializeDailyStudy(options = {}) {
     });
     state = ensured.state;
     missions = ensured.missions;
-    activeSlot = missions.main && !missions.main.completedAt
-        ? MAIN_SLOT
-        : missions.review && !missions.review.completedAt ? REVIEW_SLOT : MAIN_SLOT;
+    activeSlot = DAILY_SLOTS.find(slot => missions[slot] && !missions[slot].completedAt) || MAIN_SLOT;
     persist();
     mount();
 
@@ -705,9 +712,21 @@ export function initializeDailyStudy(options = {}) {
         open: show,
         close: hide,
         getMission: () => ({ ...(currentMission() || {}) }),
-        getMissions: () => ({ main: { ...(missions.main || {}) }, review: { ...(missions.review || {}) } }),
+        getMissions: () => Object.fromEntries(DAILY_SLOTS.map(slot =>
+            [slot, { ...(missions[slot] || {}) }])),
         getState: () => state,
         getSession: sessionSnapshot,
+        recordPracticeAnswer: () => {
+            const mission = currentMission();
+            if (!mission) return false;
+            const result = recordPracticeAnswer(state, mission.date, mission.slot, new Date());
+            if (!result.counted) return false;
+            state = result.state;
+            missions[mission.slot] = result.mission;
+            persist();
+            emitSession();
+            return true;
+        },
         openTarget: id => typeof openStudyTarget === "function" ? openStudyTarget(id) : false
     };
     return api;

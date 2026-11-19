@@ -4,8 +4,12 @@ import {
     STUDY_ACTIVITIES,
     MAIN_SLOT,
     REVIEW_SLOT,
+    EXTRA_SLOT,
+    DAILY_SLOTS,
+    PRACTICE_ANSWER_TARGET,
     MAIN_ACTIVITY_IDS,
     REVIEW_ACTIVITY_IDS,
+    EXTRA_ACTIVITY_IDS,
     MIN_REAL_INTERACTIONS,
     getActivity,
     getLocalDateKey,
@@ -20,6 +24,7 @@ import {
     refreshMissionTarget,
     recordCommitment,
     recordInteraction,
+    recordPracticeAnswer,
     recordCompletion,
     resetMission,
     saveReminderSettings,
@@ -65,17 +70,17 @@ test("the six study activities point to real sections of the app", () => {
     assert.deepEqual(getActivity("sentences").screen, "review")
 })
 
-test("only the two missions assigned today count towards the daily time", () => {
+test("only the three missions assigned today count towards the daily time", () => {
     const now = new Date(2026, 10, 19, 9, 0)
     const today = ensureDailyMissions(normalizeDailyState(null), {
         dateKey: "2026-11-19", now, targets: AI_TARGETS
     })
     const total = getDailyTotalMinutes(today.missions)
-    assert.equal(total, getActivityMinutes(today.missions.main.activityId) +
-        getActivityMinutes(today.missions.review.activityId))
+    assert.equal(total, DAILY_SLOTS.reduce((sum, slot) =>
+        sum + getActivityMinutes(today.missions[slot].activityId), 0))
     assert.ok(total < getTotalPlanMinutes())
-    assert.ok(total >= 9)
-    assert.ok(total <= 11)
+    assert.ok(total >= 13)
+    assert.ok(total <= 16)
 })
 
 test("local date keys do not shift with UTC", () => {
@@ -126,27 +131,32 @@ test("review due activities are preferred over already consolidated ones", () =>
     }), "listening")
 })
 
-test("two different missions are created per day and each keeps its own slot", () => {
+test("three different missions are created per day and each keeps its own slot", () => {
     const now = new Date(2026, 10, 19, 9, 0)
     const first = ensureDailyMissions(normalizeDailyState(null), {
         dateKey: "2026-11-19", now, targets: AI_TARGETS
     })
     assert.equal(first.created, true)
+    assert.deepEqual(DAILY_SLOTS, [MAIN_SLOT, REVIEW_SLOT, EXTRA_SLOT])
     assert.equal(first.missions.main.slot, MAIN_SLOT)
     assert.equal(first.missions.review.slot, REVIEW_SLOT)
+    assert.equal(first.missions.extra.slot, EXTRA_SLOT)
     assert.ok(MAIN_ACTIVITY_IDS.includes(first.missions.main.activityId))
     assert.ok(REVIEW_ACTIVITY_IDS.includes(first.missions.review.activityId))
-    assert.notEqual(first.missions.main.activityId, first.missions.review.activityId)
-    assert.equal(first.state.history.length, 2)
+    assert.ok(EXTRA_ACTIVITY_IDS.includes(first.missions.extra.activityId))
+    const ids = DAILY_SLOTS.map(slot => first.missions[slot].activityId)
+    assert.equal(new Set(ids).size, 3)
+    assert.equal(first.state.history.length, 3)
 
     const repeated = ensureDailyMissions(first.state, { dateKey: "2026-11-19", now, targets: AI_TARGETS })
     assert.equal(repeated.created, false)
-    assert.equal(repeated.missions.main.activityId, first.missions.main.activityId)
-    assert.equal(repeated.missions.review.activityId, first.missions.review.activityId)
-    assert.equal(repeated.state.history.length, 2)
+    for (const slot of DAILY_SLOTS) {
+        assert.equal(repeated.missions[slot].activityId, first.missions[slot].activityId)
+    }
+    assert.equal(repeated.state.history.length, 3)
 })
 
-test("the two missions of a day alternate with the previous day", () => {
+test("the three missions of a day alternate with the previous day", () => {
     let state = normalizeDailyState(null)
     const previousBySlot = {}
     for (let day = 18; day <= 24; day += 1) {
@@ -155,13 +165,13 @@ test("the two missions of a day alternate with the previous day", () => {
             dateKey, now: new Date(2026, 10, day, 9, 0), targets: AI_TARGETS
         })
         state = ensured.state
-        for (const slot of [MAIN_SLOT, REVIEW_SLOT]) {
+        for (const slot of DAILY_SLOTS) {
             if (previousBySlot[slot]) {
                 assert.notEqual(ensured.missions[slot].activityId, previousBySlot[slot])
             }
             previousBySlot[slot] = ensured.missions[slot].activityId
         }
-        assert.notEqual(ensured.missions.main.activityId, ensured.missions.review.activityId)
+        assert.equal(new Set(DAILY_SLOTS.map(slot => ensured.missions[slot].activityId)).size, 3)
     }
 })
 
@@ -205,6 +215,28 @@ test("reviewing requires real interactions before scoring and schedules at least
 
     const untouchedReview = findMission(completed.state, dateKey, REVIEW_SLOT)
     assert.equal(untouchedReview.completedAt, null)
+})
+
+test("Practice counts answered exercises towards a visible target", () => {
+    const now = new Date(2026, 10, 19, 9, 0)
+    const dateKey = "2026-11-19"
+    let state = normalizeDailyState({
+        history: [{ date: dateKey, slot: MAIN_SLOT, activityId: "practice" }]
+    })
+
+    const before = recordPracticeAnswer(state, dateKey, MAIN_SLOT, now)
+    assert.equal(before.counted, false)
+
+    state = recordCommitment(state, dateKey, MAIN_SLOT, "Estudiaré Ejercicios", now).state
+    for (let index = 0; index < PRACTICE_ANSWER_TARGET; index += 1) {
+        const result = recordPracticeAnswer(state, dateKey, MAIN_SLOT, now)
+        assert.equal(result.counted, true)
+        state = result.state
+    }
+    assert.equal(findMission(state, dateKey, MAIN_SLOT).answers, PRACTICE_ANSWER_TARGET)
+
+    const restarted = resetMission(state, dateKey, MAIN_SLOT)
+    assert.equal(restarted.mission.answers, 0)
 })
 
 test("each AI query has its own review card and new queries join the rotation", () => {

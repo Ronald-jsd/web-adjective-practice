@@ -1,8 +1,7 @@
-/* Plan diario de estudio: dos retos cortos al día (uno principal de práctica y
- * uno de repaso), se alternan para no repetir los del día anterior y cada uno
- * programa su próxima aparición con el calendario SM-2 de las frases.
- * Las consultas de IA tienen tarjeta propia y las nuevas entran solas.
- * Todo se guarda en este dispositivo. */
+/* Plan diario de estudio: tres retos cortos al día (principal, repaso y extra),
+ * distintos entre sí y distintos a los de ayer. Cada uno programa su próxima
+ * aparición con el calendario SM-2 de las frases. Las consultas de IA tienen
+ * tarjeta propia y las nuevas entran solas. Todo se guarda en este dispositivo. */
 
 import { scheduleReview } from "./sentences/scheduler.js";
 
@@ -19,9 +18,13 @@ export const STUDY_ACTIVITIES = Object.freeze([
 
 export const MAIN_SLOT = "main";
 export const REVIEW_SLOT = "review";
+export const EXTRA_SLOT = "extra";
+export const DAILY_SLOTS = Object.freeze([MAIN_SLOT, REVIEW_SLOT, EXTRA_SLOT]);
 export const MAIN_ACTIVITY_IDS = Object.freeze(["practice", "listening", "shadowing", "vocabulary"]);
 export const REVIEW_ACTIVITY_IDS = Object.freeze(["sentences", "vocabulary", "ai"]);
+export const EXTRA_ACTIVITY_IDS = Object.freeze(["sentences", "vocabulary", "ai"]);
 export const MIN_REAL_INTERACTIONS = 3;
+export const PRACTICE_ANSWER_TARGET = 8;
 
 const STATE_VERSION = 2;
 const MAX_HISTORY = 180;
@@ -39,10 +42,10 @@ export function getTotalPlanMinutes() {
     return STUDY_ACTIVITIES.reduce((total, activity) => total + getActivityMinutes(activity.id), 0);
 }
 
-/* Tiempo real del día: solo los dos retos asignados hoy, no el total del catálogo. */
+/* Tiempo real del día: solo los tres retos asignados hoy, no el total del catálogo. */
 export function getDailyTotalMinutes(missions = {}) {
-    return [missions.main, missions.review].reduce((total, mission) =>
-        total + (mission ? getActivityMinutes(mission.activityId) : 0), 0);
+    return DAILY_SLOTS.reduce((total, slot) =>
+        total + (missions[slot] ? getActivityMinutes(missions[slot].activityId) : 0), 0);
 }
 
 export function getLocalDateKey(date = new Date()) {
@@ -123,6 +126,7 @@ export function chooseDailyActivity({
     cards = {},
     previousId = "",
     excludeId = "",
+    excludeIds = [],
     allowedIds = [],
     dateKey = "",
     now = new Date(),
@@ -135,7 +139,8 @@ export function chooseDailyActivity({
         : STUDY_ACTIVITIES;
     let pool = universe.map(activity => activity.id).filter(id => isActivityDue(cards[id], now));
     if (!pool.length) pool = universe.map(activity => activity.id);
-    const withoutPrevious = pool.filter(id => id !== previousId && id !== excludeId);
+    const withoutPrevious = pool.filter(id =>
+        id !== previousId && id !== excludeId && !excludeIds.includes(id));
     if (withoutPrevious.length) pool = withoutPrevious;
     const index = Math.min(pool.length - 1, Math.floor(nextRandom() * pool.length));
     return pool[index];
@@ -164,7 +169,7 @@ export function chooseDailyTarget({ targets = [], cards = {}, previousId = "", e
 }
 
 function slotOf(entry) {
-    return entry?.slot === REVIEW_SLOT ? REVIEW_SLOT : MAIN_SLOT;
+    return DAILY_SLOTS.includes(entry?.slot) ? entry.slot : MAIN_SLOT;
 }
 
 function makeMission(date, slot, activityId, target = null) {
@@ -177,6 +182,7 @@ function makeMission(date, slot, activityId, target = null) {
         grade: null,
         recall: "",
         interactions: 0,
+        answers: 0,
         targetId: target ? String(target.id) : "",
         targetLabel: target ? String(target.label || "") : ""
     };
@@ -195,6 +201,7 @@ export function normalizeDailyState(raw) {
                 grade: entry.grade || null,
                 recall: entry.recall || "",
                 interactions: Math.max(0, Number(entry.interactions) || 0),
+                answers: Math.max(0, Number(entry.answers) || 0),
                 targetId: entry.targetId || "",
                 targetLabel: entry.targetLabel || ""
             }))
@@ -228,10 +235,12 @@ export function findMission(state, dateKey, slot = MAIN_SLOT) {
 
 export function findDailyMissions(state, dateKey) {
     const normalized = normalizeDailyState(state);
-    return {
-        main: normalized.history.find(entry => entry.date === dateKey && slotOf(entry) === MAIN_SLOT) || null,
-        review: normalized.history.find(entry => entry.date === dateKey && slotOf(entry) === REVIEW_SLOT) || null
-    };
+    const result = {};
+    for (const slot of DAILY_SLOTS) {
+        result[slot] = normalized.history.find(entry =>
+            entry.date === dateKey && slotOf(entry) === slot) || null;
+    }
+    return result;
 }
 
 function replaceMission(state, mission) {
@@ -308,6 +317,38 @@ export function ensureDailyMissions(state, { dateKey = "", now = new Date(), ran
         created = true;
     }
 
+    if (!findMission(result, key, EXTRA_SLOT)) {
+        const prevExtra = findMission(result, previous, EXTRA_SLOT);
+        const mainId = findMission(result, key, MAIN_SLOT)?.activityId || "";
+        const reviewId = findMission(result, key, REVIEW_SLOT)?.activityId || "";
+        const freeIds = EXTRA_ACTIVITY_IDS.filter(id => id !== mainId && id !== reviewId);
+        const activityId = chooseDailyActivity({
+            cards: result.cards,
+            previousId: prevExtra?.activityId || "",
+            allowedIds: freeIds.length ? freeIds : EXTRA_ACTIVITY_IDS,
+            dateKey: `${key}|extra`,
+            now,
+            random: randomFor(key, EXTRA_SLOT, prevExtra?.activityId || "")
+        });
+        let mission = makeMission(key, EXTRA_SLOT, activityId);
+        if (activityId === "ai" && targets.length) {
+            const prevTarget = previousAiTarget(result, key);
+            const reviewTargetId = findMission(result, key, REVIEW_SLOT)?.targetId || "";
+            const target = chooseDailyTarget({
+                targets,
+                cards: result.cards,
+                previousId: prevTarget?.targetId || "",
+                excludeId: reviewTargetId,
+                dateKey: key,
+                now,
+                random: randomFor(key, "ai-extra-target", prevTarget?.targetId || "")
+            });
+            if (target) mission = { ...mission, targetId: String(target.id), targetLabel: target.label };
+        }
+        result = replaceMission(result, mission);
+        created = true;
+    }
+
     return {
         state: result,
         missions: findDailyMissions(result, key),
@@ -362,6 +403,17 @@ export function recordInteraction(state, dateKey, slot, now = new Date()) {
     return { state: replaceMission(normalized, updated), mission: { ...updated }, counted: true };
 }
 
+/* Cada respuesta de Practice cuenta para el objetivo visible de ejercicios. */
+export function recordPracticeAnswer(state, dateKey, slot, now = new Date()) {
+    const normalized = normalizeDailyState(state);
+    const mission = findMission(normalized, dateKey, slot);
+    if (!mission || mission.activityId !== "practice" || !mission.commitmentAt || mission.completedAt) {
+        return { state: normalized, mission: mission ? { ...mission } : null, counted: false };
+    }
+    const updated = { ...mission, answers: Math.min(999, mission.answers + 1) };
+    return { state: replaceMission(normalized, updated), mission: { ...updated }, counted: true };
+}
+
 export function recordCompletion(state, dateKey, slot, { grade, recall } = {}, now = new Date()) {
     const normalized = normalizeDailyState(state);
     const mission = findMission(normalized, dateKey, slot);
@@ -399,7 +451,7 @@ export function resetMission(state, dateKey, slot) {
     const normalized = normalizeDailyState(state);
     const mission = findMission(normalized, dateKey, slot);
     if (!mission) return { state: normalized, mission: null, reset: false };
-    const updated = { ...mission, commitmentAt: null, completedAt: null, grade: null, recall: "", interactions: 0 };
+    const updated = { ...mission, commitmentAt: null, completedAt: null, grade: null, recall: "", interactions: 0, answers: 0 };
     return { state: replaceMission(normalized, updated), mission: { ...updated }, reset: true };
 }
 
