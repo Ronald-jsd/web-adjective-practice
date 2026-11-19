@@ -24,7 +24,8 @@ const {
     CATEGORY_TREE_COLUMNS,
     CUSTOM_ITEM_COLUMNS,
     ITEM_COLUMNS,
-    VERB_COLUMNS
+    VERB_COLUMNS,
+    PRACTICE_VERB_COLUMNS
 } = await import("../js/supabase-columns.js")
 
 test("catalog freshness expires after the cache duration", () => {
@@ -48,6 +49,25 @@ test("VERB_COLUMNS contains every editable verb field", () => {
     for (const key of keys) {
         assert.ok(columns.has(key), `Falta la columna ${key} en VERB_COLUMNS`)
     }
+})
+
+test("PRACTICE_VERB_COLUMNS fetches every derived form used by practice", () => {
+    const columns = PRACTICE_VERB_COLUMNS.split(",")
+    for (const column of [
+        "id", "verb", "pronunciation", "translation", "example_base",
+        "past_simple", "pronunciation_ps", "translation_ps", "example_ps",
+        "past_participle", "pronunciation_pp", "translation_pp", "example_pp",
+        "adjective", "pronunciation_adj", "translation_adj", "example_adj", "example_adj_translation",
+        "adverb", "pronunciation_adv", "translation_adv", "example_adv", "example_adv_translation",
+        "noun", "pronunciation_noun", "translation_noun", "example_noun", "example_noun_translation"
+    ]) {
+        assert.ok(columns.includes(column), `Falta ${column} en PRACTICE_VERB_COLUMNS`)
+    }
+    for (const column of ["category", "type", "usage", "notes"]) {
+        assert.ok(!columns.includes(column), `${column} no debe pedirse en la práctica`)
+    }
+    const practiceSource = readFileSync(join(root, "js/practice.js"), "utf8")
+    assert.match(practiceSource, /\.select\(PRACTICE_VERB_COLUMNS\)/)
 })
 
 test("CUSTOM_ITEM_COLUMNS covers the fields the app reads and writes", () => {

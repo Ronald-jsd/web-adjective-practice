@@ -27,7 +27,7 @@ import { parsePracticeTable } from "./practice-import.js";
 import { showLoading, hideLoading } from "./ui-status.js";
 import { cacheRowsPreservingPending, readCachedRows, TABLES } from "./offline/cache.js";
 import { isCatalogFresh, markCatalogFresh } from "./catalog-freshness.js";
-import { CUSTOM_ITEM_COLUMNS } from "./supabase-columns.js";
+import { CUSTOM_ITEM_COLUMNS, PRACTICE_VERB_COLUMNS } from "./supabase-columns.js";
 import { isOnline } from "./offline/sync.js";
 
 const PROGRESS_STORAGE_KEY = "vocabulary_practice_progress_v1";
@@ -917,7 +917,7 @@ async function initializePractice(categories = [], options = {}) {
                 for (let start = 0; ; start += pageSize) {
                     const { data, error } = await options.supabase
                         .from("verbs")
-                        .select("id, verb, pronunciation, translation, example_base, past_simple, pronunciation_ps, translation_ps, example_ps, past_participle, pronunciation_pp, translation_pp, example_pp")
+                        .select(PRACTICE_VERB_COLUMNS)
                         .order("verb")
                         .range(start, start + pageSize - 1);
                     if (error) throw error;

@@ -110,19 +110,43 @@ export function createVerbPracticeCategory(verbs) {
                     translation: getUsableValue(verb.translation_pp) || baseTranslation,
                     example: verb.example_pp,
                     id: "past-participle"
+                },
+                {
+                    form: verb.adjective,
+                    pronunciation: verb.pronunciation_adj,
+                    translation: getUsableValue(verb.translation_adj) || baseTranslation,
+                    example: verb.example_adj,
+                    exampleSpanish: verb.example_adj_translation,
+                    id: "adjective"
+                },
+                {
+                    form: verb.adverb,
+                    pronunciation: verb.pronunciation_adv,
+                    translation: getUsableValue(verb.translation_adv) || baseTranslation,
+                    example: verb.example_adv,
+                    exampleSpanish: verb.example_adv_translation,
+                    id: "adverb"
+                },
+                {
+                    form: verb.noun,
+                    pronunciation: verb.pronunciation_noun,
+                    translation: getUsableValue(verb.translation_noun) || baseTranslation,
+                    example: verb.example_noun,
+                    exampleSpanish: verb.example_noun_translation,
+                    id: "noun"
                 }
             ];
 
             return forms
                 .filter(form => getUsableValue(form.form))
                 .map(form => {
-                    const [example, exampleSpanish] = splitTranslatedExample(form.example);
+                    const [example, exampleSpanishFromExample] = splitTranslatedExample(form.example);
                     return [
                         form.form.trim(),
                         getUsableValue(form.pronunciation),
                         getUsableValue(form.translation) || baseTranslation,
                         example,
-                        exampleSpanish,
+                        getUsableValue(form.exampleSpanish) || exampleSpanishFromExample,
                         `saved-verb-${verb.id}-${form.id}`
                     ];
                 });

@@ -529,6 +529,46 @@ test("saved verbs without a stored tense form do not create placeholder exercise
     assert.equal(category.subcategories[0].items.length, 1)
 })
 
+test("saved verbs also practice adjective, adverb and noun forms", () => {
+    const category = createVerbPracticeCategory([{
+        id: 9,
+        verb: "act",
+        translation: "actuar",
+        example_base: "They act now. (Ellos actúan ahora.)",
+        adjective: "active",
+        pronunciation_adj: "/ˈæktɪv/",
+        translation_adj: "activo",
+        example_adj: "She is active.",
+        example_adj_translation: "Ella es activa.",
+        adverb: "actively",
+        pronunciation_adv: "/ˈæktɪvli/",
+        translation_adv: "activamente",
+        example_adv: "He participates actively.",
+        example_adv_translation: "Él participa activamente.",
+        noun: "action",
+        translation_noun: "acción",
+        example_noun: "The action was quick. (La acción fue rápida.)",
+        category: "ignored",
+        type: "ignored",
+        usage: "ignored",
+        notes: "ignored"
+    }])
+
+    const items = category.subcategories[0].items
+    assert.deepEqual(items.map(item => item[0]), ["act", "active", "actively", "action"])
+    assert.deepEqual(items.map(item => item[5]), [
+        "saved-verb-9-base",
+        "saved-verb-9-adjective",
+        "saved-verb-9-adverb",
+        "saved-verb-9-noun"
+    ])
+    assert.deepEqual(items.slice(1).map(item => item.slice(0, 5)), [
+        ["active", "/ˈæktɪv/", "activo", "She is active.", "Ella es activa."],
+        ["actively", "/ˈæktɪvli/", "activamente", "He participates actively.", "Él participa activamente."],
+        ["action", "", "acción", "The action was quick.", "La acción fue rápida."]
+    ])
+})
+
 test("favorites practice includes only marked adjective IDs and all usable forms of starred verbs", () => {
     const adjectiveCategories = [{
         id: "adjectives",

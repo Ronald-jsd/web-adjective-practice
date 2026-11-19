@@ -48,3 +48,36 @@ export const VERB_COLUMNS = [
     "example_noun_translation",
     "notes"
 ].join(",")
+
+/* Columnas que Ejercicios y Escucha continua necesitan de `verbs`.
+ * Se excluyen `category`, `type`, `usage` y `notes`: no generan tarjetas. */
+export const PRACTICE_VERB_COLUMNS = [
+    "id",
+    "verb",
+    "pronunciation",
+    "translation",
+    "example_base",
+    "past_simple",
+    "pronunciation_ps",
+    "translation_ps",
+    "example_ps",
+    "past_participle",
+    "pronunciation_pp",
+    "translation_pp",
+    "example_pp",
+    "adjective",
+    "pronunciation_adj",
+    "translation_adj",
+    "example_adj",
+    "example_adj_translation",
+    "adverb",
+    "pronunciation_adv",
+    "translation_adv",
+    "example_adv",
+    "example_adv_translation",
+    "noun",
+    "pronunciation_noun",
+    "translation_noun",
+    "example_noun",
+    "example_noun_translation"
+].join(",")
