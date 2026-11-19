@@ -9,7 +9,7 @@ import { performSearch, initSearchModeListeners, showFavoriteAdjectives } from "
 import { closeCategoryView } from "./category-view.js";
 import { updateAIButton } from "./ai.js";
 import { initializePractice, setNotionPracticeCategories } from "./practice.js";
-import { initializeBrowserAI } from "./browser-ai.js";
+import { initializeBrowserAI, getStudyQueries, openStudyQuery } from "./browser-ai.js";
 import { initializeNotionIntegration } from "./notion.js";
 import { initializeNotionEmbeds } from "./notion-embeds/app.js";
 import { initializeShadowing } from "./shadowing/app.js";
@@ -212,7 +212,7 @@ async function refreshCategoriesInBackground() {
     }
 }
 
-function navigateToDailyActivity(activity) {
+function navigateToDailyActivity(activity, mission) {
     if (!activity) return;
     const button = document.querySelector(`[data-section="${activity.section}"]`);
     window.switchSection?.(activity.section, button);
@@ -221,6 +221,10 @@ function navigateToDailyActivity(activity) {
         const clickTab = () => document.querySelector(`.tab[data-screen="${activity.screen}"]`)?.click();
         clickTab();
         setTimeout(clickTab, 150);
+    }
+    // El reto de IA abre la consulta concreta del tema elegido.
+    if (activity.id === "ai" && mission?.targetId) {
+        setTimeout(() => openStudyQuery(mission.targetId), 200);
     }
 }
 
@@ -242,7 +246,12 @@ async function initApp() {
     startAutoSync();
     initAuthSession();
     // El plan diario se muestra aunque la sesión remota tarde o falle.
-    initializeDailyStudy({ userId: store.currentUser?.id, navigate: navigateToDailyActivity });
+    initializeDailyStudy({
+        userId: store.currentUser?.id,
+        navigate: navigateToDailyActivity,
+        getStudyQueries,
+        openStudyTarget: openStudyQuery
+    });
     await checkUser();
     updateFavoriteFilterHints();
     initializeBrowserAI();

@@ -29,6 +29,15 @@ let pendingImages = []
 let pendingImageKey = 0
 let queryHistoryOffline = false
 
+/* El plan diario necesita saber qué consultas existen para elegir un tema
+ * concreto. Se avisa cada vez que se carga el historial (también al volver a
+ * conectarte o al añadir una consulta nueva). */
+function emitStudyQueries() {
+    window.dispatchEvent(new CustomEvent('ai-queries-changed', {
+        detail: { queries: getStudyQueries() }
+    }))
+}
+
 function updateAvailability() {
     const status = document.getElementById('browser-ai-availability')
     const submit = document.getElementById('browser-ai-submit')
@@ -320,6 +329,7 @@ function renderHistory(queries) {
     const history = document.getElementById('browser-ai-history')
     if (!history) return
     savedQueries = queries
+    emitStudyQueries()
 
     history.replaceChildren()
 
@@ -930,6 +940,8 @@ async function loadQueryHistory() {
     if (!store.currentUser) {
         document.querySelector('.ai-query-dialog')?.close()
         activeQueryId = null
+        savedQueries = []
+        emitStudyQueries()
         history.replaceChildren()
         const loginMessage = document.createElement('p')
         loginMessage.className = 'text-sm text-gray-500'
@@ -1047,6 +1059,8 @@ async function loadQueryHistory() {
         errorMessage.textContent = `No se pudo cargar el historial: ${message}.${migrationHint}`
     }
     history.appendChild(errorMessage)
+    savedQueries = []
+    emitStudyQueries()
 
     const retry = document.createElement('button')
     retry.type = 'button'
@@ -1327,4 +1341,23 @@ function initializeBrowserAI() {
     })
 }
 
-export { initializeBrowserAI }
+/* Temas concretos para el plan diario: una entrada por consulta guardada. */
+function getStudyQueries() {
+    return savedQueries.map(query => {
+        const question = String(query.question || query.summary || 'Consulta guardada').trim()
+        return {
+            id: String(query.id),
+            question,
+            label: question.length > 80 ? `${question.slice(0, 77)}…` : question
+        }
+    })
+}
+
+function openStudyQuery(id) {
+    const query = savedQueries.find(item => String(item.id) === String(id))
+    if (!query) return false
+    openQueryDetails(query)
+    return true
+}
+
+export { initializeBrowserAI, getStudyQueries, openStudyQuery }
