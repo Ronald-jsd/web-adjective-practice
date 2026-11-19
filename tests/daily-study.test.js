@@ -53,11 +53,11 @@ test("the six study activities point to real sections of the app", () => {
     ])
     for (const activity of STUDY_ACTIVITIES) {
         assert.ok(activity.label && activity.icon && activity.section)
-        assert.ok(activity.minutes >= 5)
+        assert.ok(activity.minutes >= 4)
         assert.equal(getActivityMinutes(activity.id), activity.minutes)
         assert.equal(getActivity(activity.id), activity)
     }
-    assert.equal(getTotalPlanMinutes(), 70)
+    assert.equal(getTotalPlanMinutes(), 30)
     assert.deepEqual(getActivity("practice").pane, "general")
     assert.deepEqual(getActivity("listening").pane, "audio")
     assert.deepEqual(getActivity("shadowing").pane, "shadowing")
@@ -74,8 +74,8 @@ test("only the two missions assigned today count towards the daily time", () => 
     assert.equal(total, getActivityMinutes(today.missions.main.activityId) +
         getActivityMinutes(today.missions.review.activityId))
     assert.ok(total < getTotalPlanMinutes())
-    assert.ok(total >= 15)
-    assert.ok(total <= 30)
+    assert.ok(total >= 9)
+    assert.ok(total <= 11)
 })
 
 test("local date keys do not shift with UTC", () => {
@@ -180,18 +180,18 @@ test("reviewing requires real interactions before scoring and schedules at least
     assert.equal(committed.valid, true)
     state = committed.state
 
-    const missingRecall = recordCompletion(state, dateKey, MAIN_SLOT, { grade: "good", recall: " " }, now)
-    assert.equal(missingRecall.recorded, false)
+    const noInteractions = recordCompletion(state, dateKey, MAIN_SLOT, { grade: "good" }, now)
+    assert.equal(noInteractions.recorded, false)
 
     for (let index = 0; index < MIN_REAL_INTERACTIONS - 1; index += 1) {
         state = recordInteraction(state, dateKey, MAIN_SLOT, now).state
     }
-    const tooFew = recordCompletion(state, dateKey, MAIN_SLOT, { grade: "good", recall: "reasonable" }, now)
+    const tooFew = recordCompletion(state, dateKey, MAIN_SLOT, { grade: "good" }, now)
     assert.equal(tooFew.recorded, false)
 
     state = recordInteraction(state, dateKey, MAIN_SLOT, now).state
     assert.equal(findMission(state, dateKey, MAIN_SLOT).interactions, MIN_REAL_INTERACTIONS)
-    const completed = recordCompletion(state, dateKey, MAIN_SLOT, { grade: "good", recall: "reasonable" }, now)
+    const completed = recordCompletion(state, dateKey, MAIN_SLOT, { grade: "good" }, now)
     assert.equal(completed.recorded, true)
     assert.equal(completed.mission.grade, "good")
     assert.ok(new Date(completed.card.nextReviewAt).getTime() - now.getTime() >= 24 * 60 * 60 * 1000 - 1000)
@@ -240,7 +240,7 @@ test("each AI query has its own review card and new queries join the rotation", 
     for (let index = 0; index < MIN_REAL_INTERACTIONS; index += 1) {
         state = recordInteraction(state, dateKey, REVIEW_SLOT, now).state
     }
-    const completed = recordCompletion(state, dateKey, REVIEW_SLOT, { grade: "easy", recall: "repasar phasal verbs" }, now)
+    const completed = recordCompletion(state, dateKey, REVIEW_SLOT, { grade: "easy" }, now)
     assert.equal(completed.recorded, true)
     assert.equal(completed.cardKey, "ai:q4")
     assert.ok(completed.state.cards["ai:q4"])

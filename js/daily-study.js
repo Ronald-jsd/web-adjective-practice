@@ -6,13 +6,15 @@
 
 import { scheduleReview } from "./sentences/scheduler.js";
 
+/* Duraciones cortas, en la línea de Duolingo (5-10 min) y Busuu (3-5 min por
+ * lección): un reto principal de 5-6 min y un repaso de 4-5 min. */
 export const STUDY_ACTIVITIES = Object.freeze([
-    { id: "practice", label: "Ejercicios", icon: "✍️", minutes: 10, section: "practice", pane: "general" },
-    { id: "listening", label: "Escucha continua", icon: "🎧", minutes: 15, section: "practice", pane: "audio" },
-    { id: "shadowing", label: "Shadowing", icon: "🎤", minutes: 15, section: "practice", pane: "shadowing" },
-    { id: "vocabulary", label: "Mi vocabulario", icon: "📚", minutes: 10, section: "mysentences", screen: "vocabulary" },
-    { id: "sentences", label: "Frases · Repaso", icon: "💬", minutes: 10, section: "mysentences", screen: "review" },
-    { id: "ai", label: "Consultas IA", icon: "🤖", minutes: 10, section: "browser-ai" }
+    { id: "practice", label: "Ejercicios", icon: "✍️", minutes: 5, section: "practice", pane: "general" },
+    { id: "listening", label: "Escucha continua", icon: "🎧", minutes: 6, section: "practice", pane: "audio" },
+    { id: "shadowing", label: "Shadowing", icon: "🎤", minutes: 6, section: "practice", pane: "shadowing" },
+    { id: "vocabulary", label: "Mi vocabulario", icon: "📚", minutes: 5, section: "mysentences", screen: "vocabulary" },
+    { id: "sentences", label: "Frases · Repaso", icon: "💬", minutes: 4, section: "mysentences", screen: "review" },
+    { id: "ai", label: "Consultas IA", icon: "🤖", minutes: 4, section: "browser-ai" }
 ]);
 
 export const MAIN_SLOT = "main";
@@ -37,7 +39,7 @@ export function getTotalPlanMinutes() {
     return STUDY_ACTIVITIES.reduce((total, activity) => total + getActivityMinutes(activity.id), 0);
 }
 
-/* Tiempo real del día: solo los retos asignados hoy, nunca los 70 min del catálogo. */
+/* Tiempo real del día: solo los dos retos asignados hoy, no el total del catálogo. */
 export function getDailyTotalMinutes(missions = {}) {
     return [missions.main, missions.review].reduce((total, mission) =>
         total + (mission ? getActivityMinutes(mission.activityId) : 0), 0);
@@ -364,7 +366,7 @@ export function recordCompletion(state, dateKey, slot, { grade, recall } = {}, n
     const normalized = normalizeDailyState(state);
     const mission = findMission(normalized, dateKey, slot);
     if (!mission || !mission.commitmentAt || mission.completedAt ||
-        String(recall || "").trim().length < 2 || mission.interactions < MIN_REAL_INTERACTIONS) {
+        mission.interactions < MIN_REAL_INTERACTIONS) {
         return { state: normalized, mission: mission ? { ...mission } : null, recorded: false, card: null };
     }
     // Esta misión es diaria: el repaso más pronto posible es mañana, no en 1 minuto.

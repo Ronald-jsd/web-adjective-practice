@@ -170,13 +170,7 @@ function mount() {
     card.appendChild(commitStep);
 
     const verifyStep = element("div", "ds-step hidden");
-    verifyStep.appendChild(element("label", "", "Recuerda sin mirar: escribe una palabra o frase de tu sesión"));
-    const recallInput = element("input");
-    recallInput.type = "text";
-    recallInput.id = "ds-recall-input";
-    recallInput.placeholder = "Una palabra, frase o ejemplo que recuerdes";
-    recallInput.autocomplete = "off";
-    verifyStep.appendChild(recallInput);
+    verifyStep.appendChild(element("label", "", "¿Cómo te fue? Esto decide cuándo vuelve el reto."));
     const check = element("div", "ds-check", "");
     check.id = "ds-check";
     verifyStep.appendChild(check);
@@ -243,7 +237,6 @@ function mount() {
             .replace(/[\u0300-\u036f]/g, "").includes("estudiare");
         if (start) start.disabled = !valid;
     });
-    recallInput.addEventListener("input", updateVerificationUi);
     reminderEnabled.addEventListener("change", updateReminder);
     reminderTime.addEventListener("change", updateReminder);
 }
@@ -434,21 +427,23 @@ function updateVerificationUi() {
     if (!overlay) return;
     const mission = currentMission();
     const check = overlay.querySelector("#ds-check");
-    const recall = overlay.querySelector("#ds-recall-input")?.value.trim() || "";
     if (!check || !mission) return;
     const interactions = mission.interactions || 0;
     const timeUp = Boolean(session && session.slot === activeSlot && !session.running && session.remainingMs <= 0);
     const enough = interactions >= MIN_REAL_INTERACTIONS;
+    const actions = enough
+        ? `✅ ${interactions} acciones (mínimo ${MIN_REAL_INTERACTIONS})`
+        : `${interactions}/${MIN_REAL_INTERACTIONS} acciones`;
     check.classList.toggle("ok", timeUp && enough);
     check.textContent = timeUp
         ? enough
-            ? `✅ Tiempo cumplido y ${interactions} acciones reales. Ya puedes puntuar.`
-            : `⏱ Tiempo cumplido · acciones reales: ${interactions}/${MIN_REAL_INTERACTIONS}. Usa la sección (clics o texto) para continuar.`
+            ? `✅ Tiempo completado · ${actions}. Elige una opción.`
+            : `⏱ Tiempo completado · ${actions}. Usa la sección para interactuar.`
         : session && session.slot === activeSlot
             ? session.paused
-                ? `⏸ Reloj pausado: ${pauseReason()}. Acciones reales: ${interactions}/${MIN_REAL_INTERACTIONS}`
-                : `⏱ Quedan ${formatRemaining(session.remainingMs)} · acciones reales: ${interactions}/${MIN_REAL_INTERACTIONS}`
-            : `Este reto aún no está en marcha. Acciones reales: ${interactions}/${MIN_REAL_INTERACTIONS}`;
+                ? `⏸ Reloj pausado: ${pauseReason()} · ${actions}`
+                : `⏱ Quedan ${formatRemaining(session.remainingMs)} · ${actions}`
+            : `Este reto aún no está en marcha · ${actions}`;
 
     const resume = overlay.querySelector("#ds-resume");
     if (resume) {
@@ -458,7 +453,7 @@ function updateVerificationUi() {
             ? "▶️ Reanudar temporizador"
             : "▶️ Iniciar temporizador";
     }
-    const ready = timeUp && enough && recall.length >= 2;
+    const ready = timeUp && enough;
     overlay.querySelectorAll(".ds-grade").forEach(button => { button.disabled = !ready; });
 }
 
@@ -593,8 +588,7 @@ function startMission() {
 function finish(grade) {
     const mission = currentMission();
     if (!mission) return;
-    const recall = overlay.querySelector("#ds-recall-input").value;
-    const result = recordCompletion(state, mission.date, mission.slot, { grade, recall }, new Date());
+    const result = recordCompletion(state, mission.date, mission.slot, { grade }, new Date());
     if (!result.recorded) return;
     state = result.state;
     missions[mission.slot] = result.mission;
