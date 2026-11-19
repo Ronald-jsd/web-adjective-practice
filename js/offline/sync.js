@@ -28,6 +28,50 @@ const RETRYABLE_CODES = new Set([
     "57P01"
 ]);
 
+const RETRY_BASE_MS = 5 * 1000;
+const RETRY_MAX_MS = 5 * 60 * 1000;
+
+/* Espera exponencial entre reintentos del mismo cambio. */
+export function retryDelayFor(attempts) {
+    const n = Math.max(0, Math.min(Number(attempts) || 0, 10));
+    return Math.min(RETRY_MAX_MS, RETRY_BASE_MS * (2 ** n));
+}
+
+/* Solo se agrupan entradas contiguas y compatibles: el orden de la cola se
+ * conserva y un lote nunca mezcla usuarios ni formas de payload distintas. */
+function batchSignature(entry) {
+    if (!entry || !entry.table) return null;
+    const user = entry.userId || "";
+    if (entry.action === "upsert" && entry.payload && typeof entry.payload === "object"
+        && !Array.isArray(entry.payload)) {
+        const keys = Object.keys(entry.payload).sort().join(",");
+        return `upsert|${user}|${entry.table}|${entry.conflict || ""}|${keys}`;
+    }
+    if (entry.action === "delete" && entry.match && typeof entry.match === "object") {
+        const keys = Object.keys(entry.match);
+        if (keys.length !== 1) return null;
+        const value = entry.match[keys[0]];
+        if (value === null || value === undefined) return null;
+        return `delete|${user}|${entry.table}|${keys[0]}`;
+    }
+    return null;
+}
+
+export function groupOutboxEntries(entries) {
+    const ordered = [...(entries || [])].sort((a, b) => (a.id || 0) - (b.id || 0));
+    const groups = [];
+    for (const entry of ordered) {
+        const signature = batchSignature(entry);
+        const last = groups[groups.length - 1];
+        if (signature && last && last.signature === signature) {
+            last.entries.push(entry);
+        } else {
+            groups.push({ signature, entries: [entry] });
+        }
+    }
+    return groups;
+}
+
 let client = null;
 let getUser = () => null;
 let flushing = false;
@@ -151,48 +195,91 @@ export async function flushOutbox(options = {}) {
 
     try {
         const entries = await listOutboxEntries();
-        entries.sort((a, b) => (a.id || 0) - (b.id || 0));
         const context = { refreshed: false };
+        const groups = groupOutboxEntries(entries);
+        let nextRetryIn = Infinity;
+        let stop = false;
 
-        for (const entry of entries) {
+        for (const group of groups) {
+            if (stop) break;
             const currentUser = getUser();
             if (!currentUser) break;
-            if (entry.userId && entry.userId !== currentUser) continue;
 
-            const outcome = await sendEntry(entry, context);
-            if (outcome.ok) {
-                await removeOutboxEntry(entry.id);
-                processed += 1;
-                pendingCache = Math.max(0, pendingCache - 1);
-                continue;
+            const usable = group.entries.filter(entry => !entry.userId || entry.userId === currentUser);
+            if (!usable.length) continue;
+
+            // Un cambio que falló hace poco espera su backoff en vez de
+            // volver a pedirle a Supabase lo mismo cada minuto.
+            const ready = [];
+            for (const entry of usable) {
+                const delay = retryDelayFor(entry.attempts || 0);
+                const elapsed = Date.now() - Number(entry.lastAttemptAt || 0);
+                if ((entry.attempts || 0) > 0 && entry.lastAttemptAt && elapsed < delay) {
+                    nextRetryIn = Math.min(nextRetryIn, Math.max(1, delay - elapsed));
+                } else {
+                    ready.push(entry);
+                }
+            }
+            if (!ready.length) continue;
+
+            if (group.signature && ready.length > 1) {
+                const outcome = await sendBatch({ ...group, entries: ready });
+                if (outcome.ok) {
+                    for (const entry of ready) {
+                        await removeOutboxEntry(entry.id);
+                        processed += 1;
+                        pendingCache = Math.max(0, pendingCache - 1);
+                    }
+                    continue;
+                }
+                // Si el lote falla, se envían uno por uno para conservar el
+                // diagnóstico y el reintento independiente de cada cambio.
+                console.warn("[offline] No se pudo agrupar el lote; se envía cambio por cambio:", outcome.message);
             }
 
-            if (outcome.retry) {
+            for (const entry of ready) {
+                const outcome = await sendEntry(entry, context);
+                if (outcome.ok) {
+                    await removeOutboxEntry(entry.id);
+                    processed += 1;
+                    pendingCache = Math.max(0, pendingCache - 1);
+                    continue;
+                }
+
+                if (outcome.retry) {
+                    failed += 1;
+                    lastError = outcome.message;
+                    await updateOutboxEntry({
+                        ...entry,
+                        attempts: (entry.attempts || 0) + 1,
+                        lastError: outcome.message,
+                        lastAttemptAt: Date.now()
+                    });
+                    console.warn(
+                        `[offline] No se pudo sincronizar "${entry.description || entry.table}":`,
+                        outcome.message
+                    );
+                    // Sin red, con el servidor caído o con límite de peticiones
+                    // no tiene sentido seguir. Otros errores reintentables no
+                    // deben bloquear al resto.
+                    if (outcome.networkish || outcome.status === 429 || outcome.status >= 500) {
+                        stop = true;
+                        break;
+                    }
+                    continue;
+                }
+
+                // Error permanente: se descarta para que no bloquee la cola.
                 failed += 1;
                 lastError = outcome.message;
-                await updateOutboxEntry({
-                    ...entry,
-                    attempts: (entry.attempts || 0) + 1,
-                    lastError: outcome.message,
-                    lastAttemptAt: Date.now()
-                });
-                console.warn(
-                    `[offline] No se pudo sincronizar "${entry.description || entry.table}":`,
-                    outcome.message
-                );
-                // Sin red, con el servidor caído o con límite de peticiones no
-                // tiene sentido seguir. Otros errores reintentables (por
-                // ejemplo un token caducado) no deben bloquear al resto.
-                if (outcome.networkish || outcome.status === 429 || outcome.status >= 500) break;
-                continue;
+                await removeOutboxEntry(entry.id);
+                pendingCache = Math.max(0, pendingCache - 1);
+                console.warn("[offline] Cambio descartado por un error permanente:", entry, outcome.message);
             }
+        }
 
-            // Error permanente: se descarta para que no bloquee la cola.
-            failed += 1;
-            lastError = outcome.message;
-            await removeOutboxEntry(entry.id);
-            pendingCache = Math.max(0, pendingCache - 1);
-            console.warn("[offline] Cambio descartado por un error permanente:", entry, outcome.message);
+        if (!stop && Number.isFinite(nextRetryIn)) {
+            scheduleFlush(Math.ceil(nextRetryIn));
         }
     } catch (error) {
         lastError = error?.message || String(error);
@@ -216,6 +303,26 @@ export async function flushOutbox(options = {}) {
     }
 
     return { processed, failed, pending: remaining, error: lastError };
+}
+
+async function sendBatch(group) {
+    const first = group.entries[0];
+    if (first.action === "upsert") {
+        const payloads = group.entries.map(entry => entry.payload);
+        const table = client.from(first.table);
+        const query = first.conflict
+            ? table.upsert(payloads, { onConflict: first.conflict })
+            : table.upsert(payloads);
+        const { error } = await query;
+        return error ? classifySyncError(error) : { ok: true };
+    }
+    if (first.action === "delete") {
+        const key = Object.keys(first.match)[0];
+        const values = group.entries.map(entry => entry.match[key]);
+        const { error } = await client.from(first.table).delete().in(key, values);
+        return error ? classifySyncError(error) : { ok: true };
+    }
+    return { ok: false, retry: false, message: "Acción no agrupable" };
 }
 
 async function sendOnce(entry) {
