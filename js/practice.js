@@ -176,40 +176,11 @@ function recordExerciseOutcome(type, isCorrect) {
     if (isCorrect) current.correct += 1;
     exerciseStats[type] = current;
     saveExerciseStats();
-    updateExerciseStats();
 }
 
 function exerciseTypeAccuracy(type) {
     const stats = exerciseStats[type];
     return stats?.attempts ? stats.correct / stats.attempts : null;
-}
-
-function formatPracticeClock(ms) {
-    const total = Math.max(0, Math.ceil(ms / 1000));
-    return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
-}
-
-/* Antes aquí se mostraba un porcentaje de aciertos acumulado desde siempre,
- * que parecía un progreso distinto al del resto de actividades. Ahora Exercise
- * muestra el mismo reloj del reto diario: tiempo restante y acciones reales. */
-function updateExerciseStats() {
-    const target = document.getElementById("practice-exercise-stats");
-    if (!target) return;
-    const session = window.dailyStudy?.getSession?.();
-    if (!session || session.activityId !== "practice" || session.completed || session.remainingMs == null) {
-        target.textContent = "";
-        target.classList.add("hidden");
-        return;
-    }
-    const clock = formatPracticeClock(session.remainingMs);
-    const goal = session.answerTarget
-        ? `${session.answers}/${session.answerTarget} ejercicios`
-        : "ejercicios";
-    const actions = `${session.interactions}/${session.requiredInteractions} acciones`;
-    target.textContent = session.paused
-        ? `⏸ Ejercicios en pausa · ${goal} · ${clock} restantes`
-        : `⏱ Ejercicios de hoy · ${goal} · ${clock} restantes · ${actions}`;
-    target.classList.remove("hidden");
 }
 
 function loadProgress() {
@@ -265,7 +236,6 @@ function getPracticeItems(categories) {
 function updateScore() {
     const score = document.getElementById("practice-score");
     if (score) score.textContent = `${correctAnswers} correctas · ${answeredQuestions} respondidas`;
-    updateExerciseStats();
     updateReviewSummary();
 }
 
@@ -776,7 +746,6 @@ function recordAnswer(submittedAnswer, selectedButton = null) {
     }
     answeredQuestions += 1;
     if (isCorrect) correctAnswers += 1;
-    window.dailyStudy?.recordPracticeAnswer?.();
 
     const progress = { ...getItemProgress(currentItem) };
     const now = Date.now();
@@ -1333,9 +1302,6 @@ async function initializePractice(categories = [], options = {}) {
 }
 
 export { initializePractice };
-
-window.addEventListener("daily-study-session", () => updateExerciseStats());
-updateExerciseStats();
 
 export function setNotionPracticeCategories(categories) {
     practiceNotionCache = categories;

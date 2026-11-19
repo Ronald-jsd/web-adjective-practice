@@ -10,7 +10,6 @@ import {
     EXTRA_SLOT,
     DAILY_SLOTS,
     MIN_REAL_INTERACTIONS,
-    PRACTICE_ANSWER_TARGET,
     getActivity,
     getActivityMinutes,
     getDailyTotalMinutes,
@@ -21,7 +20,6 @@ import {
     refreshMissionTarget,
     recordCommitment,
     recordInteraction,
-    recordPracticeAnswer,
     recordCompletion,
     resetMission,
     saveReminderSettings,
@@ -474,8 +472,6 @@ function sessionSnapshot() {
         paused: Boolean(session?.paused),
         interactions: mission?.interactions || 0,
         requiredInteractions: MIN_REAL_INTERACTIONS,
-        answers: mission?.answers || 0,
-        answerTarget: mission?.activityId === "practice" ? PRACTICE_ANSWER_TARGET : 0,
         completed: Boolean(mission?.completedAt)
     };
 }
@@ -716,17 +712,6 @@ export function initializeDailyStudy(options = {}) {
             [slot, { ...(missions[slot] || {}) }])),
         getState: () => state,
         getSession: sessionSnapshot,
-        recordPracticeAnswer: () => {
-            const mission = currentMission();
-            if (!mission) return false;
-            const result = recordPracticeAnswer(state, mission.date, mission.slot, new Date());
-            if (!result.counted) return false;
-            state = result.state;
-            missions[mission.slot] = result.mission;
-            persist();
-            emitSession();
-            return true;
-        },
         openTarget: id => typeof openStudyTarget === "function" ? openStudyTarget(id) : false
     };
     return api;

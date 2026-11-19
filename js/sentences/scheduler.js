@@ -121,7 +121,7 @@ export function scheduleReview(sentence, grade, now = new Date(), options = {}) 
                 intervalDays: 0,
                 repetitions: source.repetitions,
                 learningStep: Math.max(1, source.learningStep),
-                nextReviewAt: addMinutes(now, 10).toISOString(),
+                nextReviewAt: addMinutes(now, learningSteps[1] ?? learningSteps[0] ?? 10).toISOString(),
                 lastGrade: id,
                 totalFailures: source.totalFailures || 0
             })

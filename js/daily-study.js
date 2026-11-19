@@ -24,7 +24,6 @@ export const MAIN_ACTIVITY_IDS = Object.freeze(["practice", "listening", "shadow
 export const REVIEW_ACTIVITY_IDS = Object.freeze(["sentences", "vocabulary", "ai"]);
 export const EXTRA_ACTIVITY_IDS = Object.freeze(["sentences", "vocabulary", "ai"]);
 export const MIN_REAL_INTERACTIONS = 3;
-export const PRACTICE_ANSWER_TARGET = 8;
 
 const STATE_VERSION = 2;
 const MAX_HISTORY = 180;
@@ -182,7 +181,6 @@ function makeMission(date, slot, activityId, target = null) {
         grade: null,
         recall: "",
         interactions: 0,
-        answers: 0,
         targetId: target ? String(target.id) : "",
         targetLabel: target ? String(target.label || "") : ""
     };
@@ -201,7 +199,6 @@ export function normalizeDailyState(raw) {
                 grade: entry.grade || null,
                 recall: entry.recall || "",
                 interactions: Math.max(0, Number(entry.interactions) || 0),
-                answers: Math.max(0, Number(entry.answers) || 0),
                 targetId: entry.targetId || "",
                 targetLabel: entry.targetLabel || ""
             }))
@@ -403,17 +400,6 @@ export function recordInteraction(state, dateKey, slot, now = new Date()) {
     return { state: replaceMission(normalized, updated), mission: { ...updated }, counted: true };
 }
 
-/* Cada respuesta de Practice cuenta para el objetivo visible de ejercicios. */
-export function recordPracticeAnswer(state, dateKey, slot, now = new Date()) {
-    const normalized = normalizeDailyState(state);
-    const mission = findMission(normalized, dateKey, slot);
-    if (!mission || mission.activityId !== "practice" || !mission.commitmentAt || mission.completedAt) {
-        return { state: normalized, mission: mission ? { ...mission } : null, counted: false };
-    }
-    const updated = { ...mission, answers: Math.min(999, mission.answers + 1) };
-    return { state: replaceMission(normalized, updated), mission: { ...updated }, counted: true };
-}
-
 export function recordCompletion(state, dateKey, slot, { grade, recall } = {}, now = new Date()) {
     const normalized = normalizeDailyState(state);
     const mission = findMission(normalized, dateKey, slot);
@@ -451,7 +437,7 @@ export function resetMission(state, dateKey, slot) {
     const normalized = normalizeDailyState(state);
     const mission = findMission(normalized, dateKey, slot);
     if (!mission) return { state: normalized, mission: null, reset: false };
-    const updated = { ...mission, commitmentAt: null, completedAt: null, grade: null, recall: "", interactions: 0, answers: 0 };
+    const updated = { ...mission, commitmentAt: null, completedAt: null, grade: null, recall: "", interactions: 0 };
     return { state: replaceMission(normalized, updated), mission: { ...updated }, reset: true };
 }
 

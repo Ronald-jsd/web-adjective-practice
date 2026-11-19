@@ -970,7 +970,6 @@
     .practice-build-clear { border: 0; background: none; color: #647168; cursor: pointer; font-weight: 700; padding: 7px 8px; }
     .practice-build-footer button:last-child { min-height: 40px; padding: 8px 18px; border: 0; border-radius: 5px; background: #28745a; color: #fff; cursor: pointer; font-weight: 700; }
     .practice-build-footer button:last-child:disabled { opacity: 0.45; cursor: not-allowed; }
-    .practice-exercise-stats { max-width: 520px; margin: 8px auto 0; padding: 7px 10px; border-radius: 999px; background: #eef4ee; color: #3f5d4d; font-size: 0.76rem; line-height: 1.4; text-align: center; }
 
     .practice-listen-button, .practice-next-button, #practice-submit {
         display: inline-flex;
@@ -1919,7 +1918,6 @@
 #practice-section .practice-build-clear { color: #647168; border-radius: 9px; }
 #practice-section .practice-build-clear:hover { background: #eef4ee }
 #practice-section .practice-build-footer button:last-child { min-height: 44px; padding: 10px 20px; border-radius: 11px; background: linear-gradient(135deg, #2f8667, #205b46); box-shadow: 0 8px 18px rgba(40, 116, 90, .25) }
-#practice-section .practice-exercise-stats { padding: 9px 14px; border: 1px solid #d3e6d8; background: #eef6f0; font-weight: 700; color: #3f5d4d }
 
 #practice-section .practice-listen-button,
 #practice-section .practice-next-button,

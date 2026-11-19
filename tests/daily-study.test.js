@@ -6,7 +6,6 @@ import {
     REVIEW_SLOT,
     EXTRA_SLOT,
     DAILY_SLOTS,
-    PRACTICE_ANSWER_TARGET,
     MAIN_ACTIVITY_IDS,
     REVIEW_ACTIVITY_IDS,
     EXTRA_ACTIVITY_IDS,
@@ -24,7 +23,6 @@ import {
     refreshMissionTarget,
     recordCommitment,
     recordInteraction,
-    recordPracticeAnswer,
     recordCompletion,
     resetMission,
     saveReminderSettings,
@@ -217,26 +215,22 @@ test("reviewing requires real interactions before scoring and schedules at least
     assert.equal(untouchedReview.completedAt, null)
 })
 
-test("Practice counts answered exercises towards a visible target", () => {
+test("every grade keeps the daily plan at least one day apart", () => {
     const now = new Date(2026, 10, 19, 9, 0)
     const dateKey = "2026-11-19"
-    let state = normalizeDailyState({
-        history: [{ date: dateKey, slot: MAIN_SLOT, activityId: "practice" }]
-    })
-
-    const before = recordPracticeAnswer(state, dateKey, MAIN_SLOT, now)
-    assert.equal(before.counted, false)
-
-    state = recordCommitment(state, dateKey, MAIN_SLOT, "Estudiaré Ejercicios", now).state
-    for (let index = 0; index < PRACTICE_ANSWER_TARGET; index += 1) {
-        const result = recordPracticeAnswer(state, dateKey, MAIN_SLOT, now)
-        assert.equal(result.counted, true)
-        state = result.state
+    for (const grade of ["again", "hard", "good", "easy"]) {
+        let state = normalizeDailyState({
+            history: [{ date: dateKey, slot: MAIN_SLOT, activityId: "practice" }]
+        })
+        state = recordCommitment(state, dateKey, MAIN_SLOT, "Estudiaré Ejercicios", now).state
+        for (let index = 0; index < MIN_REAL_INTERACTIONS; index += 1) {
+            state = recordInteraction(state, dateKey, MAIN_SLOT, now).state
+        }
+        const completed = recordCompletion(state, dateKey, MAIN_SLOT, { grade }, now)
+        assert.equal(completed.recorded, true)
+        assert.ok(new Date(completed.card.nextReviewAt).getTime() - now.getTime() >= 24 * 60 * 60 * 1000 - 1000,
+            `${grade} should not schedule a review before tomorrow`)
     }
-    assert.equal(findMission(state, dateKey, MAIN_SLOT).answers, PRACTICE_ANSWER_TARGET)
-
-    const restarted = resetMission(state, dateKey, MAIN_SLOT)
-    assert.equal(restarted.mission.answers, 0)
 })
 
 test("each AI query has its own review card and new queries join the rotation", () => {
