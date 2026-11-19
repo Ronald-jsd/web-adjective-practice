@@ -218,6 +218,7 @@ export function normalizeDailyState(raw) {
         version: STATE_VERSION,
         cards,
         history,
+        introShownDate: typeof raw?.introShownDate === "string" ? raw.introShownDate : "",
         notifications: {
             enabled: Boolean(raw?.notifications?.enabled),
             time
@@ -439,6 +440,13 @@ export function resetMission(state, dateKey, slot) {
     if (!mission) return { state: normalized, mission: null, reset: false };
     const updated = { ...mission, commitmentAt: null, completedAt: null, grade: null, recall: "", interactions: 0 };
     return { state: replaceMission(normalized, updated), mission: { ...updated }, reset: true };
+}
+
+/* El modal del plan se abre solo una vez al día, aunque se recargue la página. */
+export function markDailyIntroShown(state, dateKey) {
+    const normalized = normalizeDailyState(state);
+    if (normalized.introShownDate === dateKey) return normalized;
+    return { ...normalized, introShownDate: String(dateKey || "") };
 }
 
 export function saveReminderSettings(state, { enabled = false, time = "20:00" } = {}) {

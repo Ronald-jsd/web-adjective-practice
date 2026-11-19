@@ -1,3 +1,5 @@
+import { normalizeWrittenAnswer } from "../practice-utils.js";
+
 const SPANISH_EXPLANATIONS = {
     "don't": "Usa «don't» con I, you, we y they para negar en presente.",
     "doesn't": "Usa «doesn't» con he, she e it; el verbo principal va en forma base.",
@@ -42,7 +44,7 @@ export function isDifficult(sentence) {
 }
 
 export function normalizeAnswer(value) {
-    return String(value || "").trim().toLowerCase().replace(/[.!?]+$/g, "").replace(/\s+/g, " ")
+    return normalizeWrittenAnswer(value)
 }
 
 function escapeRegExp(value) {

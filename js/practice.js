@@ -4,6 +4,7 @@ import { showToast } from "./cache.js";
 import {
     filterAudioPracticeItems,
     getPracticeFillHint,
+    normalizeWrittenAnswer,
     rankPracticeReviews,
     selectPracticeDistractors
 } from "./practice-utils.js";
@@ -269,7 +270,7 @@ function isTemporaryNotionItem(itemId) {
 }
 
 function normalizeAnswer(value) {
-    return value.trim().toLocaleLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    return normalizeWrittenAnswer(value);
 }
 
 function phraseTokens(value) {

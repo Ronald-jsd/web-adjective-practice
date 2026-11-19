@@ -1,5 +1,18 @@
+/* Una respuesta escrita cuenta aunque cambie el caso, lleve tilde o se le
+ * olvide el punto final. Solo se ignoran signos alrededor del texto, nunca
+ * dentro (por ejemplo el apóstrofo de "don't"). */
+export function normalizeWrittenAnswer(value) {
+    return String(value ?? "")
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .toLocaleLowerCase()
+        .trim()
+        .replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "")
+        .replace(/\s+/g, " ");
+}
+
 function normalizePracticeAnswer(value) {
-    return value.trim().toLocaleLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+    return normalizeWrittenAnswer(value);
 }
 
 export function selectPracticeDistractors(items, correctAnswer, count = 3, random = Math.random) {

@@ -15,6 +15,7 @@ import {
     getDailyTotalMinutes,
     loadDailyState,
     saveDailyState,
+    markDailyIntroShown,
     ensureDailyMissions,
     findDailyMissions,
     refreshMissionTarget,
@@ -102,9 +103,11 @@ function injectStyles() {
         .ds-reminder input[type="time"] { width: 90px; padding: 5px; border: 1px solid #cbd5e1; border-radius: 8px; font: inherit; }
         .ds-link { border: 0; background: transparent; color: #4f46e5; font: inherit; font-size: 13px; cursor: pointer; }
         .ds-link.hidden, .ds-error.hidden { display: none !important; }
-        .ds-badge { position: fixed; right: 16px; bottom: 16px; z-index: 999; border: 0; border-radius: 999px;
-            max-width: calc(100vw - 32px); padding: 10px 15px; background: #4338ca; color: #fff;
-            font: inherit; font-size: 13px; font-weight: 700; box-shadow: 0 8px 24px rgba(67,56,202,.35); cursor: pointer; }
+        .ds-badge { display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 999px;
+            max-width: 220px; padding: 8px 12px; background: #4338ca; color: #fff; overflow: hidden;
+            font: inherit; font-size: 12px; font-weight: 700; white-space: nowrap; text-overflow: ellipsis;
+            box-shadow: 0 4px 12px rgba(67,56,202,.25); cursor: pointer; }
+        @media (max-width: 640px) { .ds-badge { max-width: 118px; padding: 7px 9px; font-size: 11px; } }
         @media (max-width: 480px) { .ds-card { padding: 20px; } .ds-card h2 { font-size: 19px; } }
     `;
     document.head.appendChild(style);
@@ -179,10 +182,7 @@ function mount() {
     const resume = element("button", "ds-link", "▶️ Iniciar temporizador");
     resume.id = "ds-resume";
     resume.type = "button";
-    resume.addEventListener("click", () => {
-        const mission = currentMission();
-        if (mission) startSession(mission);
-    });
+    resume.addEventListener("click", () => focusMission(currentMission()));
     verifyStep.appendChild(resume);
     const grades = element("div", "ds-grades");
     for (const [grade, label] of [
@@ -231,7 +231,17 @@ function mount() {
     badge = element("button", "ds-badge hidden", "🎯 Plan de hoy");
     badge.type = "button";
     badge.addEventListener("click", show);
-    document.body.appendChild(badge);
+    const voiceButton = document.getElementById("voice-settings-button");
+    const header = document.querySelector("header");
+    if (voiceButton?.parentElement) voiceButton.parentElement.insertBefore(badge, voiceButton);
+    else if (header) header.appendChild(badge);
+    else {
+        badge.style.position = "fixed";
+        badge.style.top = "12px";
+        badge.style.right = "12px";
+        badge.style.zIndex = "999";
+        document.body.appendChild(badge);
+    }
 
     commitInput.addEventListener("input", () => {
         overlay.querySelector(".ds-error")?.classList.add("hidden");
@@ -302,6 +312,7 @@ function renderPlan(now) {
         row.addEventListener("click", () => {
             activeSlot = slot;
             render();
+            focusMission(mission, { startTimer: Boolean(mission.commitmentAt) });
         });
         host.appendChild(row);
     }
@@ -566,6 +577,20 @@ function persist() {
     saveDailyState(state, { storage, userId });
 }
 
+/* Cualquier acceso al reto (botón de actividad, temporizador o fila del plan)
+ * lleva a la sección real donde se trabaja. Si ya hay un reloj en marcha para
+ * ese mismo reto se conserva; si no, arranca aquí. */
+function focusMission(mission, { startTimer = true } = {}) {
+    if (!mission) return;
+    const activity = getActivity(mission.activityId);
+    if (!activity) return;
+    hide();
+    navigate(activity, mission);
+    if (startTimer && (!session || session.slot !== mission.slot || !session.running)) {
+        startSession(mission);
+    }
+}
+
 function startMission() {
     const mission = currentMission();
     if (!mission) return;
@@ -580,11 +605,9 @@ function startMission() {
     state = result.state;
     missions[mission.slot] = result.mission;
     persist();
-    hide();
-    navigate(getActivity(mission.activityId), mission);
+    focusMission(mission);
     showToast(`Reto aceptado: ${missionLabel(mission)}. Tienes ${getActivityMinutes(mission.activityId)} min. ¡A estudiar!`, "success");
     render();
-    startSession(mission);
 }
 
 function finish(grade) {
@@ -701,8 +724,14 @@ export function initializeDailyStudy(options = {}) {
         document.addEventListener(type, onRealInteraction, true);
     }
 
+    const dateKey = getLocalDateKey(new Date());
+    const firstOpenToday = state.introShownDate !== dateKey;
+    if (firstOpenToday) {
+        state = markDailyIntroShown(state, dateKey);
+        persist();
+    }
     render();
-    show();
+    if (firstOpenToday) show();
     scheduleNotification();
     api = {
         open: show,

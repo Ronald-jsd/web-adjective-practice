@@ -30,6 +30,7 @@ import {
     getActivityMinutes,
     getDailyTotalMinutes,
     getTotalPlanMinutes,
+    markDailyIntroShown,
     loadDailyState,
     saveDailyState,
     getStorageKey
@@ -286,4 +287,20 @@ test("daily state survives a reload and is isolated per user", () => {
 
     const invalidTime = saveReminderSettings(state, { enabled: true, time: "99:99" })
     assert.equal(invalidTime.notifications.time, "21:30")
+})
+
+test("the plan modal is marked as shown only once per day", () => {
+    const storage = createStorage()
+    let state = normalizeDailyState(null)
+    assert.equal(state.introShownDate, "")
+
+    state = markDailyIntroShown(state, "2026-11-19")
+    assert.equal(state.introShownDate, "2026-11-19")
+    assert.equal(markDailyIntroShown(state, "2026-11-19").introShownDate, "2026-11-19")
+    assert.equal(markDailyIntroShown(state, "2026-11-20").introShownDate, "2026-11-20")
+
+    saveDailyState(state, { storage, userId: "abc" })
+    const loaded = loadDailyState({ storage, userId: "abc" })
+    assert.equal(loaded.introShownDate, "2026-11-19")
+    assert.equal(loadDailyState({ storage, userId: "otro" }).introShownDate, "")
 })
