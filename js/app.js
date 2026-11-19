@@ -21,6 +21,7 @@ import { showLoading, hideLoading } from "./ui-status.js";
 import { initPWA } from "./pwa.js";
 import { initOfflineSync, startAutoSync } from "./offline/sync.js";
 import { initSyncStatus } from "./offline/status.js";
+import { initializeDailyStudy } from "./daily-study-ui.js";
 
 window.toggleVocabularyFavorite = (itemType, itemId) =>
     toggleFavorite(supabase, itemType, itemId);
@@ -211,6 +212,18 @@ async function refreshCategoriesInBackground() {
     }
 }
 
+function navigateToDailyActivity(activity) {
+    if (!activity) return;
+    const button = document.querySelector(`[data-section="${activity.section}"]`);
+    window.switchSection?.(activity.section, button);
+    if (activity.pane) document.querySelector(`[data-practice-pane="${activity.pane}"]`)?.click();
+    if (activity.screen) {
+        const clickTab = () => document.querySelector(`.tab[data-screen="${activity.screen}"]`)?.click();
+        clickTab();
+        setTimeout(clickTab, 150);
+    }
+}
+
 async function initApp() {
     // Los listeners de la interfaz se conectan antes de las tareas lentas
     // (sesión, datos y práctica) para que el buscador responda desde el
@@ -230,6 +243,7 @@ async function initApp() {
     initAuthSession();
     await checkUser();
     updateFavoriteFilterHints();
+    initializeDailyStudy({ userId: store.currentUser?.id, navigate: navigateToDailyActivity });
     initializeBrowserAI();
     initializeNotionIntegration(supabase);
     initializeNotionEmbeds(supabase);
