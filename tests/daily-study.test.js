@@ -13,6 +13,8 @@ import {
     recordCompletion,
     saveReminderSettings,
     normalizeDailyState,
+    getActivityMinutes,
+    getTotalPlanMinutes,
     loadDailyState,
     saveDailyState,
     getStorageKey
@@ -33,8 +35,11 @@ test("the six study activities point to real sections of the app", () => {
     ])
     for (const activity of STUDY_ACTIVITIES) {
         assert.ok(activity.label && activity.icon && activity.section)
+        assert.ok(activity.minutes >= 5)
+        assert.equal(getActivityMinutes(activity.id), activity.minutes)
         assert.equal(getActivity(activity.id), activity)
     }
+    assert.equal(getTotalPlanMinutes(), 70)
     assert.deepEqual(getActivity("practice").pane, "general")
     assert.deepEqual(getActivity("listening").pane, "audio")
     assert.deepEqual(getActivity("shadowing").pane, "shadowing")

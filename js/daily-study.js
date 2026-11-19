@@ -5,12 +5,12 @@
 import { scheduleReview } from "./sentences/scheduler.js";
 
 export const STUDY_ACTIVITIES = Object.freeze([
-    { id: "practice", label: "Ejercicios", icon: "✍️", section: "practice", pane: "general" },
-    { id: "listening", label: "Escucha continua", icon: "🎧", section: "practice", pane: "audio" },
-    { id: "shadowing", label: "Shadowing", icon: "🎤", section: "practice", pane: "shadowing" },
-    { id: "vocabulary", label: "Mi vocabulario", icon: "📚", section: "mysentences", screen: "vocabulary" },
-    { id: "sentences", label: "Frases · Repaso", icon: "💬", section: "mysentences", screen: "review" },
-    { id: "ai", label: "Consultas IA", icon: "🤖", section: "browser-ai" }
+    { id: "practice", label: "Ejercicios", icon: "✍️", minutes: 10, section: "practice", pane: "general" },
+    { id: "listening", label: "Escucha continua", icon: "🎧", minutes: 15, section: "practice", pane: "audio" },
+    { id: "shadowing", label: "Shadowing", icon: "🎤", minutes: 15, section: "practice", pane: "shadowing" },
+    { id: "vocabulary", label: "Mi vocabulario", icon: "📚", minutes: 10, section: "mysentences", screen: "vocabulary" },
+    { id: "sentences", label: "Frases · Repaso", icon: "💬", minutes: 10, section: "mysentences", screen: "review" },
+    { id: "ai", label: "Consultas IA", icon: "🤖", minutes: 10, section: "browser-ai" }
 ]);
 
 const STATE_VERSION = 1;
@@ -19,6 +19,14 @@ const STORAGE_PREFIX = "daily_study_v1";
 
 export function getActivity(activityId) {
     return STUDY_ACTIVITIES.find(activity => activity.id === activityId) || null;
+}
+
+export function getActivityMinutes(activityId) {
+    return getActivity(activityId)?.minutes || 10;
+}
+
+export function getTotalPlanMinutes() {
+    return STUDY_ACTIVITIES.reduce((total, activity) => total + getActivityMinutes(activity.id), 0);
 }
 
 export function getLocalDateKey(date = new Date()) {

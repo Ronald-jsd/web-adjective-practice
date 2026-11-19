@@ -1,11 +1,14 @@
-/* Aviso diario de estudio. Se muestra una vez al abrir la app: exige escribir
- * el compromiso, lleva a la actividad y después pide un recuerdo activo antes de
+/* Plan diario de estudio: muestra las 6 actividades con su tiempo, señala la
+ * que toca hoy, la abre con una cuenta atrás y pide un recuerdo activo antes de
  * programar el siguiente repaso. No modifica ninguna pantalla existente. */
 
 import { showToast } from "./cache.js";
-import { formatInterval } from "./sentences/scheduler.js";
+import { formatInterval, isDue } from "./sentences/scheduler.js";
 import {
+    STUDY_ACTIVITIES,
     getActivity,
+    getActivityMinutes,
+    getTotalPlanMinutes,
     loadDailyState,
     saveDailyState,
     ensureDailyMission,
@@ -28,6 +31,9 @@ let navigate = () => {};
 let overlay = null;
 let badge = null;
 let reminderTimer = null;
+let sessionTimer = null;
+let sessionDeadline = 0;
+let sessionActivity = null;
 let api = null;
 
 function injectStyles() {
@@ -46,6 +52,18 @@ function injectStyles() {
         .ds-eyebrow { margin: 0 0 6px; font-size: 11px; font-weight: 700; letter-spacing: .12em; color: #4f46e5; }
         .ds-card h2 { margin: 0 0 8px; font-size: 22px; line-height: 1.25; }
         .ds-subtitle { margin: 0 0 18px; font-size: 14px; color: #475569; }
+        .ds-plan { margin: 0 0 18px; border: 1px solid #e0e7ff; border-radius: 12px; overflow: hidden; }
+        .ds-plan-head { padding: 9px 12px; background: #eef2ff; font-size: 11px; font-weight: 800;
+            letter-spacing: .08em; color: #3730a3; }
+        .ds-plan-item { display: flex; align-items: center; gap: 10px; padding: 9px 12px;
+            border-top: 1px solid #eef2ff; }
+        .ds-plan-item.current { background: #fffbeb; box-shadow: inset 3px 0 0 #f59e0b; }
+        .ds-plan-icon { font-size: 17px; }
+        .ds-plan-info { flex: 1; min-width: 0; }
+        .ds-plan-name { font-size: 13px; font-weight: 700; }
+        .ds-plan-status { font-size: 11px; color: #64748b; }
+        .ds-plan-item.current .ds-plan-status { color: #b45309; font-weight: 700; }
+        .ds-plan-minutes { font-size: 12px; font-weight: 800; color: #4338ca; white-space: nowrap; }
         .ds-step label { display: block; margin-bottom: 7px; font-size: 13px; font-weight: 600; }
         .ds-step input { width: 100%; box-sizing: border-box; padding: 11px 12px; border: 1px solid #cbd5e1;
             border-radius: 10px; font: inherit; font-size: 14px; }
@@ -107,6 +125,9 @@ function mount() {
     card.appendChild(title);
     const subtitle = element("p", "ds-subtitle", "");
     card.appendChild(subtitle);
+
+    const plan = element("div", "ds-plan");
+    card.appendChild(plan);
 
     const commitStep = element("div", "ds-step");
     commitStep.appendChild(element("label", "", "Para empezar, escribe: Estudiaré [actividad]"));
@@ -219,18 +240,43 @@ function setStep(name) {
     target?.classList.remove("hidden");
 }
 
+function dueLabel(activity, now) {
+    const card = state.cards[activity.id];
+    if (!card || card.memoryState === "new") return "Nuevo · aún sin repasar";
+    if (isDue(card, now)) return "Toca hoy · pendiente";
+    return `Próximo en ${formatInterval(new Date(card.nextReviewAt).getTime() - now.getTime())}`;
+}
+
+function renderPlan(now) {
+    const host = overlay.querySelector(".ds-plan");
+    host.textContent = "";
+    host.appendChild(element("div", "ds-plan-head", `PLAN DE HOY · ${getTotalPlanMinutes()} MIN EN TOTAL`));
+    for (const activity of STUDY_ACTIVITIES) {
+        const row = element("div", `ds-plan-item${activity.id === mission.activityId ? " current" : ""}`);
+        row.appendChild(element("span", "ds-plan-icon", activity.icon));
+        const info = element("div", "ds-plan-info");
+        info.appendChild(element("div", "ds-plan-name", activity.label));
+        info.appendChild(element("div", "ds-plan-status", dueLabel(activity, now)));
+        row.appendChild(info);
+        row.appendChild(element("span", "ds-plan-minutes", `${activity.minutes} min`));
+        host.appendChild(row);
+    }
+}
+
 function render() {
     if (!overlay || !mission) return;
     const activity = getActivity(mission.activityId);
     if (!activity) return;
+    const now = new Date();
     const title = overlay.querySelector("#ds-title");
     const subtitle = overlay.querySelector(".ds-subtitle");
-    title.textContent = `${activity.icon} Hoy te toca: ${activity.label}`;
+    title.textContent = `${activity.icon} Hoy te toca: ${activity.label} (${activity.minutes} min)`;
     subtitle.textContent = mission.completedAt
         ? "Reto completado. Tu próxima aparición ya está programada según lo bien que te fue."
         : mission.commitmentAt
             ? "Sesión en marcha. Cuando termines, escribe algo que recuerdes y puntúa tu repaso."
-            : "Una actividad distinta cada día, elegida entre las que tienen repaso pendiente.";
+            : "Un reto distinto cada día, elegido entre lo que tienes pendiente. El texto ya está escrito: solo pulsa el botón.";
+    renderPlan(now);
     if (!mission.commitmentAt) setStep("commit");
     else if (!mission.completedAt) setStep("review");
     else {
@@ -239,7 +285,19 @@ function render() {
         doneStep.textContent = "";
         doneStep.appendChild(element("p", "ds-subtitle", `✅ Completaste ${activity.label}. Próximo repaso: ${nextReviewLabel()}`));
     }
-    badge.textContent = mission.completedAt ? `✅ ${activity.label} hecho` : `🎯 Hoy: ${activity.label}`;
+    if (!mission.completedAt && !mission.commitmentAt) {
+        const input = overlay.querySelector("#ds-commit-input");
+        input.value = `Estudiaré ${activity.label}`;
+        const start = overlay.querySelector("#ds-start");
+        if (start) start.disabled = false;
+    }
+    if (!sessionActivity) {
+        badge.textContent = mission.completedAt
+            ? `✅ ${activity.label} hecho`
+            : mission.commitmentAt
+                ? `⏱ ${activity.minutes} min · ${activity.label}`
+                : `🎯 Hoy: ${activity.label} · ${activity.minutes} min`;
+    }
     badge.classList.remove("hidden");
     const reminderEnabled = overlay.querySelector("#ds-reminder-enabled");
     const reminderTime = overlay.querySelector("#ds-reminder-time");
@@ -251,6 +309,37 @@ function nextReviewLabel() {
     const card = state.cards[mission.activityId];
     if (!card?.nextReviewAt) return "pronto";
     return formatInterval(new Date(card.nextReviewAt).getTime() - Date.now());
+}
+
+function updateTimerBadge() {
+    if (!sessionActivity) return;
+    const remaining = Math.max(0, sessionDeadline - Date.now());
+    if (!remaining) {
+        const label = sessionActivity.label;
+        stopTimer();
+        badge.textContent = `⏰ Tiempo · ${label}`;
+        showToast("Tiempo terminado. Vuelve al reto y puntúa cómo te fue.", "info");
+        show();
+        return;
+    }
+    const minutes = Math.floor(remaining / 60000);
+    const seconds = Math.floor((remaining % 60000) / 1000);
+    badge.textContent = `⏱ ${minutes}:${String(seconds).padStart(2, "0")} · ${sessionActivity.label}`;
+}
+
+function startTimer(activity) {
+    stopTimer();
+    sessionActivity = activity;
+    sessionDeadline = Date.now() + getActivityMinutes(activity.id) * 60000;
+    updateTimerBadge();
+    sessionTimer = setInterval(updateTimerBadge, 1000);
+}
+
+function stopTimer() {
+    if (sessionTimer) clearInterval(sessionTimer);
+    sessionTimer = null;
+    sessionDeadline = 0;
+    sessionActivity = null;
 }
 
 function persist() {
@@ -270,9 +359,11 @@ function startMission() {
     mission = result.mission;
     persist();
     hide();
-    navigate(getActivity(mission.activityId));
-    showToast(`Reto aceptado: ${getActivity(mission.activityId).label}. ¡A estudiar!`, "success");
+    const activity = getActivity(mission.activityId);
+    navigate(activity);
+    showToast(`Reto aceptado: ${activity.label}. Tienes ${activity.minutes} min. ¡A estudiar!`, "success");
     render();
+    startTimer(activity);
 }
 
 function finish(grade) {
@@ -282,6 +373,7 @@ function finish(grade) {
     state = result.state;
     mission = result.mission;
     persist();
+    stopTimer();
     render();
     showToast(`Repaso guardado. Próxima vez: ${nextReviewLabel()}`, "success");
     scheduleNotification();
