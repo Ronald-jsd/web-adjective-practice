@@ -66,19 +66,21 @@ function updateAIButton() {
     const hasGroq = hasApiKey('groq')
     const preferred = getPreferredProvider()
 
-    if (hasGroq || hasGemini) {
-        let label = ''
-        if (preferred === 'groq' && hasGroq) label = '⚡ Groq'
-        else if (preferred === 'gemini' && hasGemini) label = '🤖 Gemini'
-        else if (hasGroq) label = '⚡ IA Auto'
-        else label = '🤖 IA Auto'
+    const baseClass = 'flex items-center gap-1.5 px-2 lg:px-3 py-1.5 lg:py-2 text-xs lg:text-sm font-medium transition-colors border rounded-lg whitespace-nowrap'
 
-        btn.className = 'flex items-center gap-2 px-3 py-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-xs md:text-sm font-medium transition-colors border border-green-200'
-        btn.innerHTML = label
+    if (hasGroq || hasGemini) {
+        let icon = '🤖'
+        let label = '🤖 IA Auto'
+        if (preferred === 'groq' && hasGroq) { icon = '⚡'; label = '⚡ Groq' }
+        else if (preferred === 'gemini' && hasGemini) { icon = '🤖'; label = '🤖 Gemini' }
+        else if (hasGroq) { icon = '⚡'; label = '⚡ IA Auto' }
+
+        btn.className = `${baseClass} bg-green-100 hover:bg-green-200 text-green-700 border-green-200`
+        btn.innerHTML = `<span class="lg:hidden">${icon}</span><span class="hidden lg:inline">${label}</span>`
         btn.title = `Proveedor: ${preferred}. Click para gestionar.`
     } else {
-        btn.className = 'flex items-center gap-2 px-3 py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg text-xs md:text-sm font-medium transition-colors border border-purple-200'
-        btn.innerHTML = '🤖 Configurar IA'
+        btn.className = `${baseClass} bg-purple-100 hover:bg-purple-200 text-purple-700 border-purple-200`
+        btn.innerHTML = '<span class="lg:hidden">🤖</span><span class="hidden lg:inline">🤖 Configurar IA</span>'
         btn.title = 'Configura tu API Key (Groq recomendado)'
     }
 }

@@ -104,10 +104,16 @@ function injectStyles() {
         .ds-link { border: 0; background: transparent; color: #4f46e5; font: inherit; font-size: 13px; cursor: pointer; }
         .ds-link.hidden, .ds-error.hidden { display: none !important; }
         .ds-badge { display: inline-flex; align-items: center; justify-content: center; border: 0; border-radius: 999px;
-            max-width: 220px; padding: 8px 12px; background: #4338ca; color: #fff; overflow: hidden;
-            font: inherit; font-size: 12px; font-weight: 700; white-space: nowrap; text-overflow: ellipsis;
+            max-width: 240px; padding: 8px 12px; background: #4338ca; color: #fff; overflow: hidden;
+            font: inherit; font-size: 12px; font-weight: 700; white-space: nowrap;
             box-shadow: 0 4px 12px rgba(67,56,202,.25); cursor: pointer; }
-        @media (max-width: 640px) { .ds-badge { max-width: 150px; padding: 7px 9px; font-size: 11px; } }
+        .ds-badge-short { display: inline; }
+        .ds-badge-full { display: none; }
+        @media (min-width: 1024px) {
+            .ds-badge-short { display: none; }
+            .ds-badge-full { display: inline; }
+        }
+        @media (max-width: 639px) { .ds-badge { padding: 7px 9px; font-size: 11px; } }
         @media (max-width: 480px) { .ds-card { padding: 20px; } .ds-card h2 { font-size: 19px; } }
     `;
     document.head.appendChild(style);
@@ -495,15 +501,25 @@ function emitSession() {
 
 function updateBadge() {
     if (!badge) return;
+    let full;
+    let short;
     if (session && session.running) {
         const stateText = session.paused ? "⏸" : "⏱";
-        badge.textContent = `${stateText} ${formatRemaining(session.remainingMs)} · ${session.activity.label}`;
+        const remaining = formatRemaining(session.remainingMs);
+        full = `${stateText} ${remaining} · ${session.activity.label}`;
+        short = `${stateText} ${remaining}`;
     } else {
         const pending = DAILY_SLOTS.filter(slot => missions[slot] && !missions[slot].completedAt).length;
-        badge.textContent = pending
+        full = pending
             ? `🎯 Hoy: ${getDailyTotalMinutes(missions)} min · ${pending} reto${pending === 1 ? "" : "s"}`
             : "✅ Retos de hoy completados";
+        short = pending ? `🎯 ${pending} reto${pending === 1 ? "" : "s"}` : "✅ Listo";
     }
+    badge.replaceChildren(
+        element("span", "ds-badge-short", short),
+        element("span", "ds-badge-full", full)
+    );
+    badge.title = full;
     badge.classList.remove("hidden");
 }
 

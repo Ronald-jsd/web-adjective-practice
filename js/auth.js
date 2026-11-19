@@ -18,14 +18,19 @@ function updateAuthUI() {
     if (!authContainer) return
 
     if (store.currentUser) {
+        const hasKey = window.hasApiKey
+            ? (window.hasApiKey('groq') || window.hasApiKey('gemini'))
+            : false
         authContainer.innerHTML = `
-            <div class="flex items-center gap-2 md:gap-3">
-                <button id="ai-provider-btn" onclick="window.manageAIKeys()" class="flex items-center gap-2 px-3 py-2 bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-xs md:text-sm font-medium transition-colors border border-green-200" title="Gestionar proveedores de IA">
-                    ${window.hasApiKey ? (window.hasApiKey('groq') || window.hasApiKey('gemini') ? '⚡ IA' : '🤖 Configurar IA') : '🤖 Configurar IA'}
+            <div class="flex items-center gap-1.5 lg:gap-3">
+                <button id="ai-provider-btn" onclick="window.manageAIKeys()" class="flex items-center gap-1.5 px-2 lg:px-3 py-1.5 lg:py-2 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded-lg text-xs lg:text-sm font-medium transition-colors border border-purple-200 whitespace-nowrap" title="Gestionar proveedores de IA">
+                    <span class="lg:hidden">${hasKey ? '⚡' : '🤖'}</span>
+                    <span class="hidden lg:inline">${hasKey ? '⚡ IA' : '🤖 Configurar IA'}</span>
                 </button>
-                <span class="text-xs md:text-sm text-gray-600 hidden sm:block">${store.currentUser.email}</span>
-                <button onclick="window.logout()" class="px-2 md:px-3 py-1.5 bg-red-500 text-white rounded-lg text-xs md:text-sm hover:bg-red-600">
-                    Salir
+                <span class="text-xs lg:text-sm text-gray-600 hidden lg:block">${store.currentUser.email}</span>
+                <button onclick="window.logout()" class="px-2 lg:px-3 py-1.5 bg-red-500 text-white rounded-lg text-xs lg:text-sm hover:bg-red-600 whitespace-nowrap" title="Salir">
+                    <span class="lg:hidden">🚪</span>
+                    <span class="hidden lg:inline">Salir</span>
                 </button>
             </div>
         `
@@ -34,8 +39,8 @@ function updateAuthUI() {
         })
     } else {
         authContainer.innerHTML = `
-            <button onclick="window.abrirModalLogin()" class="px-3 md:px-4 py-1.5 md:py-2 bg-amber-500 text-white rounded-lg text-xs md:text-sm font-medium hover:bg-amber-600 transition-colors">
-                🔐 Iniciar sesión
+            <button onclick="window.abrirModalLogin()" class="px-2 sm:px-4 py-1.5 sm:py-2 bg-amber-500 text-white rounded-lg text-xs sm:text-sm font-medium hover:bg-amber-600 transition-colors whitespace-nowrap" title="Iniciar sesión">
+                🔐<span class="hidden sm:inline"> Iniciar sesión</span>
             </button>
         `
     }
