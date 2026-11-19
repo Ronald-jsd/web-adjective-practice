@@ -16,6 +16,7 @@ import {
     getImageExtension,
     prepareImageForVision
 } from './ai-images.js'
+import { getSignedImageUrls } from './ai-image-urls.js'
 
 const DEFAULT_QUERY_PAGE_SIZE = 12
 let savedQueries = []
@@ -971,31 +972,31 @@ async function loadQueryHistory() {
     if (networkRows) {
         const rows = await cacheRowsPreservingPending(TABLES.aiQueries, networkRows)
         queryHistoryOffline = false
-        const queries = await Promise.all(rows.map(async query => {
-            const paths = normalizeImagePaths(query)
-            if (!paths.length) return { ...query, images: [] }
-
-            const { data: signedImages, error: imageError } = await supabase.storage
-                .from(AI_QUERY_IMAGE_BUCKET)
-                .createSignedUrls(paths, 60 * 60)
-            if (imageError) {
-                console.error('No se pudieron crear enlaces temporales para las imágenes de la consulta:', imageError)
-                return { ...query, images: [], image_error: true }
+        const queries = rows.map(query => ({ ...query, images: [] }))
+        const pathsByQuery = new Map(queries.map(query => [query.id, normalizeImagePaths(query)]))
+        const allPaths = [...new Set([...pathsByQuery.values()].flat())]
+        let signedUrls = new Map()
+        if (allPaths.length) {
+            try {
+                // Una sola llamada para todas las rutas distintas; las ya
+                // firmadas hace menos de una hora se reutilizan.
+                signedUrls = await getSignedImageUrls(supabase, allPaths, { scope: userId })
+            } catch (error) {
+                console.error('No se pudieron crear enlaces temporales para las imágenes de las consultas:', error)
             }
-
-            const byPath = new Map((signedImages || []).map(item => [item.path, item]))
-            const images = []
+        }
+        for (const query of queries) {
             let failed = false
-            for (const path of paths) {
-                const item = byPath.get(path)
-                if (!item || item.error || !item.signedUrl) {
+            for (const path of pathsByQuery.get(query.id) || []) {
+                const url = signedUrls.get(path)
+                if (!url) {
                     failed = true
                     continue
                 }
-                images.push({ path, url: item.signedUrl })
+                query.images.push({ path, url })
             }
-            return { ...query, images, image_error: failed }
-        }))
+            query.image_error = failed
+        }
         renderHistory(queries)
         const activeDialog = document.querySelector('.ai-query-dialog')
         const activeQuery = queries.find(query => query.id === activeQueryId)
