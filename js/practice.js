@@ -26,6 +26,8 @@ import { getSelectedNotionPageIds, loadNotionPracticeCategories } from "./notion
 import { parsePracticeTable } from "./practice-import.js";
 import { showLoading, hideLoading } from "./ui-status.js";
 import { cacheRowsPreservingPending, readCachedRows, TABLES } from "./offline/cache.js";
+import { isCatalogFresh, markCatalogFresh } from "./catalog-freshness.js";
+import { CUSTOM_ITEM_COLUMNS } from "./supabase-columns.js";
 import { isOnline } from "./offline/sync.js";
 
 const PROGRESS_STORAGE_KEY = "vocabulary_practice_progress_v1";
@@ -886,7 +888,17 @@ async function initializePractice(categories = [], options = {}) {
     if (options.supabase && (practiceVerbsCache === null || options.refreshVerbs || practiceVerbsUserId !== userId)) {
         try {
             let finalRows = null
-            if (!isOnline()) {
+            // La copia completa ya bajó hace menos de 24 h: se reutiliza en
+            // vez de volver a pedir la tabla al iniciar la práctica.
+            const freshCache = !options.refreshVerbs && isCatalogFresh("verbs")
+                ? await readCachedRows(TABLES.verbs)
+                : []
+            if (freshCache.length) {
+                finalRows = freshCache
+                practiceVerbsCache = finalRows
+                practiceVerbsUserId = userId
+                practiceVerbCategoryCache = createVerbPracticeCategory(finalRows)
+            } else if (!isOnline()) {
                 const cached = await readCachedRows(TABLES.verbs)
                 if (cached.length) {
                     practiceVerbsCache = cached
@@ -922,6 +934,12 @@ async function initializePractice(categories = [], options = {}) {
                 practiceVerbsCache = finalRows;
                 practiceVerbsUserId = userId;
                 practiceVerbCategoryCache = createVerbPracticeCategory(finalRows);
+                // Solo se marca como fresca una copia completa. Esta consulta
+                // pide menos columnas; si no había espejo previo, el cargador
+                // de verbos seguirá bajando la tabla completa la primera vez.
+                if (finalRows?.length && Object.prototype.hasOwnProperty.call(finalRows[0], "category")) {
+                    markCatalogFresh("verbs");
+                }
             }
         } catch (error) {
             console.error("No se pudieron cargar los verbos para practicar:", error);
@@ -1056,7 +1074,7 @@ async function initializePractice(categories = [], options = {}) {
             } else {
                 const { data, error } = await options.supabase
                     .from("user_custom_items")
-                    .select("*")
+                    .select(CUSTOM_ITEM_COLUMNS)
                     .eq("user_id", userId)
                     .eq("subcategory", "Mi vocabulario")
                     .order("created_at", { ascending: false });

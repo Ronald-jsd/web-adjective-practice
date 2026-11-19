@@ -1,5 +1,6 @@
 import { supabase } from './app.js'
 import { store } from './config.js'
+import { CUSTOM_ITEM_COLUMNS } from './supabase-columns.js'
 import { loadUserFavorites } from './favorites.js'
 import { cacheRowsPreservingPending, readCachedRows, TABLES } from './offline/cache.js'
 import { flushOutbox, clearOfflineData, isOnline } from './offline/sync.js'
@@ -230,7 +231,7 @@ async function loadUserCustomItems(options = {}) {
         try {
             const result = await supabase
                 .from('user_custom_items')
-                .select('*')
+                .select(CUSTOM_ITEM_COLUMNS)
                 .eq('user_id', userId)
             if (result.error) throw result.error
             data = result.data || []

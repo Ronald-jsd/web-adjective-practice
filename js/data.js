@@ -1,11 +1,24 @@
 import { supabase } from './app.js'
 import { saveToCache, loadFromCache, showToast } from './cache.js'
-import { store } from './config.js'
+import { store, CACHE_TIMESTAMP_KEY } from './config.js'
+import { markCatalogFresh } from './catalog-freshness.js'
+import { CATEGORY_TREE_COLUMNS, CUSTOM_ITEM_COLUMNS } from './supabase-columns.js'
 import { showLoading, hideLoading } from './ui-status.js'
 import { cacheSnapshot, readSnapshot, readCachedRows, cacheRowsPreservingPending, TABLES } from './offline/cache.js'
 
 async function readLocalCategories() {
     return loadFromCache() || await readSnapshot('categories') || null
+}
+
+/* La caché de localStorage ya tiene su propio TTL de 24 h. Reutilizamos ese
+ * timestamp como marca de frescura para no descargar de nuevo al arrancar. */
+function seedCategoriesFreshness() {
+    try {
+        const timestamp = Number(localStorage.getItem(CACHE_TIMESTAMP_KEY) || 0)
+        if (timestamp) markCatalogFresh('categories', timestamp)
+    } catch (error) {
+        // Sin localStorage se consulta la red como antes.
+    }
 }
 
 function normalizeTitle(value) {
@@ -130,6 +143,7 @@ async function loadCategoriesFromSupabase(forceRefresh = false, options = {}) {
         const cachedData = loadFromCache()
         if (cachedData) {
             console.log('Usando caché')
+            seedCategoriesFreshness()
             return withLocalCustomItems(cachedData, { persist: false })
         }
 
@@ -154,7 +168,7 @@ async function loadCategoriesFromSupabase(forceRefresh = false, options = {}) {
         try {
             ({ data: categories, error } = await supabase
                 .from('categories')
-                .select(`*, subcategories:subcategories(*, items:items(*))`)
+                .select(CATEGORY_TREE_COLUMNS)
                 .order('display_order')
                 .abortSignal(controller.signal))
         } finally {
@@ -207,7 +221,7 @@ async function loadCategoriesFromSupabase(forceRefresh = false, options = {}) {
                 try {
                     ({ data: networkCustomItems, error: customError } = await supabase
                         .from('user_custom_items')
-                        .select('*')
+                        .select(CUSTOM_ITEM_COLUMNS)
                         .eq('user_id', store.currentUser.id)
                         .order('sort_order', { ascending: true })
                         .abortSignal(customController.signal))
@@ -251,6 +265,7 @@ async function loadCategoriesFromSupabase(forceRefresh = false, options = {}) {
 
         saveToCache(transformedData)
         await cacheSnapshot('categories', transformedData)
+        markCatalogFresh('categories')
         return transformedData
 
     } catch (err) {

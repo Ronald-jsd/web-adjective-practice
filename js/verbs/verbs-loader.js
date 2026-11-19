@@ -2,6 +2,8 @@ import { supabase } from '../app.js'
 import { showToast } from '../cache.js'
 import { showLoading, hideLoading } from '../ui-status.js'
 import { cacheRowsPreservingPending, readCachedRows, TABLES } from '../offline/cache.js'
+import { isCatalogFresh, markCatalogFresh } from '../catalog-freshness.js'
+import { VERB_COLUMNS } from '../supabase-columns.js'
 import { isOnline } from '../offline/sync.js'
 import {
     setVerbsData, setVerbCategories,
@@ -42,7 +44,7 @@ async function fetchVerbsFromNetwork() {
 
         const { data: verbs, error } = await supabase
             .from('verbs')
-            .select('*')
+            .select(VERB_COLUMNS)
             .order('verb')
             .range(from, to)
 
@@ -75,26 +77,40 @@ export async function loadVerbsFromSupabase(forceRefresh = false) {
         let allVerbs = null
         let fromCache = false
 
-        if (isOnline()) {
-            try {
-                console.log('Cargando todos los verbos desde Supabase...')
-                const networkVerbs = await fetchVerbsFromNetwork()
-                if (networkVerbs.length) {
-                    allVerbs = await cacheRowsPreservingPending(TABLES.verbs, networkVerbs)
-                }
-            } catch (error) {
-                console.warn('No se pudieron cargar los verbos desde la nube:', error)
+        // Si la copia tiene menos de 24 h se usa sin tocar la red. Las
+        // ediciones, borrados y generación con IA pasan forceRefresh y siguen
+        // refrescando desde Supabase.
+        if (!forceRefresh && isCatalogFresh('verbs')) {
+            const cached = await readCachedRows(TABLES.verbs)
+            if (cached.length) {
+                allVerbs = cached
+                fromCache = true
             }
         }
 
-        if (!allVerbs || !allVerbs.length) {
-            allVerbs = await readCachedRows(TABLES.verbs)
-            fromCache = allVerbs.length > 0
-            if (!fromCache) {
-                showToast('No hay verbos guardados en este dispositivo y no se pudo conectar.', 'warning')
-                return []
+        if (!allVerbs) {
+            if (isOnline()) {
+                try {
+                    console.log('Cargando todos los verbos desde Supabase...')
+                    const networkVerbs = await fetchVerbsFromNetwork()
+                    if (networkVerbs.length) {
+                        allVerbs = await cacheRowsPreservingPending(TABLES.verbs, networkVerbs)
+                        markCatalogFresh('verbs')
+                    }
+                } catch (error) {
+                    console.warn('No se pudieron cargar los verbos desde la nube:', error)
+                }
             }
-            showToast('Mostrando los verbos guardados en el dispositivo.', 'info')
+
+            if (!allVerbs || !allVerbs.length) {
+                allVerbs = await readCachedRows(TABLES.verbs)
+                fromCache = allVerbs.length > 0
+                if (!fromCache) {
+                    showToast('No hay verbos guardados en este dispositivo y no se pudo conectar.', 'warning')
+                    return []
+                }
+                showToast('Mostrando los verbos guardados en el dispositivo.', 'info')
+            }
         }
 
         const mapped = applyVerbs(allVerbs)

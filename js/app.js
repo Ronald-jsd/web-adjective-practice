@@ -16,6 +16,7 @@ import { initializeShadowing } from "./shadowing/app.js";
 import { initializeWordGroups } from "./word-groups/modal.js";
 import { toggleFavorite } from "./favorites.js";
 import { showToast } from "./cache.js";
+import { isCatalogFresh } from "./catalog-freshness.js";
 import { showLoading, hideLoading } from "./ui-status.js";
 import { initPWA } from "./pwa.js";
 import { initOfflineSync, startAutoSync } from "./offline/sync.js";
@@ -187,6 +188,9 @@ window.loadVerbsFromSupabase = async function (forceRefresh) {
  * local ya está visible; cuando llega la respuesta se refresca la vista
  * respetando la búsqueda o la categoría que el usuario esté viendo. */
 async function refreshCategoriesInBackground() {
+    // La copia local ya se validó al cargar; solo se vuelve a la red cuando
+    // han pasado 24 h. Las ediciones usan forceRefresh y no dependen de aquí.
+    if (isCatalogFresh("categories")) return;
     try {
         const fresh = await loadCategoriesFromSupabase(true, { silent: true });
         if (!fresh?.length) return;
