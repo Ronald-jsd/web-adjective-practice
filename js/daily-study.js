@@ -177,6 +177,7 @@ function makeMission(date, slot, activityId, target = null) {
         slot,
         activityId,
         commitmentAt: null,
+        timeUpAt: null,
         completedAt: null,
         grade: null,
         recall: "",
@@ -195,6 +196,7 @@ export function normalizeDailyState(raw) {
                 slot: slotOf(entry),
                 activityId: entry.activityId,
                 commitmentAt: entry.commitmentAt || null,
+                timeUpAt: entry.timeUpAt || null,
                 completedAt: entry.completedAt || null,
                 grade: entry.grade || null,
                 recall: entry.recall || "",
@@ -401,6 +403,20 @@ export function recordInteraction(state, dateKey, slot, now = new Date()) {
     return { state: replaceMission(normalized, updated), mission: { ...updated }, counted: true };
 }
 
+/* El tiempo cumplido se guarda en la misión: si el usuario cierra el modal o
+ * vuelve a entrar en la sección, no debe reiniciarse el reloj ni desactivar
+ * las notas. La calificación sigue siendo obligatoria para dar el reto por
+ * hecho. */
+export function recordTimeUp(state, dateKey, slot, now = new Date()) {
+    const normalized = normalizeDailyState(state);
+    const mission = findMission(normalized, dateKey, slot);
+    if (!mission || !mission.commitmentAt || mission.completedAt || mission.timeUpAt) {
+        return { state: normalized, mission: mission ? { ...mission } : null, recorded: false };
+    }
+    const updated = { ...mission, timeUpAt: now.toISOString() };
+    return { state: replaceMission(normalized, updated), mission: { ...updated }, recorded: true };
+}
+
 export function recordCompletion(state, dateKey, slot, { grade, recall } = {}, now = new Date()) {
     const normalized = normalizeDailyState(state);
     const mission = findMission(normalized, dateKey, slot);
@@ -419,7 +435,7 @@ export function recordCompletion(state, dateKey, slot, { grade, recall } = {}, n
         ...mission,
         completedAt: now.toISOString(),
         grade: card.lastGrade || String(grade || "again").toLowerCase(),
-        recall: String(recall).trim()
+        recall: String(recall || "").trim()
     };
     const key = cardKeyForMission(mission);
     return {
@@ -438,7 +454,7 @@ export function resetMission(state, dateKey, slot) {
     const normalized = normalizeDailyState(state);
     const mission = findMission(normalized, dateKey, slot);
     if (!mission) return { state: normalized, mission: null, reset: false };
-    const updated = { ...mission, commitmentAt: null, completedAt: null, grade: null, recall: "", interactions: 0 };
+    const updated = { ...mission, commitmentAt: null, timeUpAt: null, completedAt: null, grade: null, recall: "", interactions: 0 };
     return { state: replaceMission(normalized, updated), mission: { ...updated }, reset: true };
 }
 

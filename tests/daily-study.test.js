@@ -23,6 +23,7 @@ import {
     refreshMissionTarget,
     recordCommitment,
     recordInteraction,
+    recordTimeUp,
     recordCompletion,
     resetMission,
     saveReminderSettings,
@@ -203,6 +204,7 @@ test("reviewing requires real interactions before scoring and schedules at least
     const completed = recordCompletion(state, dateKey, MAIN_SLOT, { grade: "good" }, now)
     assert.equal(completed.recorded, true)
     assert.equal(completed.mission.grade, "good")
+    assert.equal(completed.mission.recall, "")
     assert.ok(new Date(completed.card.nextReviewAt).getTime() - now.getTime() >= 24 * 60 * 60 * 1000 - 1000)
 
     const restarted = resetMission(completed.state, dateKey, MAIN_SLOT)
@@ -215,6 +217,44 @@ test("reviewing requires real interactions before scoring and schedules at least
     const untouchedReview = findMission(completed.state, dateKey, REVIEW_SLOT)
     assert.equal(untouchedReview.completedAt, null)
 })
+
+test("time up is persisted, survives reload and is cleared on reset", () => {
+    const now = new Date(2026, 10, 19, 9, 0)
+    const dateKey = "2026-11-19"
+    let state = normalizeDailyState({
+        history: [{ date: dateKey, slot: MAIN_SLOT, activityId: "practice" }]
+    })
+
+    const tooEarly = recordTimeUp(state, dateKey, MAIN_SLOT, now)
+    assert.equal(tooEarly.recorded, false)
+
+    state = recordCommitment(state, dateKey, MAIN_SLOT, "Estudiaré Ejercicios", now).state
+    const timeUp = recordTimeUp(state, dateKey, MAIN_SLOT, now)
+    assert.equal(timeUp.recorded, true)
+    assert.equal(timeUp.mission.timeUpAt, now.toISOString())
+    state = timeUp.state
+
+    const reloaded = loadDailyState({ storage: createStorageWith(timeUp.state) })
+    assert.equal(findMission(reloaded, dateKey, MAIN_SLOT).timeUpAt, now.toISOString())
+    assert.equal(recordTimeUp(reloaded, dateKey, MAIN_SLOT, now).recorded, false)
+
+    for (let index = 0; index < MIN_REAL_INTERACTIONS; index += 1) {
+        state = recordInteraction(state, dateKey, MAIN_SLOT, now).state
+    }
+    const completed = recordCompletion(state, dateKey, MAIN_SLOT, { grade: "good" }, now)
+    assert.equal(completed.recorded, true)
+    assert.equal(completed.mission.timeUpAt, now.toISOString())
+
+    const restarted = resetMission(completed.state, dateKey, MAIN_SLOT)
+    assert.equal(restarted.mission.timeUpAt, null)
+})
+
+function createStorageWith(state) {
+    const storage = createStorage()
+    const key = getStorageKey("")
+    storage.setItem(key, JSON.stringify(state))
+    return storage
+}
 
 test("every grade keeps the daily plan at least one day apart", () => {
     const now = new Date(2026, 10, 19, 9, 0)

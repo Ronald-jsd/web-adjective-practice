@@ -21,6 +21,7 @@ import {
     refreshMissionTarget,
     recordCommitment,
     recordInteraction,
+    recordTimeUp,
     recordCompletion,
     resetMission,
     saveReminderSettings,
@@ -413,7 +414,8 @@ function isOverlayOpen() {
 }
 
 function isStudyPresent() {
-    const activity = session?.activity;
+    const mission = currentMission();
+    const activity = session?.activity || (mission ? getActivity(mission.activityId) : null);
     if (!activity || document.hidden || isOverlayOpen()) return false;
     const section = document.getElementById(`${activity.section}-section`);
     if (!section || !section.classList.contains("active")) return false;
@@ -448,7 +450,7 @@ function updateVerificationUi() {
     const check = overlay.querySelector("#ds-check");
     if (!check || !mission) return;
     const interactions = mission.interactions || 0;
-    const timeUp = Boolean(session && session.slot === activeSlot && !session.running && session.remainingMs <= 0);
+    const timeUp = Boolean(mission.timeUpAt) || Boolean(session && session.slot === mission.slot && !session.running && session.remainingMs <= 0);
     const enough = interactions >= MIN_REAL_INTERACTIONS;
     const actions = enough
         ? `✅ ${interactions} acciones (mínimo ${MIN_REAL_INTERACTIONS})`
@@ -467,7 +469,7 @@ function updateVerificationUi() {
     const resume = overlay.querySelector("#ds-resume");
     if (resume) {
         const needsSession = !session || session.slot !== mission.slot;
-        resume.classList.toggle("hidden", !needsSession);
+        resume.classList.toggle("hidden", Boolean(mission.timeUpAt) || !needsSession);
         resume.textContent = session && session.slot === mission.slot && !session.running
             ? "▶️ Reanudar temporizador"
             : "▶️ Iniciar temporizador";
@@ -531,8 +533,20 @@ function tick() {
         session.remainingMs = Math.max(0, session.remainingMs - TICK_MS);
         if (session.remainingMs === 0) {
             session.running = false;
-            showToast("Tiempo terminado. Vuelve al reto, escribe lo que recuerdas y puntúa.", "success");
-            if (!isOverlayOpen()) show();
+            session.paused = false;
+            const mission = missions[session.slot];
+            if (mission && !mission.timeUpAt) {
+                const result = recordTimeUp(state, mission.date, mission.slot, new Date());
+                if (result.recorded) {
+                    state = result.state;
+                    missions[mission.slot] = result.mission;
+                    persist();
+                }
+            }
+            if (mission) activeSlot = mission.slot;
+            render();
+            show();
+            showToast("Tiempo terminado. Elige una opción para puntuar el reto.", "success");
         }
     }
     updateVerificationUi();
@@ -552,28 +566,31 @@ function stopSession() {
 function startSession(mission) {
     stopSession();
     const activity = getActivity(mission.activityId);
+    const alreadyDone = Boolean(mission.timeUpAt || mission.completedAt);
     session = {
         slot: mission.slot,
         activity,
-        remainingMs: getActivityMinutes(mission.activityId) * 60000,
-        running: true,
+        remainingMs: alreadyDone ? 0 : getActivityMinutes(mission.activityId) * 60000,
+        running: !alreadyDone,
         paused: false
     };
-    tickTimer = setInterval(tick, TICK_MS);
+    if (!alreadyDone) tickTimer = setInterval(tick, TICK_MS);
     updateVerificationUi();
     updateBadge();
     emitSession();
 }
 
 function onRealInteraction(event) {
-    if (!session || !session.running || session.paused) return;
+    const mission = currentMission();
+    if (!mission || mission.completedAt) return;
+    const timeUp = Boolean(mission.timeUpAt);
+    if (!timeUp && (!session || !session.running || session.paused)) return;
     if (!isStudyPresent()) return;
     const target = event.target;
     if (!target || !(target instanceof Node) || !isStudyPresentFor(target)) return;
     if (interactionTimer) return;
     interactionTimer = setTimeout(() => { interactionTimer = null; }, 700);
-    const mission = currentMission();
-    if (!mission || mission.slot !== session.slot) return;
+    if (!timeUp && mission.slot !== session.slot) return;
     const result = recordInteraction(state, mission.date, mission.slot, new Date());
     if (!result.counted) return;
     state = result.state;
@@ -583,7 +600,8 @@ function onRealInteraction(event) {
 }
 
 function isStudyPresentFor(target) {
-    const activity = session?.activity;
+    const mission = currentMission();
+    const activity = session?.activity || (mission ? getActivity(mission.activityId) : null);
     if (!activity || !isStudyPresent()) return false;
     const section = document.getElementById(`${activity.section}-section`);
     return Boolean(section && section.contains(target));
@@ -600,8 +618,14 @@ function focusMission(mission, { startTimer = true } = {}) {
     if (!mission) return;
     const activity = getActivity(mission.activityId);
     if (!activity) return;
-    hide();
+    activeSlot = mission.slot;
     navigate(activity, mission);
+    if (mission.timeUpAt || mission.completedAt) {
+        render();
+        show();
+        return;
+    }
+    hide();
     if (startTimer && (!session || session.slot !== mission.slot || !session.running)) {
         startSession(mission);
     }
