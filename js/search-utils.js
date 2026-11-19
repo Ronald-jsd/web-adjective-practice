@@ -1,7 +1,7 @@
 /* Búsqueda compartida por adjetivos y verbos: ignora tildes y mayúsculas.
- * Siempre se busca desde el principio del campo: "g" → palabras que empiezan
- * por g; "go" → "go out", "gone"; "go out" → "go out", "go outside".
- * No se busca en medio de la frase: "out" no encuentra "go out". */
+ * "partial" busca desde el principio del campo: "go" → "go out", "gone".
+ * "exact" exige que el campo completo sea la palabra buscada, ni más ni menos:
+ * "go out" encuentra "go out", pero no "go outside" ni "go out with friends". */
 
 export function normalizeSearchText(value) {
     return String(value || "")
@@ -52,10 +52,13 @@ function startsWithPhrase(normalizedText, parts) {
     return pattern.test(normalizedText)
 }
 
-/* `mode` se mantiene por compatibilidad con la interfaz; ambos modos buscan
- * ahora por prefijo de frase. */
+function exactText(normalizedText, normalizedQuery) {
+    return normalizedText.replace(/\s+/g, " ").trim() === normalizedQuery.replace(/\s+/g, " ").trim()
+}
+
 export function matchesSearchTerms(text, query, mode = "partial") {
-    const terms = searchTerms(query)
-    if (!terms.length) return true
-    return startsWithPhrase(normalizeSearchText(text), terms)
+    const normalizedQuery = normalizeSearchText(query)
+    if (!normalizedQuery.trim()) return true
+    if (mode === "exact") return exactText(normalizeSearchText(text), normalizedQuery)
+    return startsWithPhrase(normalizeSearchText(text), searchTerms(query))
 }

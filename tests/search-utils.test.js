@@ -37,14 +37,19 @@ test("matchesSearchTerms matches the beginning and ignores accents", () => {
     assert.equal(matchesSearchTerms("aplicación práctica", "utopia"), false)
 })
 
-test("matchesSearchTerms applies the same prefix rule in both modes", () => {
-    assert.equal(matchesSearchTerms("happy happiness", "happy", "exact"), true)
-    assert.equal(matchesSearchTerms("happy happiness", "happy", "partial"), true)
+test("exact mode only returns the exact word, with no prefix or extra words", () => {
+    assert.equal(matchesSearchTerms("go out", "go out", "exact"), true)
+    assert.equal(matchesSearchTerms("ÁGIL", "agil", "exact"), true)
+    assert.equal(matchesSearchTerms("aplicación práctica", "aplicacion practica", "exact"), true)
+    assert.equal(matchesSearchTerms("go outside", "go out", "exact"), false)
+    assert.equal(matchesSearchTerms("go out with friends", "go out", "exact"), false)
+    assert.equal(matchesSearchTerms("happy happiness", "happy", "exact"), false)
     assert.equal(matchesSearchTerms("happiness", "happy", "exact"), false)
+    assert.equal(matchesSearchTerms("aplicación práctica", "aplicacion", "exact"), false)
+    assert.equal(matchesSearchTerms("feliz aplicación", "aplicacion", "exact"), false)
+    assert.equal(matchesSearchTerms("Even so", "even s", "exact"), false)
+    assert.equal(matchesSearchTerms("happy happiness", "happy", "partial"), true)
     assert.equal(matchesSearchTerms("happiness", "happy", "partial"), false)
-    assert.equal(matchesSearchTerms("feliz application", "aplicacion aplicacion", "exact"), false)
-    assert.equal(matchesSearchTerms("aplicación feliz", "aplicacion", "exact"), true)
-    assert.equal(matchesSearchTerms("feliz aplicación", "aplicacion"), false)
 })
 
 test("matchesSearchTerms requires the full phrase at the beginning", () => {

@@ -170,7 +170,7 @@ export function setSearchMode(mode) {
         if (exactBtn) {
             exactBtn.className = 'px-4 py-1.5 rounded-md text-sm font-medium transition-all bg-amber-500 text-white'
         }
-        if (hint) hint.textContent = '(Empieza por frase: "go out" encuentra "go out" y "go outside")'
+        if (hint) hint.textContent = '(Palabra exacta: "go out" solo encuentra "go out")'
     }
 
     if (store.lastSearchQuery?.trim()) {
@@ -221,7 +221,7 @@ function renderSearchResults() {
                     <td colspan="9" class="py-8 text-center text-gray-500">
                         No se encontraron resultados para "<strong>${store.lastSearchQuery}</strong>"
                         <br>
-                        <span class="text-xs text-gray-400">Modo: ${searchMode === 'exact' ? 'Empieza por frase' : 'Empieza por'}</span>
+                        <span class="text-xs text-gray-400">Modo: ${searchMode === 'exact' ? 'Palabra exacta' : 'Empieza por'}</span>
                     </td>
                 </tr>
             `
