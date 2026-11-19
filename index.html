@@ -24,7 +24,7 @@
     <link rel="stylesheet" href="word-groups.css" />
     <link rel="stylesheet" href="editing.css" />
     <link rel="stylesheet" href="shadowing.css" />
-    <link id="mysentences-styles" rel="stylesheet" href="sentences.css" disabled />
+    <link id="mysentences-styles" rel="stylesheet" href="sentences.css?v=1.6.4" disabled />
 </head>
 
 <body class="text-gray-900 antialiased min-h-screen flex flex-col">
@@ -85,7 +85,8 @@
                 </p>
 
                 <div class="relative max-w-2xl mx-auto">
-                    <input type="text" id="global-search" placeholder="Buscar adjetivo (inglés o español)..."
+                    <input type="search" id="global-search" name="q" aria-label="Buscar adjetivo (inglés o español)"
+                        placeholder="Buscar adjetivo (inglés o español)..."
                         autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="search"
                         data-lpignore="true" data-1p-ignore="true" data-form-type="other"
                         class="w-full px-5 py-3.5 pl-12 bg-white border border-gray-300 rounded-xl shadow-sm focus:ring-2 focus:ring-amber-500 focus:border-amber-500 outline-none transition-all" />
@@ -719,7 +720,7 @@
 
                 <div class="mb-6">
                     <div class="relative">
-                        <input id="verbs-search-input" type="text" placeholder="🔍 Buscar verbos..."
+                        <input id="verbs-search-input" type="search" name="q" aria-label="Buscar verbos" placeholder="🔍 Buscar verbos..."
                             autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="search"
                             data-lpignore="true" data-1p-ignore="true" data-form-type="other"
                             class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500"
