@@ -107,7 +107,7 @@ function injectStyles() {
             max-width: 220px; padding: 8px 12px; background: #4338ca; color: #fff; overflow: hidden;
             font: inherit; font-size: 12px; font-weight: 700; white-space: nowrap; text-overflow: ellipsis;
             box-shadow: 0 4px 12px rgba(67,56,202,.25); cursor: pointer; }
-        @media (max-width: 640px) { .ds-badge { max-width: 118px; padding: 7px 9px; font-size: 11px; } }
+        @media (max-width: 640px) { .ds-badge { max-width: 150px; padding: 7px 9px; font-size: 11px; } }
         @media (max-width: 480px) { .ds-card { padding: 20px; } .ds-card h2 { font-size: 19px; } }
     `;
     document.head.appendChild(style);
