@@ -942,7 +942,14 @@ function renderDialog() {
         ? `Ver ${missingByTranslation} coincidencias por traducción equivalente`
         : "No hay coincidencias pendientes con esta traducción"
     autoButton.setAttribute("aria-label", autoButton.title)
-    autoButton.addEventListener("click", () => renderAutoPanel())
+    autoButton.addEventListener("click", () => {
+        renderAutoPanel()
+        const target = currentMember()
+        const missing = target ? missingTranslationCandidates(ensureCandidates(), target, state.draft) : []
+        modalStatus(missing.length
+            ? `Autos: ${missing.map(candidate => candidate.word).join(", ")}`
+            : "No hay coincidencias pendientes con esta traducción.")
+    })
     viewActions.append(addWord, autoButton)
     viewControls.append(viewActions)
     titleBlock.append(titleInput, viewControls)
@@ -954,8 +961,12 @@ function renderDialog() {
 
     const autoPanel = el("div", "word-groups-autos-panel")
     autoPanel.id = "word-groups-autos-panel"
+    autoPanel.style.display = "grid"
     const autoLabel = el("div", "word-groups-section-label", "Coincidencias por traducción equivalente")
     const autoList = el("div", "word-groups-autos-list")
+    autoList.style.display = "flex"
+    autoList.style.flexDirection = "column"
+    autoList.style.gap = "6px"
     autoPanel.append(autoLabel, autoList)
 
     const body = el("div", "word-groups-body")
