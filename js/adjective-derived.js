@@ -75,7 +75,7 @@ function displayCell(word, pron, translation, examples = []) {
     for (const example of examples) {
         if (example) lines.push(`<span class="block text-xs text-gray-400">${example}</span>`);
     }
-    if (!lines.length) lines.push(`<span class="text-gray-400">—</span>`);
+    if (!lines.length) lines.push(`<span class="text-gray-400">No tiene</span>`);
     return `<div class="text-sm">${lines.join(" ")}</div>`;
 }
 
@@ -83,23 +83,21 @@ export function deriveAdjectiveDerivedFields(word, pronunciation, spanish) {
     const rawWord = String(word || "").trim();
     const table = pickTable(rawWord);
     const w = normalize(rawWord);
-    const adverb = table?.adverb || rawWord || "";
-    const comparative = table?.comparative || (table ? "" : "");
-    const superlative = table?.superlative || (table ? "" : "");
+    const adverb = table?.adverb || "";
+    const comparative = table?.comparative || "";
+    const superlative = table?.superlative || "";
 
-    const adverbEs = pickSpanish(adverb) || ADVERB_SPANISH[w] || ADVERB_SPANISH[table?.adverb] || "";
+    const adverbEs = pickSpanish(adverb);
     const comparativeEs = table && spanish ? `más ${spanish}` : "";
     const superlativeEs = table && spanish ? `el más ${spanish}` : "";
 
-    const adverbExample = table?.adverb === "tall"
-        ? "She stands tall."
-        : `She acts ${table?.adverb || rawWord}.`;
-    const comparativeExample = `She is ${table?.comparative || "more " + rawWord} than you.`;
-    const superlativeExample = `She is the ${table?.superlative || rawWord}.`;
+    const adverbExample = adverb ? (table?.adverb === "tall" ? "She stands tall." : `She acts ${adverb}.`) : "";
+    const comparativeExample = comparative ? `She is ${comparative} than you.` : "";
+    const superlativeExample = superlative ? `She is the ${superlative}.` : "";
 
     const comparativeEsExample = comparativeEs ? `Ella es ${comparativeEs} que tú.` : "";
     const superlativeEsExample = superlativeEs ? `Ella es ${superlativeEs}.` : "";
-    const adverbEsExample = adverbEs ? `Ella ${table?.physical ? "se ve" : "actúa"} ${adverbEs}.` : `Ella es ${spanish || rawWord}.`;
+    const adverbEsExample = adverbEs ? `Ella ${table?.physical ? "se ve" : "actúa"} ${adverbEs}.` : "";
 
     return {
         adverb_en: adverb,
