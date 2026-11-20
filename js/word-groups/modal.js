@@ -519,8 +519,10 @@ function renderAutoPanel() {
         row.append(el("span", "word-groups-autos-word", candidate.word || ""))
         if (candidate.pronunciation) row.append(el("span", "word-groups-autos-pron", ` [${candidate.pronunciation}]`))
         if (candidate.spanish) row.append(el("span", "word-groups-autos-es", ` — ${candidate.spanish}`))
-        const add = el("button", "button secondary", "Agregar")
+        const add = el("button", "button secondary word-groups-autos-add", `＋ ${candidate.word || ""}`)
         add.type = "button"
+        add.title = `Agregar ${candidate.word || ""}`
+        add.setAttribute("aria-label", add.title)
         add.addEventListener("click", event => {
             event.stopPropagation()
             const result = addMember(state.draft, candidate)
