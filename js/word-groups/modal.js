@@ -948,12 +948,17 @@ function renderDialog() {
         : "No hay coincidencias pendientes con esta traducción"
     autoButton.setAttribute("aria-label", autoButton.title)
     autoButton.addEventListener("click", () => {
-        renderAutoPanel()
         const target = currentMember()
-        const missing = target ? missingTranslationCandidates(ensureCandidates(), target, state.draft) : []
-        modalStatus(missing.length
-            ? `Autos: ${missing.map(candidate => candidate.word).join(", ")}`
-            : "No hay coincidencias pendientes con esta traducción.")
+        const result = autoAddTranslationMatches(state.draft, target)
+        state.draft = result.group
+        if (result.added) {
+            state.activeMemberId = target?.id || state.activeMemberId
+            setDirty(true)
+            renderDialog()
+            modalStatus(`Se agregaron ${result.added} palabras de Autos.`)
+        } else {
+            modalStatus("No hay coincidencias pendientes con esta traducción.")
+        }
     })
     viewActions.append(addWord, autoButton)
     viewControls.append(viewActions)
