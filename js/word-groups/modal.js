@@ -541,6 +541,50 @@ function renderAutoPanel() {
     })
 }
 
+let autoPickerDialog = null
+function openAutoPicker() {
+    if (autoPickerDialog) autoPickerDialog.remove()
+    const dialog = el("dialog", "word-groups-autos-picker")
+    dialog.id = "word-groups-autos-picker"
+    const target = currentMember()
+    const missing = target ? missingTranslationCandidates(ensureCandidates(), target, state.draft) : []
+    const list = el("div", "word-groups-autos-list")
+    if (!missing.length) {
+        list.append(el("p", "", "No hay coincidencias pendientes con esta traducción."))
+    }
+    missing.forEach(candidate => {
+        const row = el("div", "word-groups-autos-row")
+        row.append(el("span", "word-groups-autos-word", candidate.word || ""))
+        if (candidate.pronunciation) row.append(el("span", "word-groups-autos-pron", ` [${candidate.pronunciation}]`))
+        if (candidate.spanish) row.append(el("span", "word-groups-autos-es", ` — ${candidate.spanish}`))
+        const add = el("button", "button secondary word-groups-autos-add", `➕ Agregar ${candidate.word || ""}`)
+        add.type = "button"
+        add.title = `Agregar ${candidate.word || ""}`
+        add.addEventListener("click", () => {
+            const result = addMember(state.draft, candidate)
+            if (result.added) {
+                state.draft = result.group
+                setDirty(true)
+                renderAutoPanel()
+            }
+        })
+        const remove = el("button", "button secondary word-groups-autos-remove", "− Quitar")
+        remove.type = "button"
+        remove.title = `Quitar ${candidate.word || ""}`
+        remove.disabled = true
+        row.append(add, remove)
+        list.append(row)
+    })
+    const closeBtn = el("button", "button secondary word-groups-autos-close", "✕ Cerrar ventana")
+    closeBtn.type = "button"
+    closeBtn.addEventListener("click", () => dialog.close())
+    dialog.append(el("h3", "word-groups-autos-title", "Coincidencias por traducción equivalente"), list, closeBtn)
+    document.body.appendChild(dialog)
+    autoPickerDialog = dialog
+    dialog.addEventListener("close", () => { if (autoPickerDialog === dialog) autoPickerDialog = null })
+    dialog.showModal()
+}
+
 function renderComparisonTable() {
     const wrap = el("div", "word-groups-table-wrap")
     const table = el("table", "word-groups-table")
@@ -948,12 +992,10 @@ function renderDialog() {
         : "No hay coincidencias pendientes con esta traducción"
     autoButton.setAttribute("aria-label", autoButton.title)
     autoButton.addEventListener("click", () => {
-        renderAutoPanel()
+        openAutoPicker()
         const target = currentMember()
         const missing = target ? missingTranslationCandidates(ensureCandidates(), target, state.draft) : []
-        modalStatus(missing.length
-            ? `Autos: ${missing.map(candidate => candidate.word).join(", ")}`
-            : "No hay coincidencias pendientes con esta traducción.")
+        modalStatus(missing.length ? `${missing.length} coincidencias para agregar manualmente.` : "No hay coincidencias pendientes con esta traducción.")
     })
     viewActions.append(addWord, autoButton)
     viewControls.append(viewActions)
