@@ -301,15 +301,15 @@ function renderSearchResults() {
                         <td class="py-2.5 px-3" ondblclick="window.editCell('spanish', '${escapedSpanish}', ${itemObjStr})">
                             ${spanishWithAudio}
                         </td>
-                        <td class="py-2.5 px-2 text-sm">${derivedDisplayCell(derived.adverb_en, derived.adverb_en_pron, derived.adverb_es)}</td>
-                        <td class="py-2.5 px-2 text-sm">${derivedDisplayCell(derived.comparative_en, derived.comparative_en_pron, derived.comparative_es)}</td>
-                        <td class="py-2.5 px-2 text-sm">${derivedDisplayCell(derived.superlative_en, derived.superlative_en_pron, derived.superlative_es)}</td>
                         <td class="py-2.5 px-3 text-sm text-gray-600" ondblclick="window.editCell('example_en', '${escapedExampleEn}', ${itemObjStr})">
                             ${exampleWithAudio}
                         </td>
                         <td class="py-2.5 px-3 text-sm text-gray-600" ondblclick="window.editCell('example_es', '${escapedExampleEs}', ${itemObjStr})">
                             ${exampleEsWithAudio}
                         </td>
+                        <td class="py-2.5 px-2 text-sm">${derivedDisplayCell(derived.adverb_en, derived.adverb_en_pron, derived.adverb_es)}</td>
+                        <td class="py-2.5 px-2 text-sm">${derivedDisplayCell(derived.comparative_en, derived.comparative_en_pron, derived.comparative_es)}</td>
+                        <td class="py-2.5 px-2 text-sm">${derivedDisplayCell(derived.superlative_en, derived.superlative_en_pron, derived.superlative_es)}</td>
                         ${deleteCell}
                     </tr>
                 `
