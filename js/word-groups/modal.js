@@ -534,6 +534,9 @@ function renderAutoPanel() {
             }
         })
         row.append(add)
+        row.addEventListener("click", event => {
+            if (!event.target.closest("button")) add.click()
+        })
         list.append(row)
     })
 }
