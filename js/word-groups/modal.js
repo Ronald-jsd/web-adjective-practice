@@ -502,6 +502,40 @@ function renderExamplesCell(member) {
     return cell
 }
 
+function renderAutoPanel() {
+    const panel = byId("word-groups-autos-panel")
+    if (!panel) return
+    const target = currentMember()
+    const missing = target ? missingTranslationCandidates(ensureCandidates(), target, state.draft) : []
+    const list = panel.querySelector(".word-groups-autos-list")
+    if (!list) return
+    list.textContent = ""
+    if (!missing.length) {
+        list.append(el("p", "", "No hay coincidencias pendientes con esta traducción."))
+        return
+    }
+    missing.forEach(candidate => {
+        const row = el("div", "word-groups-autos-row")
+        row.append(el("span", "word-groups-autos-word", candidate.word || ""))
+        if (candidate.pronunciation) row.append(el("span", "word-groups-autos-pron", ` [${candidate.pronunciation}]`))
+        if (candidate.spanish) row.append(el("span", "word-groups-autos-es", ` — ${candidate.spanish}`))
+        const add = el("button", "button secondary", "Agregar")
+        add.type = "button"
+        add.addEventListener("click", event => {
+            event.stopPropagation()
+            const result = addMember(state.draft, candidate)
+            if (result.added) {
+                state.draft = result.group
+                state.activeMemberId = target?.id || state.activeMemberId
+                setDirty(true)
+                renderAutoPanel()
+            }
+        })
+        row.append(add)
+        list.append(row)
+    })
+}
+
 function renderComparisonTable() {
     const wrap = el("div", "word-groups-table-wrap")
     const table = el("table", "word-groups-table")
@@ -902,26 +936,13 @@ function renderDialog() {
             input?.scrollIntoView({ block: "nearest" })
         })
     })
-    const autoButton = el("button", "button secondary word-groups-add-member word-groups-auto-button", missingByTranslation ? `＋ Autos ${missingByTranslation}` : "＋ Autos")
+    const autoButton = el("button", "button secondary word-groups-add-member word-groups-auto-button", `👀 Autos ${missingByTranslation || ""}`.trim())
     autoButton.type = "button"
-    autoButton.disabled = !missingByTranslation
     autoButton.title = missingByTranslation
-        ? `Agregar ${missingByTranslation} términos con traducción equivalente`
+        ? `Ver ${missingByTranslation} coincidencias por traducción equivalente`
         : "No hay coincidencias pendientes con esta traducción"
     autoButton.setAttribute("aria-label", autoButton.title)
-    autoButton.addEventListener("click", () => {
-        const target = currentMember()
-        const result = autoAddTranslationMatches(state.draft, target)
-        state.draft = result.group
-        if (result.added) {
-            state.activeMemberId = target?.id || state.activeMemberId
-            setDirty(true)
-            renderDialog()
-            modalStatus(`Se agregaron ${result.added} términos con traducción equivalente.`)
-        } else {
-            modalStatus("No hay coincidencias pendientes con esta traducción.", true)
-        }
-    })
+    autoButton.addEventListener("click", () => renderAutoPanel())
     viewActions.append(addWord, autoButton)
     viewControls.append(viewActions)
     titleBlock.append(titleInput, viewControls)
@@ -930,6 +951,12 @@ function renderDialog() {
     close.setAttribute("aria-label", "Cerrar ventana")
     close.addEventListener("click", closeDialog)
     header.append(titleBlock, close)
+
+    const autoPanel = el("div", "word-groups-autos-panel")
+    autoPanel.id = "word-groups-autos-panel"
+    const autoLabel = el("div", "word-groups-section-label", "Coincidencias por traducción equivalente")
+    const autoList = el("div", "word-groups-autos-list")
+    autoPanel.append(autoLabel, autoList)
 
     const body = el("div", "word-groups-body")
     const members = el("aside", "word-groups-members")
@@ -983,7 +1010,7 @@ function renderDialog() {
     removeGroup.addEventListener("click", deleteCurrentGroup)
     removeMemberButton.addEventListener("click", removeCurrentMember)
 
-    shell.append(header, body, footer)
+    shell.append(header, autoPanel, body, footer)
     dialog.append(shell)
     document.body.append(dialog)
     dialog.addEventListener("cancel", event => {
@@ -994,6 +1021,7 @@ function renderDialog() {
     dialog.showModal()
 
     renderCandidates()
+    renderAutoPanel()
 }
 
 function closeDialog() {
