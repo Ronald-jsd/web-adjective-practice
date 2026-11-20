@@ -6,6 +6,7 @@ import { editCell, getStatusBadge } from './editing.js'
 import { getFavoriteKey } from './favorites.js'
 import { matchesSearchTerms, renderExampleLines, splitCatalogExamples } from './search-utils.js'
 import { isSignedIn } from './auth-required.js'
+import { deriveAdjectiveDerivedFields, derivedDisplayCell } from './adjective-derived.js'
 
 const PAGE_SIZE_OPTIONS = [10, 15, 25, 50, 100]
 const DEFAULT_PAGE_SIZE = 15
@@ -219,7 +220,7 @@ function renderSearchResults() {
         if (pageResults.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="9" class="py-8 text-center text-gray-500">
+                    <td colspan="12" class="py-8 text-center text-gray-500">
                         No se encontraron resultados para "<strong>${store.lastSearchQuery}</strong>"
                         <br>
                         <span class="text-xs text-gray-400">Modo: ${searchMode === 'exact' ? 'Palabra exacta' : 'Empieza por'}</span>
@@ -257,6 +258,7 @@ function renderSearchResults() {
                     subcategoryId: r.subcategoryId,
                     categoryId: r.categoryId
                 }
+                const derived = deriveAdjectiveDerivedFields(r.word, r.pronunciation, r.spanish)
                 const wordWithAudio = renderGroupWordButton(r.word || "", groupPayload, "", String(r.id).startsWith('temp_') ? null : itemObj)
                 const spanishWithAudio = makeClickableText(r.spanish, 'es')
                 const exampleWithAudio = renderExampleLines(r.example_en, r.example_es, 'en', makeClickableText)
@@ -299,6 +301,9 @@ function renderSearchResults() {
                         <td class="py-2.5 px-3" ondblclick="window.editCell('spanish', '${escapedSpanish}', ${itemObjStr})">
                             ${spanishWithAudio}
                         </td>
+                        <td class="py-2.5 px-2 text-sm">${derivedDisplayCell(derived.adverb_en, derived.adverb_en_pron, derived.adverb_es)}</td>
+                        <td class="py-2.5 px-2 text-sm">${derivedDisplayCell(derived.comparative_en, derived.comparative_en_pron, derived.comparative_es)}</td>
+                        <td class="py-2.5 px-2 text-sm">${derivedDisplayCell(derived.superlative_en, derived.superlative_en_pron, derived.superlative_es)}</td>
                         <td class="py-2.5 px-3 text-sm text-gray-600" ondblclick="window.editCell('example_en', '${escapedExampleEn}', ${itemObjStr})">
                             ${exampleWithAudio}
                         </td>

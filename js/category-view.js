@@ -7,6 +7,7 @@ import { makeClickableText } from "./audio.js";
 import { renderGroupWordButton } from "./word-groups/modal.js";
 import { getFavoriteKey } from "./favorites.js";
 import { renderExampleLines, splitCatalogExamples } from "./search-utils.js";
+import { deriveAdjectiveDerivedFields, derivedDisplayCell } from "./adjective-derived.js";
 
 const SUBCAT_PAGE_SIZE_OPTIONS = [10, 15, 25, 50, 100];
 const SUBCAT_DEFAULT_PAGE_SIZE = 15;
@@ -243,6 +244,7 @@ function openCategoryView(data) {
                     subcategoryId: sub.id,
                     categoryId: data.id
                 };
+                const derived = deriveAdjectiveDerivedFields(item[0], item[1], item[2]);
 
                 const groupSource = isCustom ? "custom" : (itemId && String(itemId).startsWith("temp_") ? "inline" : "catalog")
                 const groupItemId = groupSource === "inline" ? null : (groupSource === "custom" ? customId : itemId)
@@ -308,6 +310,9 @@ function openCategoryView(data) {
                             <span class="text-sm text-gray-500 font-mono break-all">[${item[1] || ''}]</span>
                         </td>
                         <td class="py-3 px-4 border-b" ondblclick="window.editCell('spanish', '${escapedSpanish}', ${itemObjStr})">${wordEs}                        </td>
+                        <td class="py-3 px-2 border-b">${derivedDisplayCell(derived.adverb_en, derived.adverb_en_pron, derived.adverb_es)}</td>
+                        <td class="py-3 px-2 border-b">${derivedDisplayCell(derived.comparative_en, derived.comparative_en_pron, derived.comparative_es)}</td>
+                        <td class="py-3 px-2 border-b">${derivedDisplayCell(derived.superlative_en, derived.superlative_en_pron, derived.superlative_es)}</td>
                         <td class="py-3 px-4 border-b" ondblclick="window.editCell('example_en', '${escapedExampleEn}', ${itemObjStr})">${exampleEn}</td>
                         <td class="py-3 px-4 border-b" ondblclick="window.editCell('example_es', '${escapedExampleEs}', ${itemObjStr})">${exampleEs}</td>
                         ${deleteCell}
@@ -366,6 +371,9 @@ function openCategoryView(data) {
                                     <th class="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wider adjective-word-col">Adjective 🔊</th>
                                     <th class="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wider">Pronun.</th>
                                     <th class="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wider">Español 🔊</th>
+                                    <th class="py-3 px-2 text-xs font-bold text-gray-600 uppercase">Adverbio (ES)</th>
+                                    <th class="py-3 px-2 text-xs font-bold text-gray-600 uppercase">Comparativo (ES)</th>
+                                    <th class="py-3 px-2 text-xs font-bold text-gray-600 uppercase">Superlativo (ES)</th>
                                     <th class="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wider">Example EN 🔊</th>
                                     <th class="py-3 px-4 text-xs font-bold text-gray-600 uppercase tracking-wider">Example ES 🔊</th>
                                     ${deleteHeader}
