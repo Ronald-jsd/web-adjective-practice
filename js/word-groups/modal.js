@@ -546,42 +546,94 @@ function openAutoPicker() {
     if (autoPickerDialog) autoPickerDialog.remove()
     const dialog = el("dialog", "word-groups-autos-picker")
     dialog.id = "word-groups-autos-picker"
-    const target = currentMember()
-    const missing = target ? missingTranslationCandidates(ensureCandidates(), target, state.draft) : []
+
+    const shell = el("div", "word-groups-autos-shell")
+    const header = el("header", "word-groups-autos-header")
+    const headerText = el("div", "word-groups-autos-heading")
+    headerText.append(
+        el("p", "word-groups-autos-eyebrow", "COINCIDENCIAS AUTOS"),
+        el("h2", "word-groups-autos-title", "Palabras por traducción equivalente")
+    )
+    const closeTop = el("button", "word-groups-autos-close-top", "✕")
+    closeTop.type = "button"
+    closeTop.title = "Cerrar ventana"
+    closeTop.setAttribute("aria-label", "Cerrar ventana")
+    closeTop.addEventListener("click", () => dialog.close())
+    header.append(headerText, closeTop)
+
+    const intro = el("p", "word-groups-autos-intro", "Estas palabras comparten traducción con la palabra seleccionada. Agrégalas con ＋, quítalas con −, o cierra la ventana si no las quieres ahora.")
+
+    const counter = el("p", "word-groups-autos-counter")
     const list = el("div", "word-groups-autos-list")
-    if (!missing.length) {
-        list.append(el("p", "", "No hay coincidencias pendientes con esta traducción."))
-    }
-    missing.forEach(candidate => {
-        const row = el("div", "word-groups-autos-row")
-        row.append(el("span", "word-groups-autos-word", candidate.word || ""))
-        if (candidate.pronunciation) row.append(el("span", "word-groups-autos-pron", ` [${candidate.pronunciation}]`))
-        if (candidate.spanish) row.append(el("span", "word-groups-autos-es", ` — ${candidate.spanish}`))
-        const add = el("button", "button secondary word-groups-autos-add", `➕ Agregar ${candidate.word || ""}`)
-        add.type = "button"
-        add.title = `Agregar ${candidate.word || ""}`
-        add.addEventListener("click", () => {
-            const result = addMember(state.draft, candidate)
-            if (result.added) {
-                state.draft = result.group
-                setDirty(true)
-                renderAutoPanel()
-            }
-        })
-        const remove = el("button", "button secondary word-groups-autos-remove", "− Quitar")
-        remove.type = "button"
-        remove.title = `Quitar ${candidate.word || ""}`
-        remove.disabled = true
-        row.append(add, remove)
-        list.append(row)
-    })
-    const closeBtn = el("button", "button secondary word-groups-autos-close", "✕ Cerrar ventana")
+
+    const footer = el("footer", "word-groups-autos-footer")
+    const hint = el("span", "word-groups-autos-hint", "Guarda el grupo para conservar los cambios.")
+    const closeBtn = el("button", "button secondary word-groups-autos-close", "Cerrar ventana")
     closeBtn.type = "button"
     closeBtn.addEventListener("click", () => dialog.close())
-    dialog.append(el("h3", "word-groups-autos-title", "Coincidencias por traducción equivalente"), list, closeBtn)
+    footer.append(hint, closeBtn)
+
+    shell.append(header, intro, counter, list, footer)
+    dialog.append(shell)
     document.body.appendChild(dialog)
     autoPickerDialog = dialog
     dialog.addEventListener("close", () => { if (autoPickerDialog === dialog) autoPickerDialog = null })
+
+    const target = currentMember()
+    const missing = target ? missingTranslationCandidates(ensureCandidates(), target, state.draft) : []
+
+    const renderList = () => {
+        list.textContent = ""
+        const addedCount = missing.filter(candidate => findMemberByIdentity(state.draft, candidate)).length
+        counter.textContent = `${missing.length} ${missing.length === 1 ? "palabra" : "palabras"} · ${addedCount} agregada${addedCount === 1 ? "" : "s"}`
+
+        if (!missing.length) {
+            list.append(el("p", "word-groups-autos-empty", "No hay coincidencias pendientes con esta traducción."))
+            return
+        }
+
+        missing.forEach((candidate, index) => {
+            const row = el("div", "word-groups-autos-row")
+            const info = el("div", "word-groups-autos-info")
+            const headline = el("div", "word-groups-autos-line")
+            headline.append(el("span", "word-groups-autos-index", String(index + 1)), el("span", "word-groups-autos-word", candidate.word || ""))
+            info.append(headline)
+            const meta = el("div", "word-groups-autos-meta")
+            if (candidate.pronunciation) meta.append(el("span", "word-groups-autos-pron", `/${candidate.pronunciation}/`))
+            if (candidate.spanish) meta.append(el("span", "word-groups-autos-es", candidate.spanish))
+            info.append(meta)
+            row.append(info)
+
+            const actions = el("div", "word-groups-autos-actions")
+            const existing = findMemberByIdentity(state.draft, candidate)
+            const add = el("button", "word-groups-autos-add", existing ? "✓ Agregada" : "＋ Agregar")
+            add.type = "button"
+            add.classList.add(existing ? "is-added" : "is-add")
+            add.disabled = Boolean(existing)
+            add.addEventListener("click", () => {
+                const result = addMember(state.draft, candidate)
+                if (result.added) {
+                    state.draft = result.group
+                    setDirty(true)
+                    renderList()
+                }
+            })
+            const remove = el("button", "word-groups-autos-remove", "− Quitar")
+            remove.type = "button"
+            remove.disabled = !existing
+            remove.addEventListener("click", () => {
+                if (!existing) return
+                state.draft = removeMember(state.draft, existing.id)
+                setDirty(true)
+                renderList()
+            })
+            actions.append(add, remove)
+            row.append(actions)
+            list.append(row)
+        })
+    }
+
+    renderList()
     dialog.showModal()
 }
 
