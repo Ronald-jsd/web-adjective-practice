@@ -208,14 +208,18 @@ export function deriveAdjectiveDerivedFields(word, pronunciation, spanish) {
     };
 }
 
-export function derivedDisplayCell(word, pronunciation, spanish) {
+export function derivedDisplayCell(word, pronunciation, spanish, example_en, example_es) {
     const value = String(word || "").trim();
     const pron = String(pronunciation || "").trim();
     const translation = String(spanish || "").trim();
-    if (!value && !translation) return `<span class="text-gray-400">—</span>`;
+    const exampleEn = String(example_en || "").trim();
+    const exampleEs = String(example_es || "").trim();
+    if (!value && !translation && !exampleEn && !exampleEs) return `<span class="text-gray-400">—</span>`;
     const lines = [value || translation ? value || "" : ""];
     if (pron) lines.push(`<span class="text-xs text-gray-400">[${pron}]</span>`);
     if (translation) lines.push(`<span class="block text-xs text-gray-500">${translation}</span>`);
+    if (exampleEn) lines.push(`<span class="block text-xs text-gray-400">En: ${exampleEn}</span>`);
+    if (exampleEs) lines.push(`<span class="block text-xs text-gray-400">Es: ${exampleEs}</span>`);
     if (!value) lines.push(`<span class="block text-xs text-gray-400">—</span>`);
     return `<div class="text-sm">${lines.join(" ")}</div>`;
 }
