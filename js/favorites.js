@@ -2,6 +2,7 @@ import { showToast } from "./cache.js";
 import { store } from "./config.js";
 import { cacheRowsPreservingPending, cacheRow, removeCachedRow, readCachedRows, TABLES } from "./offline/cache.js";
 import { queueChange, isOnline } from "./offline/sync.js";
+import { requireSession } from "./auth-required.js";
 
 export function getFavoriteKey(itemType, itemId) {
     return `${itemType}:${String(itemId)}`;
@@ -62,10 +63,7 @@ export async function toggleFavorite(supabase, itemType, itemId) {
         showToast("No se pudo identificar este elemento para guardarlo como favorito.", "error");
         return false;
     }
-    if (!store.currentUser) {
-        showToast("Inicia sesión para guardar y sincronizar tus favoritos.", "info");
-        return false;
-    }
+    if (!requireSession("guardar y sincronizar tus favoritos")) return false;
 
     const userId = store.currentUser.id;
     const key = getFavoriteKey(itemType, itemId);

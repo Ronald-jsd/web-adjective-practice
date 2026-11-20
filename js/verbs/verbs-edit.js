@@ -10,6 +10,7 @@ import {
     isVerbEditing,
     setIsVerbEditing
 } from './verbs-state.js'
+import { requireSession } from '../auth-required.js'
 
 /* Edición igual que Adjetivos: se abre el modal compartido y la celda nunca se
  * convierte en editable. Así no queda texto seleccionado, ni el borde naranja,
@@ -104,10 +105,7 @@ async function refreshVerbCells(verbId, field, value) {
 }
 
 window.editVerbCell = async function (cell, field, verbId) {
-    if (!store.currentUser) {
-        showToast('🔐 Inicia sesión para editar', 'error')
-        return
-    }
+    if (!requireSession('editar este verbo')) return
     if (isVerbEditing || !cell || !field || !verbId) return
 
     const dbField = FIELD_MAP[field] || field
@@ -179,10 +177,7 @@ window.playVerbAudio = function (cell) {
 }
 
 window.deleteVerbRow = async function (verbId) {
-    if (!store.currentUser) {
-        showToast('Inicia sesión para eliminar verbos.', 'warning')
-        return
-    }
+    if (!requireSession('eliminar este verbo')) return
 
     const verb = verbsData.find(item => String(item.id) === String(verbId))
     const name = verb?.verb || 'este verbo'

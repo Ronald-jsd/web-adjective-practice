@@ -4,6 +4,7 @@ import { loadUserCustomItems } from './auth.js'
 import { loadCategoriesFromSupabase, updateCachedCategories } from './data.js'
 import { cacheRow, removeCachedRow, readCachedRow, TABLES } from './offline/cache.js'
 import { queueChange, isOnline } from './offline/sync.js'
+import { requireSession } from './auth-required.js'
 
 const ITEM_FIELD_INDEX = {
     word: 0,
@@ -153,6 +154,7 @@ function openInlineEditor(fieldName, currentValue, field, options = {}) {
 
 async function editCell(field, currentValue, item) {
     if (store.isEditing) return
+    if (!requireSession('editar este término')) return
     store.isEditing = true
 
     const fieldNames = {
@@ -174,12 +176,6 @@ async function editCell(field, currentValue, item) {
         store.isEditing = false
         return
     }
-    if (!store.currentUser) {
-        alert('🔐 Inicia sesión para editar')
-        store.isEditing = false
-        return
-    }
-
     try {
         const updateData = {}
         updateData[field] = newValue
@@ -235,8 +231,7 @@ async function editCell(field, currentValue, item) {
 }
 
 async function updateWordStatus(itemId, status) {
-    if (!store.currentUser) {
-        alert('🔐 Inicia sesión para guardar tu progreso');
+    if (!requireSession('guardar tu progreso')) {
         return false;
     }
 
@@ -352,10 +347,7 @@ async function saveStatus(itemIdNumber, status, originalItemId) {
 
 async function deleteAdjectiveRow(item) {
     if (store.isEditing) return
-    if (!store.currentUser) {
-        alert('🔐 Inicia sesión para eliminar')
-        return
-    }
+    if (!requireSession('eliminar este término')) return
     if (!item || item.id === null || item.id === undefined || item.id === '') {
         showToast('Este término no tiene un ID válido para eliminar.', 'error')
         return

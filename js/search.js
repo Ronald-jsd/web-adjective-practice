@@ -5,6 +5,7 @@ import { renderCategories } from './data.js'
 import { editCell, getStatusBadge } from './editing.js'
 import { getFavoriteKey } from './favorites.js'
 import { matchesSearchTerms, renderExampleLines, splitCatalogExamples } from './search-utils.js'
+import { isSignedIn } from './auth-required.js'
 
 const PAGE_SIZE_OPTIONS = [10, 15, 25, 50, 100]
 const DEFAULT_PAGE_SIZE = 15
@@ -273,10 +274,11 @@ function renderSearchResults() {
                 const escapedExampleEs = (r.example_es || '').replace(/'/g, "\\'")
                 const favoriteId = JSON.stringify(String(r.id)).replace(/"/g, '&quot;')
 
-                const deleteCell = `
-                    <td class="py-2.5 px-3 text-center">
+                const deleteCell = isSignedIn()
+                    ? `<td class="py-2.5 px-3 text-center">
                         <button type="button" class="px-2 py-1 text-red-700 hover:bg-red-50 rounded" title="Eliminar este término" aria-label="Eliminar ${escapedWord}" onclick="event.stopPropagation(); window.deleteAdjectiveRow(${itemObjStr})">🗑️</button>
                     </td>`
+                    : `<td class="py-2.5 px-3"></td>`
 
                 return `
                     <tr class="hover:bg-gray-50 ${r.isCustom ? 'bg-purple-50/50' : ''}">

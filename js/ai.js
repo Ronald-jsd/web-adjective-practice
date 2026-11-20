@@ -21,6 +21,7 @@ import { queueChange, isOnline } from './offline/sync.js'
 import { generateLocalIntegerId } from './offline/ids.js'
 import { buildVisionInstruction } from './ai-images.js'
 import { renderGroupWordButton } from './word-groups/modal.js'
+import { requireSession } from './auth-required.js'
 
 // La guía crea hasta 20 tarjetas, así que necesita más margen que una ficha.
 const GUIDE_MODEL_TIMEOUT_MS = 45000
@@ -444,10 +445,7 @@ Responde SOLO en formato JSON válido, sin texto adicional:
 }
 
 async function generateWithAI(word, { guide = false, images = [] } = {}) {
-    if (!store.currentUser) {
-        alert('🔐 Debes iniciar sesión para usar la IA')
-        return null
-    }
+    if (!requireSession('usar la IA')) return null
 
     const preferred = getPreferredProvider()
     const hasGemini = hasApiKey('gemini')
@@ -748,10 +746,7 @@ function updateDestinationIndicator() {
 
 // GUARDAR RESULTADO DE IA
 async function saveAIResult() {
-    if (!store.currentUser) {
-        alert('🔐 Debes iniciar sesión para guardar')
-        return
-    }
+    if (!requireSession('guardar este resultado')) return
     if (!store.currentAIData) {
         alert('❌ No hay datos de IA para guardar')
         return
@@ -850,10 +845,7 @@ async function saveAIResult() {
 
 //  USAR IA PARA GENERAR PALABRA
 window.useAIForWord = async function () {
-    if (!store.currentUser) {
-        alert('🔐 Debes iniciar sesión para usar la IA')
-        return
-    }
+    if (!requireSession('usar la IA')) return
 
     if (!hasApiKey('groq') && !hasApiKey('gemini')) {
         const shouldConfigure = confirm(

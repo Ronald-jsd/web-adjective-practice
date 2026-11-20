@@ -1,4 +1,5 @@
 import { resolveSessionUser } from "../offline/session.js"
+import { isAuthError, loginRequiredMessage, requireSession } from "../auth-required.js"
 import { createNotionEmbedRepository } from "./repository.js"
 import { normalizeNotionUrl, normalizeTitle, notionEmbedUrlFromUrl } from "./model.js"
 import { loadingMarkup } from "../ui-status.js"
@@ -166,9 +167,13 @@ async function loadEmbeds() {
         renderEmbeds()
     } catch (error) {
         console.error("Unable to load Notion embeds", error)
-        state.embeds = []
-        list.replaceChildren(emptyState("No se pudieron cargar las páginas guardadas."))
-        showStatus(storageErrorMessage(error, "No se pudieron cargar las páginas de Notion"), true)
+        if (isAuthError(error)) {
+            requireSession("cargar las páginas de Notion")
+        } else {
+            state.embeds = []
+            list.replaceChildren(emptyState("No se pudieron cargar las páginas guardadas."))
+            showStatus(storageErrorMessage(error, "No se pudieron cargar las páginas de Notion"), true)
+        }
     } finally {
         state.loading = false
     }
@@ -190,6 +195,7 @@ function beginEdit(embed) {
 }
 
 async function deleteEmbed(embed) {
+    if (!requireSession("eliminar la página de Notion")) return
     if (!window.confirm(`¿Eliminar «${embed.title || "Página de Notion"}» de tus páginas guardadas?`)) return
     try {
         await repository.remove(state.user.id, embed.id)
@@ -217,9 +223,10 @@ function setupEvents() {
         const title = normalizeTitle(elements.title.value, normalized.url)
         setFormBusy(true)
         try {
+            if (!requireSession("guardar la página de Notion")) return
             state.user = state.user || await resolveSessionUser(supabaseClient)
             if (!state.user) {
-                showStatus("No se encontró una sesión activa. Inicia sesión e inténtalo de nuevo.", true)
+                showStatus(loginRequiredMessage("guardar la página de Notion"))
                 return
             }
             const id = state.editingId || elements.id.value || null
@@ -231,7 +238,8 @@ function setupEvents() {
             showStatus(id ? "Cambios guardados." : "Página guardada. El iframe ya aparece en tu colección.")
         } catch (error) {
             console.error("Unable to save Notion embed", error)
-            showStatus(storageErrorMessage(error, "No se pudo guardar la página de Notion"), true)
+            if (isAuthError(error)) showStatus(loginRequiredMessage("guardar la página de Notion"))
+            else showStatus(storageErrorMessage(error, "No se pudo guardar la página de Notion"), true)
         } finally {
             setFormBusy(false)
         }

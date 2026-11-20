@@ -1,5 +1,6 @@
 import { store } from "./config.js";
 import { showToast } from "./cache.js";
+import { requireSession } from "./auth-required.js";
 
 const PANEL_ID = "notion-integration-panel";
 const SELECTION_STORAGE_PREFIX = "notion_selected_pages_v1:";
@@ -164,6 +165,7 @@ function updateButtons() {
 }
 
 async function loadPages() {
+    if (!requireSession("cargar las páginas de Notion")) return
     showMessage("Cargando páginas compartidas con Notion...");
     try {
         const pageResult = await invoke("notion-sync", { action: "pages" });
@@ -180,7 +182,7 @@ async function loadPages() {
 }
 
 async function saveSelection(refreshPractice = true) {
-    if (!store.currentUser) return false;
+    if (!requireSession("guardar la selección de Notion")) return false;
     const button = document.getElementById("notion-save-selection");
     if (button) {
         button.disabled = true;
@@ -237,10 +239,7 @@ async function syncSelectedPages() {
 }
 
 async function connectNotion() {
-    if (!store.currentUser) {
-        showToast("Inicia sesión antes de conectar Notion.", "warning");
-        return;
-    }
+    if (!requireSession("conectar Notion")) return
     const button = document.getElementById("notion-connect");
     if (button) {
         button.disabled = true;
@@ -260,6 +259,7 @@ async function connectNotion() {
 }
 
 async function disconnectNotion() {
+    if (!requireSession("desconectar Notion")) return
     if (!window.confirm("¿Desconectar Notion y quitar de Practicar las páginas seleccionadas?")) return;
     try {
         await invoke("notion-connect", { action: "disconnect" });

@@ -17,6 +17,7 @@ import {
     prepareImageForVision
 } from './ai-images.js'
 import { getSignedImageUrls } from './ai-image-urls.js'
+import { requireSession } from './auth-required.js'
 
 const DEFAULT_QUERY_PAGE_SIZE = 12
 let savedQueries = []
@@ -645,10 +646,7 @@ function createCardEditForm(query, card, index) {
 
     form.addEventListener('submit', async event => {
         event.preventDefault()
-        if (!store.currentUser) {
-            showToast('Inicia sesión para editar tus tarjetas.', 'warning')
-            return
-        }
+        if (!requireSession('editar tus tarjetas')) return
 
         const updatedCard = Object.fromEntries(
             fields.map(([name]) => [name, String(new FormData(form).get(name) || '').trim()])
@@ -679,6 +677,7 @@ function createCardEditForm(query, card, index) {
 }
 
 async function uploadQueryImages(queryId, files) {
+    if (!requireSession('subir imágenes a la consulta')) return []
     const uploaded = []
     try {
         for (const file of files) {
@@ -703,6 +702,7 @@ async function uploadQueryImages(queryId, files) {
 }
 
 async function attachImagesToQuery(queryId, files) {
+    if (!requireSession('adjuntar imágenes a la consulta')) return []
     const uploaded = await uploadQueryImages(queryId, files)
     const { error } = await supabase.rpc('set_user_ai_query_images', {
         p_query_id: queryId,
@@ -741,6 +741,7 @@ function filterValidImages(files, limit) {
 }
 
 async function saveQueryImages(query, files, input, dropZone) {
+    if (!requireSession('guardar las imágenes de la consulta')) return
     if (dropZone?.dataset.uploading === 'true') return
     const currentPaths = normalizeImagePaths(query)
     const remaining = Math.max(0, MAX_AI_QUERY_IMAGES - currentPaths.length)
@@ -803,6 +804,7 @@ async function saveQueryImages(query, files, input, dropZone) {
 }
 
 async function removeQueryImage(query, path, button) {
+    if (!requireSession('quitar la imagen de la consulta')) return
     if (!path) return
     button.disabled = true
     const currentPaths = normalizeImagePaths(query)
@@ -829,6 +831,7 @@ async function removeQueryImage(query, path, button) {
 }
 
 async function saveQueryCards(query, cards, operation = 'update') {
+    if (!requireSession('guardar las tarjetas de la consulta')) return false
     try {
         const category = store.categoriesData.find(item => item.id === 'grammar')
         if (!category) throw new Error('No se encontró la categoría de las tarjetas.')
@@ -878,10 +881,7 @@ async function refreshSavedAIItems() {
 }
 
 async function deleteQuery(query, button) {
-    if (!store.currentUser) {
-        showToast('Inicia sesión para eliminar consultas.', 'warning')
-        return
-    }
+    if (!requireSession('eliminar consultas')) return
     if (!window.confirm('¿Eliminar esta consulta y las tarjetas que generó? Esta acción no se puede deshacer.')) return
 
     button.disabled = true
@@ -946,7 +946,13 @@ async function loadQueryHistory() {
         const loginMessage = document.createElement('p')
         loginMessage.className = 'text-sm text-gray-500'
         loginMessage.textContent = 'Inicia sesión para guardar y consultar tu historial.'
+        const loginButton = document.createElement('button')
+        loginButton.type = 'button'
+        loginButton.className = 'mt-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-300 text-white rounded-lg text-sm font-medium'
+        loginButton.textContent = 'Iniciar sesión'
+        loginButton.addEventListener('click', () => requireSession('guardar y consultar tu historial'))
         history.appendChild(loginMessage)
+        history.appendChild(loginButton)
         return
     }
 
@@ -1071,11 +1077,7 @@ async function loadQueryHistory() {
 }
 
 async function createAndSaveCard(question, { imageFiles = [], visionImages = [] } = {}) {
-    if (!store.currentUser) {
-        showToast('Inicia sesión para crear y guardar tarjetas.', 'warning')
-        window.abrirModalLogin?.()
-        return false
-    }
+    if (!requireSession('crear y guardar tarjetas')) return false
 
     const guide = await generateWithAI(question, { guide: true, images: visionImages })
     if (!guide) return false

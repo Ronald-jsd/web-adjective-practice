@@ -3,6 +3,7 @@ import { showToast } from './cache.js'
 import { updateCachedCategories } from './data.js'
 import { cacheRow, readCachedRow, TABLES } from './offline/cache.js'
 import { queueChange, isOnline } from './offline/sync.js'
+import { requireSession } from './auth-required.js'
 
 function withNewOrder(row, index) {
     const copy = [...row]
@@ -15,10 +16,7 @@ function withNewOrder(row, index) {
 }
 
 async function saveItemOrder(items, subcategoryId) {
-    if (!store.currentUser) {
-        showToast('Inicia sesión para guardar el orden', 'error')
-        return
-    }
+    if (!requireSession('guardar el orden')) return
 
     const userId = store.currentUser.id
     const normalizedItems = items.map(withNewOrder)
@@ -153,10 +151,7 @@ function initDragAndDrop(tbody, allItems, subcategoryId, refreshCallback) {
     function onTouchMove(e) { e.preventDefault(); onMove(e.touches[0].clientY) }
 
     function startDrag(index, clientY) {
-        if (!store.currentUser) {
-            showToast('Inicia sesión para reordenar', 'error')
-            return
-        }
+        if (!requireSession('reordenar elementos')) return
         dragState.active = true
         dragState.sourceIndex = index
         dragState.targetIndex = index

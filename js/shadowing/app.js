@@ -15,6 +15,7 @@ import { cacheRow, TABLES } from "../offline/cache.js"
 import { queueChange, isOnline } from "../offline/sync.js"
 import { generateLocalIntegerId } from "../offline/ids.js"
 import { updateMediaSession, clearMediaSession } from "../media-session.js"
+import { isAuthError, loginRequiredMessage, requireSession } from "../auth-required.js"
 
 let initialized = false
 let supabaseClient = null
@@ -1563,8 +1564,8 @@ async function saveSelectedWord() {
     const sentence = state.current?.transcript?.[state.currentIndex]?.text || ""
     const word = state.selectedWord || suggestionWords(sentence)[0]
     if (!word) return showStatus("Toca una palabra primero.", true)
+    if (!requireSession("guardar la palabra")) return
     const user = await ensureUser()
-    if (!user) return showStatus("Inicia sesión para guardar palabras.", true)
     const lookup = state.lookupCache.get(normalizeWord(word)) || await lookupWord(word) || {}
     if (!state.translation) await translateCurrentSentence()
     const vocabulary = shadowingVocabularyValues(lookup, sentence, state.translation)
@@ -1574,15 +1575,16 @@ async function saveSelectedWord() {
         window.dispatchEvent(new CustomEvent("personal-vocabulary-changed"))
     } catch (error) {
         console.error("[shadowing] No se pudo guardar la palabra:", error)
-        showStatus(error.message || "No se pudo guardar la palabra.", true)
+        if (isAuthError(error)) showStatus(loginRequiredMessage("guardar la palabra"))
+        else showStatus(error.message || "No se pudo guardar la palabra.", true)
     }
 }
 
 async function saveSelectedSentence() {
     const sentence = state.current?.transcript?.[state.currentIndex]?.text || ""
     if (!sentence) return
+    if (!requireSession("guardar la frase")) return
     const user = await ensureUser()
-    if (!user) return showStatus("Inicia sesión para guardar frases.", true)
     if (!state.translation) await translateCurrentSentence()
     try {
         await sentenceRepository.save(user.id, {
@@ -1598,15 +1600,16 @@ async function saveSelectedSentence() {
         window.dispatchEvent(new CustomEvent("personal-sentences-changed"))
     } catch (error) {
         console.error("[shadowing] No se pudo guardar la frase:", error)
-        showStatus(error.message || "No se pudo guardar la frase.", true)
+        if (isAuthError(error)) showStatus(loginRequiredMessage("guardar la frase"))
+        else showStatus(error.message || "No se pudo guardar la frase.", true)
     }
 }
 
 /* Guarda la palabra seleccionada como verbo o adjetivo del catálogo
  * compartido, usando la misma cola offline que el resto de categorías. */
 async function saveCatalogWord(target, word, sentence) {
+    if (!requireSession("guardar la palabra en tu cuenta")) return
     const user = await ensureUser()
-    if (!user) return showStatus("Inicia sesión para guardar palabras.", true)
     const lookup = state.lookupCache.get(normalizeWord(word)) || await lookupWord(word) || {}
     if (!state.translation) await translateCurrentSentence()
     const row = catalogRowFor(target, {
@@ -1643,7 +1646,8 @@ async function saveCatalogWord(target, word, sentence) {
         }
     } catch (error) {
         console.error("[shadowing] No se pudo guardar en el catálogo:", error)
-        showStatus(error.message || "No se pudo guardar la palabra.", true)
+        if (isAuthError(error)) showStatus(loginRequiredMessage("guardar la palabra en tu cuenta"))
+        else showStatus(error.message || "No se pudo guardar la palabra.", true)
     }
 }
 
@@ -1833,8 +1837,8 @@ async function retimeCurrentLesson() {
 }
 
 async function saveCurrentLesson() {
+    if (!requireSession("guardar la lección")) return
     const user = await ensureUser()
-    if (!user) return showStatus("Inicia sesión para guardar la lección.", true)
     const current = state.current
     if (!current) return showStatus("Crea una lección antes de guardarla.", true)
     // Si el video ya está en la biblioteca se actualiza esa fila; nunca se

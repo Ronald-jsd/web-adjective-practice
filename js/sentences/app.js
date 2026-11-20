@@ -10,6 +10,7 @@ import { createNotesView } from "./notes.js"
 import { filterVocabulary } from "./vocabulary-search.js"
 import { renderGroupWordButton } from "../word-groups/modal.js"
 import { showLoading, hideLoading } from "../ui-status.js"
+import { isAuthError, loginRequiredMessage, requireSession } from "../auth-required.js"
 
 const repository = createSentenceRepository(supabase)
 const state = { user: null, sentences: [], vocabulary: null, review: null, reviewLogs: [], reviewCards: [], settings: loadReviewSettings() }
@@ -444,6 +445,7 @@ function renderReview() {
 }
 
 async function submitReview(sentence, grade) {
+    if (!requireSession("guardar el repaso")) return
     try {
         const stateUpdate = scheduleReview(sentence, grade, new Date(), { learningSteps: normalizeLearningSteps(state.settings.learningSteps) })
         const updated = await repository.updateReviewCard(state.user.id, sentence.id, stateUpdate)
@@ -465,7 +467,8 @@ async function submitReview(sentence, grade) {
         renderAll()
     } catch (error) {
         console.error("Unable to save review result", error)
-        showNotice(storageErrorMessage(error, "No se pudo guardar el repaso."), true)
+        if (isAuthError(error)) showNotice(loginRequiredMessage("guardar el repaso"))
+        else showNotice(storageErrorMessage(error, "No se pudo guardar el repaso."), true)
     }
 }
 
@@ -519,6 +522,7 @@ function resetVocabularyForm() {
 }
 
 async function loadVocabulary() {
+    if (!requireSession("cargar tu vocabulario")) return
     if (state.vocabulary !== null) {
         renderVocabularyList()
         return
@@ -530,12 +534,14 @@ async function loadVocabulary() {
         renderVocabularyList()
     } catch (error) {
         console.error("Unable to load personal vocabulary", error)
-        host.textContent = storageErrorMessage(error, "No se pudo cargar tu vocabulario.")
-        showNotice(storageErrorMessage(error, "No se pudo cargar tu vocabulario."), true)
+        if (isAuthError(error)) host.textContent = loginRequiredMessage("cargar tu vocabulario")
+        else host.textContent = storageErrorMessage(error, "No se pudo cargar tu vocabulario.")
+        showNotice(isAuthError(error) ? loginRequiredMessage("cargar tu vocabulario") : storageErrorMessage(error, "No se pudo cargar tu vocabulario."))
     }
 }
 
 async function deleteVocabulary(vocabulary) {
+    if (!requireSession("eliminar el vocabulario")) return
     if (!window.confirm(`¿Eliminar "${vocabulary.word}" de tu vocabulario?`)) return
     try {
         await repository.removeVocabulary(state.user.id, vocabulary.id)
@@ -545,11 +551,13 @@ async function deleteVocabulary(vocabulary) {
         window.dispatchEvent(new CustomEvent("personal-vocabulary-changed"))
     } catch (error) {
         console.error("Unable to delete personal vocabulary", error)
-        showNotice(storageErrorMessage(error, "No se pudo eliminar el vocabulario."), true)
+        if (isAuthError(error)) showNotice(loginRequiredMessage("eliminar el vocabulario"))
+        else showNotice(storageErrorMessage(error, "No se pudo eliminar el vocabulario."), true)
     }
 }
 
 async function deleteSentence(sentence) {
+    if (!requireSession("eliminar la frase")) return
     if (!window.confirm(`Delete “${sentence.englishText}”?`)) return
     try {
         await repository.remove(state.user.id, sentence.id)
@@ -561,11 +569,13 @@ async function deleteSentence(sentence) {
         window.dispatchEvent(new CustomEvent("personal-sentences-changed"))
     } catch (error) {
         console.error("Unable to delete sentence", error)
-        showNotice(storageErrorMessage(error, "No se pudo eliminar la frase."), true)
+        if (isAuthError(error)) showNotice(loginRequiredMessage("eliminar la frase"))
+        else showNotice(storageErrorMessage(error, "No se pudo eliminar la frase."), true)
     }
 }
 
 async function loadData() {
+    if (!requireSession("cargar tus frases")) return
     showLoading("sentences-loading-indicator", "Cargando tus frases…")
     try {
         const sentences = await repository.list(state.user.id)
@@ -586,7 +596,8 @@ async function loadData() {
         console.error("Unable to load MySentences data", error)
         byId("auth-panel").classList.add("hidden")
         byId("app-panel").classList.remove("hidden")
-        showNotice(storageErrorMessage(error, "No se pudieron cargar las frases. Revisa que tu sesión y permisos de Supabase sean válidos."), true)
+        if (isAuthError(error)) showNotice(loginRequiredMessage("cargar tus frases"))
+        else showNotice(storageErrorMessage(error, "No se pudieron cargar las frases. Revisa que tu sesión y permisos de Supabase sean válidos."), true)
     } finally {
         hideLoading("sentences-loading-indicator")
     }
@@ -637,6 +648,7 @@ function setupEvents() {
             grammarPatternTranslation: form.elements.grammarPatternTranslation.value,
             notes: form.elements.notes.value
         }
+        if (!requireSession("guardar la frase")) return
         if (!sentence.reasonForSaving) return showNotice("Choose a reason for saving this sentence.", true)
         try {
             const saved = await repository.save(state.user.id, sentence, form.elements.id.value || null)
@@ -649,7 +661,8 @@ function setupEvents() {
             window.dispatchEvent(new CustomEvent("personal-sentences-changed"))
         } catch (error) {
             console.error("Unable to save sentence", error)
-            showNotice(storageErrorMessage(error, "No se pudo guardar la frase."), true)
+            if (isAuthError(error)) showNotice(loginRequiredMessage("guardar la frase"))
+            else showNotice(storageErrorMessage(error, "No se pudo guardar la frase."), true)
         }
     })
     byId("vocabulary-form").addEventListener("submit", async event => {
@@ -666,6 +679,7 @@ function setupEvents() {
         if (!vocabulary.word.trim() || !vocabulary.spanish.trim()) {
             return showNotice("Escribe la palabra y su significado antes de guardar.", true)
         }
+        if (!requireSession("guardar el vocabulario")) return
         try {
             const grammarCategory = store.categoriesData.find(category => category.id === "grammar")
             const saved = await repository.saveVocabulary(
@@ -686,7 +700,8 @@ function setupEvents() {
             window.dispatchEvent(new CustomEvent("personal-vocabulary-changed"))
         } catch (error) {
             console.error("Unable to save personal vocabulary", error)
-            showNotice(storageErrorMessage(error, "No se pudo guardar el vocabulario."), true)
+            if (isAuthError(error)) showNotice(loginRequiredMessage("guardar el vocabulario"))
+            else showNotice(storageErrorMessage(error, "No se pudo guardar el vocabulario."), true)
         }
     })
     byId("vocabulary-ai-button").addEventListener("click", async event => {

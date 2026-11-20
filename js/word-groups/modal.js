@@ -11,6 +11,7 @@ import {
     syncGroupWithCatalog
 } from "./candidates.js"
 import { missingTranslationCandidates } from "./similarity.js"
+import { requireSession } from "../auth-required.js"
 import {
     addMember,
     createDraftGroup,
@@ -1005,11 +1006,7 @@ function closeDialog() {
 async function saveCurrentGroup() {
     const dialog = byId("word-groups-dialog")
     if (!dialog || !state.draft) return
-    if (!state.user) state.user = await resolveSessionUser(supabaseClient)
-    if (!state.user) {
-        modalStatus("Inicia sesión para guardar en tu cuenta.", true)
-        return
-    }
+    if (!requireSession("guardar el grupo en tu cuenta")) return
     const source = { ...state.draft, title: byId("word-group-title-input")?.value || state.draft.title }
     const clean = normalizeGroup(reconcileGroupAgainstCatalog(source), { createId: true })
     if (!clean.members.length) {
@@ -1038,7 +1035,7 @@ async function deleteCurrentGroup() {
     const isLocalOnly = !state.groups.some(group => group.id === state.draft.id)
     try {
         if (!isLocalOnly) {
-            if (!state.user) state.user = await resolveSessionUser(supabaseClient)
+            if (!requireSession("eliminar el grupo de tu cuenta")) return
             await repository.remove(state.user.id, state.draft.id)
             state.groups = state.groups.filter(group => group.id !== state.draft.id)
         }

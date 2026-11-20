@@ -11,6 +11,7 @@ import { sortVerbs } from './verbs-sort.js'
 import { renderVerbPagination } from './verbs-pagination.js'
 import { filterFavoriteVerbs } from './verbs-render.js'
 import { matchesSearchTerms } from '../search-utils.js'
+import { requireSession } from '../auth-required.js'
 
 window.searchVerbs = function () {
     const input = document.getElementById('verbs-search-input')
@@ -150,10 +151,7 @@ function buildSearchRowsHelper(pageData) {
 }
 
 window.generateVerbWithAI = async function (query) {
-    if (!store.currentUser) {
-        alert('🔐 Debes iniciar sesión para usar la IA')
-        return
-    }
+    if (!requireSession('usar la IA')) return
 
     if (!query) {
         query = document.getElementById('verbs-search-input')?.value?.trim()
@@ -208,6 +206,8 @@ function clearAfterSave() {
 
 window.saveGeneratedVerb = async function (data) {
     console.log('saveGeneratedVerb llamado con:', data)
+
+    if (!requireSession('guardar el verbo')) return
 
     try {
         const { saveAIResult } = await import('./verbs-ai.js')

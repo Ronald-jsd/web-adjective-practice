@@ -14,6 +14,7 @@ import { cacheRow, TABLES } from '../offline/cache.js'
 import { queueChange, isOnline } from '../offline/sync.js'
 import { generateLocalIntegerId } from '../offline/ids.js'
 import { renderGroupWordButton } from '../word-groups/modal.js'
+import { requireSession } from '../auth-required.js'
 
 let tempAIData = null
 
@@ -522,10 +523,7 @@ Recuerda: ¡RESPONDE SOLO EN FORMATO JSON!`
 }
 
 async function generateWithAI(word) {
-    if (!store.currentUser) {
-        alert('🔐 Debes iniciar sesión para usar la IA')
-        return null
-    }
+    if (!requireSession('usar la IA')) return null
 
     const preferred = getPreferredProvider()
     const hasGemini = hasApiKey('gemini')
@@ -808,10 +806,7 @@ function updateDestinationIndicator() {
 }
 
 async function saveAIResult() {
-    if (!store.currentUser) {
-        alert('🔐 Debes iniciar sesión para guardar')
-        return
-    }
+    if (!requireSession('guardar este resultado')) return
 
     const data = store.currentAIData || tempAIData || window._tempVerbData
 
@@ -945,10 +940,7 @@ window.saveAIResultWithData = function (data) {
 }
 
 window.useAIForWord = async function () {
-    if (!store.currentUser) {
-        alert('🔐 Debes iniciar sesión para usar la IA')
-        return
-    }
+    if (!requireSession('usar la IA')) return
 
     if (!hasApiKey('groq') && !hasApiKey('gemini')) {
         const shouldConfigure = confirm(

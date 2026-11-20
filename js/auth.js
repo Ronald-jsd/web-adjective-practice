@@ -288,7 +288,7 @@ async function logout() {
 }
 
 
-window.abrirModalLogin = function () {
+window.abrirModalLogin = function (options = {}) {
     const modalBody = document.getElementById('login-modal-body')
     if (modalBody) {
         modalBody.innerHTML = `
@@ -305,6 +305,15 @@ window.abrirModalLogin = function () {
                 <p class="text-center text-sm">¿Ya tienes cuenta? <a href="#" onclick="window.mostrarLogin()" class="text-amber-600">Inicia sesión</a></p>
             </div>
         `
+        const message = String(typeof options === 'string' ? options : options?.message || '').trim()
+        if (message) {
+            const notice = document.createElement('div')
+            notice.id = 'login-required-notice'
+            notice.setAttribute('role', 'status')
+            notice.className = 'mx-4 mt-4 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900'
+            notice.textContent = message
+            modalBody.prepend(notice)
+        }
     }
     document.getElementById('login-modal').classList.remove('hidden')
 }
