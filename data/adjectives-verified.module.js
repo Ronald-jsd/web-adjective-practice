@@ -454,7 +454,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "adoringly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -930,7 +930,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "asombrado"
     },
     "adverb": {
-      "en": "",
+      "en": "amazedly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -1154,10 +1154,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "irritado"
     },
     "adverb": {
-      "en": "",
+      "en": "annoyedly",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "He looked up annoyedly as I banged the door closed.",
       "example_es": ""
     },
     "comparative": {
@@ -1266,10 +1266,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "atrayente"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "appealingly",
+      "pron": "/əˈpiːl.ɪŋ.li/",
       "es": "",
-      "example_en": "",
+      "example_en": "SURGERY is an appealingly radical way of dealing with a diseased organ, but it can have a damaging effect on the rest of the body.",
       "example_es": ""
     },
     "comparative": {
@@ -1406,7 +1406,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "arqueológico"
     },
     "adverb": {
-      "en": "",
+      "en": "archaeologically",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -1546,10 +1546,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "arrogante"
     },
     "adverb": {
-      "en": "",
+      "en": "arrogantly",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "Many a RP podcaster, blogger, and Youtuber^([sic]) have fired up their livesteaming software, to arrogantly beat their chests, boasting that men reach their “peak SMV” (“Sexual Marketplace Value”, or desirability to women) in their late 30s.",
       "example_es": ""
     },
     "comparative": {
@@ -1686,7 +1686,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "avergonzado"
     },
     "adverb": {
-      "en": "",
+      "en": "ashamedly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -1742,10 +1742,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "asombrado"
     },
     "adverb": {
-      "en": "",
+      "en": "astonishedly",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "\"For the buttons?\"—and \"Uncle\" stares astonishedly at me—\"for these buttons?\"",
       "example_es": ""
     },
     "comparative": {
@@ -1770,7 +1770,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "astringente"
     },
     "adverb": {
-      "en": "",
+      "en": "astringently",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -2190,10 +2190,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "inapropiado"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "badly",
+      "pron": "/ˈbæd.li/",
       "es": "",
-      "example_en": "",
+      "example_en": "Things are going badly for her: she did badly in her exams owing to a badly designed studying schedule.",
       "example_es": ""
     },
     "comparative": {
@@ -2218,7 +2218,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "baffledly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -2610,10 +2610,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "bewilderedly",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "Carlen was crying bitterly; the letter was just ended, when Alf came into the room asking bewilderedly what it was all about.",
       "example_es": ""
     },
     "comparative": {
@@ -2638,10 +2638,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "mayor"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "bigly",
+      "pron": "/ˈbɪɡ.li/",
       "es": "",
-      "example_en": "",
+      "example_en": "He looked at Mrs. Harling, who loomed bigly in the dull light.",
       "example_es": ""
     },
     "comparative": {
@@ -2918,10 +2918,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "blondly",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "The portrait shows Essex's hair waved, almost curled, and dark auburn, darker than the blondly reddish beard, and this might be an accident of pigments unequally deepened by time; but that's improbable.",
       "example_es": ""
     },
     "comparative": {
@@ -2974,10 +2974,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "azul"
     },
     "adverb": {
-      "en": "",
+      "en": "bluely",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "I pursed my lips thoughtfully, then reached out to prod the bluely gleaming chest of the thing with, I suppose, some notion of rolling it off the bed, […]",
       "example_es": ""
     },
     "comparative": {
@@ -3030,10 +3030,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "blurredly",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "Two trunks now followed, with \"L. T.\" blurredly marked upon the ends.",
       "example_es": ""
     },
     "comparative": {
@@ -3058,8 +3058,8 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "blushingly",
+      "pron": "/ˈblʌʃɪŋli/",
       "es": "",
       "example_en": "",
       "example_es": ""
@@ -3254,10 +3254,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "mandón"
     },
     "adverb": {
-      "en": "",
+      "en": "bossily",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "She feels guilty for pampering him, and salves her conscience by bossily ordering him to go and fetch the clothes from the line[.]",
       "example_es": ""
     },
     "comparative": {
@@ -3534,10 +3534,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "pava"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "broadly",
+      "pron": "/ˈbɹɔːdli/",
       "es": "",
-      "example_en": "",
+      "example_en": "[W]hen he caught sight of her running towards him like that, he smiled broadly.",
       "example_es": ""
     },
     "comparative": {
@@ -4122,7 +4122,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "cariñoso"
     },
     "adverb": {
-      "en": "",
+      "en": "caringly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -4206,10 +4206,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "cauto"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "cautiously",
+      "pron": "/ˈkɔːʃəsli/",
       "es": "",
-      "example_en": "",
+      "example_en": "He said cautiously, \"I do not think it right, Imperator.\"",
       "example_es": ""
     },
     "comparative": {
@@ -4514,10 +4514,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "chic"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "chicly",
+      "pron": "/ˈʃiːkli/",
       "es": "",
-      "example_en": "",
+      "example_en": "She was chicly attired in a black dress.",
       "example_es": ""
     },
     "comparative": {
@@ -4794,10 +4794,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "claro"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "clearly",
+      "pron": "/ˈklɪɚli/",
       "es": "",
-      "example_en": "",
+      "example_en": "He enunciated every syllable clearly.",
       "example_es": ""
     },
     "comparative": {
@@ -5046,10 +5046,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "collaboratively",
+      "pron": "/kəˈlæb.(ə).ɹə.tɪv.li/",
       "es": "",
-      "example_en": "",
+      "example_en": "Cris “Space Rogue” Thomas, another ex-L0pht member who testified alongside Zatko that day, said that L0pht would do everything it could to get companies to collaboratively fix software issues the hacker group found.",
       "example_es": ""
     },
     "comparative": {
@@ -5242,7 +5242,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "comunicativo"
     },
     "adverb": {
-      "en": "",
+      "en": "communicatively",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -5354,10 +5354,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "sereno"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "composedly",
+      "pron": "/kəmˈpoʊ.zɪd.li/",
       "es": "",
-      "example_en": "",
+      "example_en": "So far the letter had run composedly enough; but here, with a sudden splutter of the pen, the writer's emotion had broken loose.",
       "example_es": ""
     },
     "comparative": {
@@ -5494,10 +5494,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "considerado"
     },
     "adverb": {
-      "en": "",
+      "en": "considerately",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "He treated them considerately, letting them each work their own way.",
       "example_es": ""
     },
     "comparative": {
@@ -5578,7 +5578,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "contento"
     },
     "adverb": {
-      "en": "",
+      "en": "contently",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -5634,10 +5634,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "conveniente"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "conveniently",
+      "pron": "/kənˈvinjəntli/",
       "es": "",
-      "example_en": "",
+      "example_en": "his body was now conveniently inclin'd towards me, and just softly chucking his smooth beardless chin, I asked him if he was afraid of a lady?",
       "example_es": ""
     },
     "comparative": {
@@ -5690,10 +5690,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "cooperativo"
     },
     "adverb": {
-      "en": "",
+      "en": "cooperatively",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "Google Drive enables users to edit documents and interactive notes cooperatively.",
       "example_es": ""
     },
     "comparative": {
@@ -5774,10 +5774,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "cordial"
     },
     "adverb": {
-      "en": "",
+      "en": "courteously",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "His Third Query is a Frank Proposal, without any more ado, of taking all the Church Lands into the Crown; and Courteously he offers the Poor Cavaliers a Snip in the Booty",
       "example_es": ""
     },
     "comparative": {
@@ -5802,7 +5802,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "covetously",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -5830,7 +5830,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "cozily",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -5998,10 +5998,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "atravesado"
     },
     "adverb": {
-      "en": "",
+      "en": "crossly",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "'What do you want, Miss?' he asked, rather crossly.",
       "example_es": ""
     },
     "comparative": {
@@ -6026,7 +6026,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "atestado"
     },
     "adverb": {
-      "en": "",
+      "en": "crowdedly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -6362,10 +6362,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "peligroso"
     },
     "adverb": {
-      "en": "",
+      "en": "dangerously",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "It was found that it took about two years for the lost sting to be dangerously replaced, so that an annual pruning assured that they were in a state of safety where they could provide vast amusement for the children.",
       "example_es": ""
     },
     "comparative": {
@@ -6614,10 +6614,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "profundo"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "deeply",
+      "pron": "/ˈdi(ː)pli/",
       "es": "",
-      "example_en": "",
+      "example_en": "I am deeply concerned about this matter.",
       "example_es": ""
     },
     "comparative": {
@@ -6642,7 +6642,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "vencido"
     },
     "adverb": {
-      "en": "",
+      "en": "defeatedly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -6782,7 +6782,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "deleitoso"
     },
     "adverb": {
-      "en": "",
+      "en": "delightfully",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -6866,10 +6866,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "denso"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "densely",
+      "pron": "/ˈdɛnsli/",
       "es": "",
-      "example_en": "",
+      "example_en": "The forest was densely populated with trees.",
       "example_es": ""
     },
     "comparative": {
@@ -7090,10 +7090,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "determinado"
     },
     "adverb": {
-      "en": "",
+      "en": "determinedly",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "where closeness, when it does manage to show itself, usually falls victim to outside forces that seem determinedly hostile to any manifestation of happiness.",
       "example_es": ""
     },
     "comparative": {
@@ -7146,10 +7146,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "devastador"
     },
     "adverb": {
-      "en": "",
+      "en": "devastatingly",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "Grimsby doesn’t ever wound quite as devastatingly as Borat or Brüno, but it’s a vital, lavish, venomously profane two fingers up at Benefits Street pity porn and the social division it fosters.",
       "example_es": ""
     },
     "comparative": {
@@ -7286,10 +7286,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "diligente"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "diligently",
+      "pron": "/ˈdɪlɪd͡ʒ(ə)ntli/",
       "es": "",
-      "example_en": "",
+      "example_en": "Instead, empty bags were folded diligently into the corners of underpacked suitcases, waiting to be jammed full with the familiar objects of home.",
       "example_es": ""
     },
     "comparative": {
@@ -7426,10 +7426,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "decepcionante"
     },
     "adverb": {
-      "en": "",
+      "en": "disappointingly",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "I spent countless hours revising, but, disappointingly, I still failed the exam.",
       "example_es": ""
     },
     "comparative": {
@@ -7454,10 +7454,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "disbelievingly",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "\"How much do you want?\" I looked at him disbelievingly.",
       "example_es": ""
     },
     "comparative": {
@@ -7594,10 +7594,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "asqueroso"
     },
     "adverb": {
-      "en": "",
+      "en": "disgustingly",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "She ate disgustingly, dropping bits of food from her open mouth.",
       "example_es": ""
     },
     "comparative": {
@@ -7622,7 +7622,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "disheveledly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -7650,10 +7650,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "embustero"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "dishonestly",
+      "pron": "/dɪsˈɒnɪstli/",
       "es": "",
-      "example_en": "",
+      "example_en": "Section 13 of the 1968 Act enacts a separate offence of dishonestly abstracting electricity. The separate offence is needed because electricity, like other forms of energy such as heat, is not property.",
       "example_es": ""
     },
     "comparative": {
@@ -7678,7 +7678,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "desorganizado"
     },
     "adverb": {
-      "en": "",
+      "en": "disorganizedly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -7706,7 +7706,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "disorientedly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -7734,7 +7734,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "descontento"
     },
     "adverb": {
-      "en": "",
+      "en": "dissatisfiedly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -8014,10 +8014,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "seco"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "dryly",
+      "pron": "/ˈdɹaɪ.li/",
       "es": "",
-      "example_en": "",
+      "example_en": "The company were convulsed with laughter, all except the host himself, who dryly remarked: ‘Very amusing, Mr. Robert, very amusing, truly; ye're a clever lad, very clever; but just let me tell you, […]’",
       "example_es": ""
     },
     "comparative": {
@@ -8070,7 +8070,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "estupefacto"
     },
     "adverb": {
-      "en": "",
+      "en": "dumbfoundedly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -8462,7 +8462,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "elato"
     },
     "adverb": {
-      "en": "",
+      "en": "elatedly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -8518,7 +8518,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "elegante"
     },
     "adverb": {
-      "en": "",
+      "en": "elegantly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -8714,8 +8714,8 @@ export const ADJECTIVES_VERIFIED = {
       "es": "encantador"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "enchantingly",
+      "pron": "/ɪnˈt͡ʃæntɪŋli/",
       "es": "",
       "example_en": "",
       "example_es": ""
@@ -9078,10 +9078,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "excessively",
+      "pron": "/ɪkˈsɛsɪvli/",
       "es": "",
-      "example_en": "",
+      "example_en": "The application form was excessively complicated.",
       "example_es": ""
     },
     "comparative": {
@@ -9442,10 +9442,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "extremo"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "extremely",
+      "pron": "/ɪksˈtɹimli/",
       "es": "",
-      "example_en": "",
+      "example_en": "The National Center for Health Statistics' latest data indicate that quintuplets are extremely rare, with 66 reported sets of five or more babies in 2013.",
       "example_es": ""
     },
     "comparative": {
@@ -9498,10 +9498,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "bello"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "fairly",
+      "pron": "/ˈfɛə.li/",
       "es": "",
-      "example_en": "",
+      "example_en": "A jury is expected to ensure that the accused is fairly judged.",
       "example_es": ""
     },
     "comparative": {
@@ -9694,7 +9694,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "fascinante"
     },
     "adverb": {
-      "en": "",
+      "en": "fascinatingly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -9834,10 +9834,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "espantadizo"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "fearfully",
+      "pron": "/ˈfɪɹfəli/",
       "es": "",
-      "example_en": "",
+      "example_en": "I stepped fearfully into the pitch-dark cave.",
       "example_es": ""
     },
     "comparative": {
@@ -9862,7 +9862,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "impávido"
     },
     "adverb": {
-      "en": "",
+      "en": "fearlessly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -9974,7 +9974,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "llenante"
     },
     "adverb": {
-      "en": "",
+      "en": "fillingly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -10198,7 +10198,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "flavorfully",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -10674,10 +10674,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "amistoso"
     },
     "adverb": {
-      "en": "",
+      "en": "friendlily",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "Her still small smile teased him and her grey eyes looked at him friendlily from under the slight droop of her lids.",
       "example_es": ""
     },
     "comparative": {
@@ -10730,7 +10730,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "atemorizado"
     },
     "adverb": {
-      "en": "",
+      "en": "frightenedly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -11066,10 +11066,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "furioso"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "furiously",
+      "pron": "/ˈfjʊə̯ɹi.ə̯sli/",
       "es": "",
-      "example_en": "",
+      "example_en": "He glared furiously at the offender.",
       "example_es": ""
     },
     "comparative": {
@@ -11178,10 +11178,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "giftedly",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "He played the violin giftedly. The music was so beautiful, especially by one so young.",
       "example_es": ""
     },
     "comparative": {
@@ -11234,10 +11234,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "jengibre"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "gingerly",
+      "pron": "/ˈdʒɪn(d)ʒəli/",
       "es": "",
-      "example_en": "",
+      "example_en": "He placed the glass jar gingerly on the concrete step.",
       "example_es": ""
     },
     "comparative": {
@@ -11990,7 +11990,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "gustily",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -12158,7 +12158,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "trabajador"
     },
     "adverb": {
-      "en": "",
+      "en": "hardworkingly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -12578,7 +12578,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "díscolo"
     },
     "adverb": {
-      "en": "",
+      "en": "headstrongly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -12662,7 +12662,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "heartbrokenly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -12718,8 +12718,8 @@ export const ADJECTIVES_VERIFIED = {
       "es": "servicial"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "helpfully",
+      "pron": "/ˈhɛlp.fəl.i/",
       "es": "",
       "example_en": "",
       "example_es": ""
@@ -12830,10 +12830,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "vacilante"
     },
     "adverb": {
-      "en": "",
+      "en": "hesitantly",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "The sounds from Barb's clarinet began to take the shape of a melody, played quietly at first, hesitantly, with a misblown note here and there.",
       "example_es": ""
     },
     "comparative": {
@@ -12998,7 +12998,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "homesickly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -13362,7 +13362,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "húmedo"
     },
     "adverb": {
-      "en": "",
+      "en": "humidly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -13642,10 +13642,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "ideal"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "ideally",
+      "pron": "/aɪˈdɪə.li/",
       "es": "",
-      "example_en": "",
+      "example_en": "The summit of Mauna Kea is considered the ideal place to mount an astronomical observatory, for above the clouds there is only the stars and the skies are ideally transparent.",
       "example_es": ""
     },
     "comparative": {
@@ -13754,10 +13754,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "impolitely",
+      "pron": "/ˌɪmpəˈlaɪtli/",
       "es": "",
-      "example_en": "",
+      "example_en": "This fine officer touched his laced hat most courteously to our Captain, who, after returning the compliment, stared at him, rather impolitely, through his spy-glass.",
       "example_es": ""
     },
     "comparative": {
@@ -13894,10 +13894,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "indiferente"
     },
     "adverb": {
-      "en": "",
+      "en": "indifferently",
       "pron": "",
-      "es": "",
-      "example_en": "",
+      "es": "indiferentemente",
+      "example_en": "Uiew wel my Camp, and ſpeake indifferently, Doo not my captaines and my ſouldiers looke As if they meant to conquer Affrica?",
       "example_es": ""
     },
     "comparative": {
@@ -13922,7 +13922,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "indulgente"
     },
     "adverb": {
-      "en": "",
+      "en": "indulgently",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -14006,7 +14006,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "influyente"
     },
     "adverb": {
-      "en": "",
+      "en": "influentially",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -14034,7 +14034,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "infuriatedly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -14062,10 +14062,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "inocente"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "innocently",
+      "pron": "/ˈɪnəsəntli/",
       "es": "",
-      "example_en": "",
+      "example_en": "[M]en lyued ſimplye and innocentlye without inforcement of lawes, without quarellinge Judges and libelles, contente onely to ſatiſfie nature, without further vexation for knowledge of thinges to come.",
       "example_es": ""
     },
     "comparative": {
@@ -14174,7 +14174,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "insightfully",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -14230,10 +14230,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "inspirador"
     },
     "adverb": {
-      "en": "",
+      "en": "inspiringly",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "That line was most beautifully written, and inspiringly put.",
       "example_es": ""
     },
     "comparative": {
@@ -14258,10 +14258,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "inteligente"
     },
     "adverb": {
-      "en": "",
+      "en": "intelligently",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "[…] into the fracas with nonsensical gibberish, pretending to be speaking intelligently in Tigrinya. We had a lot of fun like that. The class also enjoyed learning American phrases. One of their favorites was \"Diddly Jack Squat\".",
       "example_es": ""
     },
     "comparative": {
@@ -14482,7 +14482,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "invitingly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -14762,10 +14762,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "jollily",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "There’s a sermon now, writ in high heaven, and the sun goes through it every year, and yet comes out of it all alive and hearty. Jollily he, aloft there, wheels through toil and trouble […]",
       "example_es": ""
     },
     "comparative": {
@@ -14790,10 +14790,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "alegre"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "joyfully",
+      "pron": "/ˈd͡ʒɔɪfəli/",
       "es": "",
-      "example_en": "",
+      "example_en": "I ended my aimless-roaming-short-term-odd-jobs lifestyle and joyfully went to work at a local restaurant in Langley Park, Maryland, as a carhop.",
       "example_es": ""
     },
     "comparative": {
@@ -14986,10 +14986,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "pródigo"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "lavishly",
+      "pron": "/ˈlævɪʃli/",
       "es": "",
-      "example_en": "",
+      "example_en": "He was noted to entertain lavishly, throwing the biggest and best parties in town.",
       "example_es": ""
     },
     "comparative": {
@@ -15350,10 +15350,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "locally",
+      "pron": "/ˈləʊkəli/",
       "es": "",
-      "example_en": "",
+      "example_en": "These things are locally separated.",
       "example_es": ""
     },
     "comparative": {
@@ -15686,10 +15686,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "luxuriously",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "2007, Travel & Leisure, Volume 37, American Express Publishing, page 92, Couples celebrating second marriages and honeymooning with kids enjoy the luxuriously spacious suites of the oceanfront ResortQuest Waikiki Beach Tower.",
       "example_es": ""
     },
     "comparative": {
@@ -15742,10 +15742,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
-      "pron": "",
-      "es": "",
-      "example_en": "",
+      "en": "madly",
+      "pron": "/ˈmædli/",
+      "es": "alocadamente",
+      "example_en": "I'm madly in love with you.",
       "example_es": ""
     },
     "comparative": {
@@ -15938,10 +15938,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "meanly",
+      "pron": "/ˈmiːnli/",
       "es": "",
-      "example_en": "",
+      "example_en": "Iphicrates and Marius were meanly born.",
       "example_es": ""
     },
     "comparative": {
@@ -16078,7 +16078,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "melancholily",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -16246,10 +16246,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "metódico"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "methodically",
+      "pron": "/mɪˈθɑdɪkəli/",
       "es": "",
-      "example_en": "",
+      "example_en": "He felt his teeth methodically, one after the other, with a vibrato movement of finger and thumb.",
       "example_es": ""
     },
     "comparative": {
@@ -16694,7 +16694,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "motivacional"
     },
     "adverb": {
-      "en": "",
+      "en": "motivationally",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -16750,7 +16750,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "mouth-wateringly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -16974,10 +16974,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "estrecho"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "narrowly",
+      "pron": "/ˈnæɹəʊli/",
       "es": "",
-      "example_en": "",
+      "example_en": "I eyed him narrowly.",
       "example_es": ""
     },
     "comparative": {
@@ -17282,7 +17282,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "descuidado"
     },
     "adverb": {
-      "en": "",
+      "en": "neglectedly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -17310,7 +17310,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "negligente"
     },
     "adverb": {
-      "en": "",
+      "en": "negligently",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -17450,7 +17450,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "nourishingly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -17506,10 +17506,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "obediente"
     },
     "adverb": {
-      "en": "",
+      "en": "obediently",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "This at least Heidi could understand, and she followed her obediently into the dining-room.",
       "example_es": ""
     },
     "comparative": {
@@ -17534,7 +17534,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "obeso"
     },
     "adverb": {
-      "en": "",
+      "en": "obesely",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -17562,7 +17562,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "obscuredly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -17646,7 +17646,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "offendedly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -17758,10 +17758,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "descorrer"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "openly",
+      "pron": "/ˈoʊpənli/",
       "es": "",
-      "example_en": "",
+      "example_en": "Nevertheless, without openly admitting it, he was devoted to Boxer;",
       "example_es": ""
     },
     "comparative": {
@@ -17786,7 +17786,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "abierto de mente"
     },
     "adverb": {
-      "en": "",
+      "en": "open-mindedly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -18066,7 +18066,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "outragedly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -18262,7 +18262,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "sobrevalorado"
     },
     "adverb": {
-      "en": "",
+      "en": "overratedly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -18430,10 +18430,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "panickedly",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "It hit me panickedly in the face that my voice with just that one 'Yes?' had treated her like a — like a what? — a client, someone with whom I was businessing.",
       "example_es": ""
     },
     "comparative": {
@@ -18682,10 +18682,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "perspicaz"
     },
     "adverb": {
-      "en": "",
+      "en": "perceptively",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "She performed appallingly on standard neurological tests, which are, as Sacks perceptively notes, specifically designed to deconstruct the whole person into a stack of 'abilities'.",
       "example_es": ""
     },
     "comparative": {
@@ -18710,10 +18710,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "perfecto"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "perfectly",
+      "pron": "/ˈpɜː.fɪk(t).li/",
       "es": "",
-      "example_en": "",
+      "example_en": "They completed the first series perfectly.",
       "example_es": ""
     },
     "comparative": {
@@ -18766,10 +18766,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "persistente"
     },
     "adverb": {
-      "en": "",
+      "en": "persistently",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "The small girl persistently asked her father to buy her the doll.",
       "example_es": ""
     },
     "comparative": {
@@ -18794,10 +18794,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "persuasivo"
     },
     "adverb": {
-      "en": "",
+      "en": "persuasively",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "‘Oh, yes,’ said Stephen persuasively, ‘you want to win the war.’",
       "example_es": ""
     },
     "comparative": {
@@ -18822,7 +18822,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "petitely",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -19074,7 +19074,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "grato"
     },
     "adverb": {
-      "en": "",
+      "en": "pleasingly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -19410,10 +19410,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "posesivo"
     },
     "adverb": {
-      "en": "",
+      "en": "possessively",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "“Besides,” she says, looking possessively at her class of Chinese youngsters, “can you imagine these children going to an ordinary school?”",
       "example_es": ""
     },
     "comparative": {
@@ -19438,10 +19438,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "pouringly",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "It rained pouringly that night.",
       "example_es": ""
     },
     "comparative": {
@@ -19662,7 +19662,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "prestigioso"
     },
     "adverb": {
-      "en": "",
+      "en": "prestigiously",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -19690,10 +19690,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "listo"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "prettily",
+      "pron": "/ˈpɹɪ.tɪ.li/",
       "es": "",
-      "example_en": "",
+      "example_en": "And thus they were all begging for pancakes, the one more prettily than the other, because they were so hungry, and such good little children.",
       "example_es": ""
     },
     "comparative": {
@@ -19746,10 +19746,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "privado"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "privately",
+      "pron": "/ˈpɹaɪvɪtli/",
       "es": "",
-      "example_en": "",
+      "example_en": "Arley's ferry boat has been replaced by a single-span pedestrian bridge. This leads to the old Harbour Inn and the impeccably restored railway station, now part of the privately run steam-operated Severn Valley Railway.",
       "example_es": ""
     },
     "comparative": {
@@ -19774,10 +19774,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "proactivo"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "proactively",
+      "pron": "/pɹəʊˈæk.tɪv.li/",
       "es": "",
-      "example_en": "",
+      "example_en": "[D]uring each lecture, an observation journal was kept to record what happened in the classroom, focusing on whether and when students enjoyed or proactively participated in classroom activities.",
       "example_es": ""
     },
     "comparative": {
@@ -19830,10 +19830,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "productivo"
     },
     "adverb": {
-      "en": "",
+      "en": "productively",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "There are people such as Diane Latiker who runs Kids Off the Block, which helps youths spend their time productively after school; Kofi Ademola from Black Lives Matter Chicago; and Pastor Jolinda Wade.",
       "example_es": ""
     },
     "comparative": {
@@ -19886,10 +19886,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "competente"
     },
     "adverb": {
-      "en": "",
+      "en": "proficiently",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "The rudimentally trained drummer can apply himself to any musical unit—band, orchestra or drum corps—more proficiently than can the drummer trained only for one branch of drumming.",
       "example_es": ""
     },
     "comparative": {
@@ -20110,10 +20110,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "puro"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
-      "es": "",
-      "example_en": "",
+      "en": "purely",
+      "pron": "/ˈpjʊəli/",
+      "es": "puramente",
+      "example_en": "I am fascinated by the entire scene, I purely am.",
       "example_es": ""
     },
     "comparative": {
@@ -20138,7 +20138,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "confundido"
     },
     "adverb": {
-      "en": "",
+      "en": "puzzledly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -20362,7 +20362,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "rainlessly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -20390,7 +20390,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "lluvioso"
     },
     "adverb": {
-      "en": "",
+      "en": "rainily",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -20474,10 +20474,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "rebelde"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "rebelliously",
+      "pron": "/ɹəˈbɛljəsli/",
       "es": "",
-      "example_en": "",
+      "example_en": "\"Hold on a minute there,\" he said, and while they hung rebelliously on the step, looked them over at his leisure.",
       "example_es": ""
     },
     "comparative": {
@@ -20726,7 +20726,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "relajante"
     },
     "adverb": {
-      "en": "",
+      "en": "relaxingly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -20866,10 +20866,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "renombrado"
     },
     "adverb": {
-      "en": "",
+      "en": "renownedly",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "He was renownedly, even recklessly, brave, winning for himself the nickname \"Mad Jack.\"",
       "example_es": ""
     },
     "comparative": {
@@ -20978,7 +20978,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "apañado"
     },
     "adverb": {
-      "en": "",
+      "en": "resourcefully",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -21006,10 +21006,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "respetuoso"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "respectfully",
+      "pron": "/ɹɪˈspɛkt.fə.li/",
       "es": "",
-      "example_en": "",
+      "example_en": "York got down and said very respectfully, \"I beg your pardon, my lady, but these horses have not been reined up for three years, and my lord said it would be safer to bring them to it by degrees; but if your ladyship pleases, I can take them up a little more.\"",
       "example_es": ""
     },
     "comparative": {
@@ -21314,7 +21314,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "espacioso"
     },
     "adverb": {
-      "en": "",
+      "en": "roomily",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -21594,10 +21594,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "rural"
     },
     "adverb": {
-      "en": "",
+      "en": "rurally",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "While rurally based revolutionary movements have been thriving in other parts of the world, the outlawed Communist Party of Thailand has been losing guerrilla supporters, weapons and prestige.",
       "example_es": ""
     },
     "comparative": {
@@ -21622,10 +21622,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "amarrido"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "sadly",
+      "pron": "/ˈsædli/",
       "es": "",
-      "example_en": "",
+      "example_en": "“Only when we climb up can we see it,” he said sadly.",
       "example_es": ""
     },
     "comparative": {
@@ -21650,10 +21650,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "seguro"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "safely",
+      "pron": "/ˈseɪfli/",
       "es": "",
-      "example_en": "",
+      "example_en": "Tara flour is one of two products made from the seed pods of a thorny shrub native to Peru. One of those, tara gum, has been used safely for years as a thickening agent or stabilizer in human foods.",
       "example_es": ""
     },
     "comparative": {
@@ -21818,10 +21818,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "asustado"
     },
     "adverb": {
-      "en": "",
+      "en": "scaredly",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "He then turned round and looked scaredly at Crean and myself.",
       "example_es": ""
     },
     "comparative": {
@@ -21902,10 +21902,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "scorchingly",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "The story was scorchingly intense.",
       "example_es": ""
     },
     "comparative": {
@@ -22042,10 +22042,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "secludedly",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "a secludedly peaceful park bench",
       "example_es": ""
     },
     "comparative": {
@@ -22098,7 +22098,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "self-assuredly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -22126,7 +22126,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "self-confidently",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -22350,10 +22350,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "serenely",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "I’ve flown in flimsy microlights, soaring serenely above rich farmland. I’ve ridden tactical combat helicopters missions, skimming the desert floor and banking hard around sand dunes.",
       "example_es": ""
     },
     "comparative": {
@@ -22490,10 +22490,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "torneado"
     },
     "adverb": {
-      "en": "",
+      "en": "shapelily",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "Ulysses meets in the mansion of Hades, not Hercules, who has been promoted to Olympus, and to “Hebe shapelily ankled,” but a phantom exactly resembling him.",
       "example_es": ""
     },
     "comparative": {
@@ -22938,10 +22938,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "petiso"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "shortly",
+      "pron": "/ˈʃɔɹtli/",
       "es": "",
-      "example_en": "",
+      "example_en": "[…] his two ill-conditioned, canine favorites, which sat shivering before the smoky little fire, barking shortly and sharply now and then, by way of hinting for some slight refreshment.",
       "example_es": ""
     },
     "comparative": {
@@ -23162,10 +23162,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "sincero"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "sincerely",
+      "pron": "/sɪnˈsɪəli/",
       "es": "",
-      "example_en": "",
+      "example_en": "I sincerely hope they make it home safely.",
       "example_es": ""
     },
     "comparative": {
@@ -24170,10 +24170,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "moteado"
     },
     "adverb": {
-      "en": "",
+      "en": "spottedly",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "However, the species was spottedly numerous in alfalfa.",
       "example_es": ""
     },
     "comparative": {
@@ -24338,7 +24338,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "sorprendido"
     },
     "adverb": {
-      "en": "",
+      "en": "startledly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -24506,7 +24506,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "redoblado"
     },
     "adverb": {
-      "en": "",
+      "en": "stockily",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -24786,10 +24786,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "fuerte"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "strongly",
+      "pron": "/ˈstɹɔŋli/",
       "es": "",
-      "example_en": "",
+      "example_en": "The Pope feels strongly about the need for both sides of the armed conflict to return to the negotiating table.",
       "example_es": ""
     },
     "comparative": {
@@ -24842,7 +24842,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "strong-heartedly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -25094,7 +25094,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "subtropically",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -25122,10 +25122,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "exitoso"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "successfully",
+      "pron": "/səkˈsɛs.fə.li/",
       "es": "",
-      "example_en": "",
+      "example_en": "He successfully climbed the mountain.",
       "example_es": ""
     },
     "comparative": {
@@ -25318,7 +25318,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "alentador"
     },
     "adverb": {
-      "en": "",
+      "en": "supportively",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -25346,7 +25346,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "sorprendido"
     },
     "adverb": {
-      "en": "",
+      "en": "surprisedly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -25458,7 +25458,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "sofocante"
     },
     "adverb": {
-      "en": "",
+      "en": "swelteringly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -25542,7 +25542,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "talentoso"
     },
     "adverb": {
-      "en": "",
+      "en": "talentedly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -25682,10 +25682,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "acidulado"
     },
     "adverb": {
-      "en": "",
+      "en": "tangily",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "a tangily refreshing soft drink",
       "example_es": ""
     },
     "comparative": {
@@ -25850,10 +25850,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "técnico"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "technically",
+      "pron": "/ˈtɛk.nɪˌkəl.i/",
       "es": "",
-      "example_en": "",
+      "example_en": "Technically, he was Canadian, but everyone assumed he was American.",
       "example_es": ""
     },
     "comparative": {
@@ -26074,7 +26074,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "aterrado"
     },
     "adverb": {
-      "en": "",
+      "en": "terrifiedly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -27110,10 +27110,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "tonante"
     },
     "adverb": {
-      "en": "",
+      "en": "thunderously",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "The line to Dunières consists of a series of breakneck descents almost invariably ended by a violent curve and followed immediately by a panting climb, on which the engine barked thunderously but failed unhappily to maintain its booked speed of 13 m.p.h.",
       "example_es": ""
     },
     "comparative": {
@@ -27138,10 +27138,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "pulcro"
     },
     "adverb": {
-      "en": "",
+      "en": "tidily",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "And a man mun keep watch at t mill toft / To stiddy his mouter-dish — help him to sift it, / And see it's o' tidily done",
       "example_es": ""
     },
     "comparative": {
@@ -27194,10 +27194,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "tímido"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "timidly",
+      "pron": "/ˈtɪmɪdli/",
       "es": "",
-      "example_en": "",
+      "example_en": "His mother o'er her barm-cloth wide / Gazed forward somewhat timidly / The new-comer's bright weed to see.",
       "example_es": ""
     },
     "comparative": {
@@ -27222,7 +27222,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "diminuto"
     },
     "adverb": {
-      "en": "",
+      "en": "tinily",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -27446,7 +27446,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "altísimo"
     },
     "adverb": {
-      "en": "",
+      "en": "toweringly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -27502,10 +27502,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "tranquilo"
     },
     "adverb": {
-      "en": "",
+      "en": "tranquilly",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "When we see a party looking tranquilly up to heaven, unconscious that his body is shot through and through with arrows, we know that that is St. Sebastian.",
       "example_es": ""
     },
     "comparative": {
@@ -27530,7 +27530,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "de moda"
     },
     "adverb": {
-      "en": "",
+      "en": "trendily",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -27642,8 +27642,8 @@ export const ADJECTIVES_VERIFIED = {
       "es": "fidedigno"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "trustworthily",
+      "pron": "/ˈtɹʌst.wɜɹ.ðɪ.li/",
       "es": "",
       "example_en": "",
       "example_es": ""
@@ -27698,10 +27698,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "feo"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "uglily",
+      "pron": "/ˈʌɡləli/",
       "es": "",
-      "example_en": "",
+      "example_en": "“One thing at least is certain,” remarked King Helmas, frowning uglily, “and it is that among the Peohtes all persons who dispute our prophecies are burned at the stake.”",
       "example_es": ""
     },
     "comparative": {
@@ -27754,10 +27754,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "incierto"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "uncertainly",
+      "pron": "/ʌnˈsɜːtən.li/",
       "es": "",
-      "example_en": "",
+      "example_en": "\"No — don't you get it?\" said Rimmer. ¶ \"Get what?\" said Kryten, uncertainly.",
       "example_es": ""
     },
     "comparative": {
@@ -27838,7 +27838,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "uncooperatively",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -28006,10 +28006,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "inesperado"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "unexpectedly",
+      "pron": "/ʌnɪkˈspɛktɪdli/",
       "es": "",
-      "example_en": "",
+      "example_en": "[…] she was startled by unexpectedly meeting her husband, who was coming to seek her.",
       "example_es": ""
     },
     "comparative": {
@@ -28202,10 +28202,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "desagradable"
     },
     "adverb": {
-      "en": "",
+      "en": "unpleasantly",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "The sinister face of Dr. Bauerstein recurred to me unpleasantly. A vague suspicion of everyone and everything filled my mind. Just for a moment I had a premonition of approaching evil.",
       "example_es": ""
     },
     "comparative": {
@@ -28258,7 +28258,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "unprotectedly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -28314,7 +28314,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "inseguro"
     },
     "adverb": {
-      "en": "",
+      "en": "unsafely",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -28538,10 +28538,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "trastornado"
     },
     "adverb": {
-      "en": "",
+      "en": "upsetly",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "Tired and sad looking at our house. I went inside upsetly. Sarah was upset too.",
       "example_es": ""
     },
     "comparative": {
@@ -28594,10 +28594,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "útil"
     },
     "adverb": {
-      "en": "",
+      "en": "usefully",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "I would rather have it said, \"He lived usefully,\" than, \"He died rich.\"",
       "example_es": ""
     },
     "comparative": {
@@ -28734,7 +28734,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "vibrante"
     },
     "adverb": {
-      "en": "",
+      "en": "vibrantly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -28818,10 +28818,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "violento"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "violently",
+      "pron": "/ˈvaɪ(ə)ləntli/",
       "es": "",
-      "example_en": "",
+      "example_en": "I found myself violently disagreeing with him.",
       "example_es": ""
     },
     "comparative": {
@@ -29210,7 +29210,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "welcomingly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -29462,7 +29462,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": ""
     },
     "adverb": {
-      "en": "",
+      "en": "whirlingly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -29798,10 +29798,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "sabio"
     },
     "adverb": {
-      "en": "",
-      "pron": "",
+      "en": "wisely",
+      "pron": "/ˈwaɪzli/",
       "es": "",
-      "example_en": "",
+      "example_en": "She wisely decided to re-check her homework before submitting it.",
       "example_es": ""
     },
     "comparative": {
@@ -29938,7 +29938,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "inquieto"
     },
     "adverb": {
-      "en": "",
+      "en": "worriedly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -29966,10 +29966,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "furioso"
     },
     "adverb": {
-      "en": "",
+      "en": "wrathfully",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "Of course, a minute or so later I would realise wrathfully that it was all a lie, a revolting lie, an affected lie, that is, all this penitence, this emotion, these vows of reform.",
       "example_es": ""
     },
     "comparative": {
@@ -29994,7 +29994,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "arrugado"
     },
     "adverb": {
-      "en": "",
+      "en": "wrinkledly",
       "pron": "",
       "es": "",
       "example_en": "",
@@ -30022,10 +30022,10 @@ export const ADJECTIVES_VERIFIED = {
       "es": "cría"
     },
     "adverb": {
-      "en": "",
+      "en": "youngly",
       "pron": "",
       "es": "",
-      "example_en": "",
+      "example_en": "And that fresh blood which youngly thou bestow'st",
       "example_es": ""
     },
     "comparative": {
@@ -30106,7 +30106,7 @@ export const ADJECTIVES_VERIFIED = {
       "es": "delicioso"
     },
     "adverb": {
-      "en": "",
+      "en": "yummily",
       "pron": "",
       "es": "",
       "example_en": "",

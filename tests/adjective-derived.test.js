@@ -57,6 +57,13 @@ test("los adjetivos citados por el usuario están en el dataset", () => {
     }
 });
 
+test("adverbios reales del volcado no declarados en derived también aparecen", () => {
+    const RECOVERED = ["local", "clear", "fair", "short", "bad", "sad"];
+    for (const word of RECOVERED) {
+        assert.ok(ADJECTIVES_VERIFIED[word]?.adverb?.en, `falta adverbio real para ${word}`);
+    }
+});
+
 test("si no hay forma verificada no se muestra pronunciación ni ejemplos", () => {
     for (const [word, entry] of Object.entries(ADJECTIVES_VERIFIED)) {
         const fields = deriveAdjectiveDerivedFields(word, "/base/", "base");
