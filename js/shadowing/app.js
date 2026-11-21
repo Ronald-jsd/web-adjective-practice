@@ -16,8 +16,20 @@ import { queueChange, isOnline } from "../offline/sync.js"
 import { generateLocalIntegerId } from "../offline/ids.js"
 import { updateMediaSession, clearMediaSession } from "../media-session.js"
 import { isAuthError, loginRequiredMessage, requireSession } from "../auth-required.js"
+import {
+    scoreAssessment,
+    compareWords,
+    phraseKey,
+    readBestAttempts,
+    writeBestAttempts,
+    saveBestAttempt,
+    manualScore,
+    isDue,
+    MASTERY_THRESHOLD
+} from "./speaking-practice.js"
 
 let initialized = false
+let switchPracticePane = () => {}
 let supabaseClient = null
 let shadowingRepository = null
 let sentenceRepository = null
@@ -53,6 +65,10 @@ const state = {
     guideWindowShown: false,
     guideDrag: null,
     speakingIndex: -1,
+    externalPhrase: null,
+    savedSentences: [],
+    lastAssessment: null,
+    autoResultReceived: false,
     recordings: new Map(),
     mediaRecorder: null,
     chunks: [],
@@ -256,8 +272,14 @@ function youtubeUrl(rawUrl) {
     }
 }
 
-function recordingsFor(index) {
-    return state.recordings.get(index) || null
+/* Las frases externas tienen clave propia: así su grabación no se mezcla con
+ * la de una lección de YouTube que estuviera en el mismo índice. */
+function recordingKey(index = state.currentIndex) {
+    return state.externalPhrase ? `ext:${state.externalPhrase.key}` : index
+}
+
+function recordingsFor(index = state.currentIndex) {
+    return state.recordings.get(recordingKey(index)) || null
 }
 
 async function refreshLessons(selectedId = "") {
@@ -574,6 +596,7 @@ function renderRecording() {
     if (play) play.disabled = !recording
     if (status) status.textContent = recording ? "Grabación lista." : "Aún no grabaste esta frase."
     if (score && !recording) score.textContent = ""
+    renderBestAttempt()
 }
 
 function seekToLine(index, keepFrame = false) {
@@ -597,9 +620,12 @@ function renderPlayerState() {
     const player = byId("shadowing-player")
     const transcript = byId("shadowing-transcript")
     if (state.current) {
-        controls?.classList.remove("hidden")
-        byId("shadowing-practice-bar")?.classList.remove("hidden")
-        player?.classList.remove("hidden")
+        // Una frase guardada no tiene video: se ocultan solo los controles de
+        // YouTube y se dejan visibles la frase, la grabación y la puntuación.
+        const external = Boolean(state.externalPhrase)
+        controls?.classList.toggle("hidden", external)
+        byId("shadowing-practice-bar")?.classList.toggle("hidden", external)
+        player?.classList.toggle("hidden", external)
         transcript?.classList.remove("hidden")
     }
 }
@@ -651,7 +677,7 @@ function handlePlaybackState(data) {
  * sistema. Las lecciones guardadas viven en IndexedDB, así que siguen
  * funcionando aunque no haya conexión. */
 function useSystemVoice() {
-    return !isOnline() || state.videoUnavailable === true
+    return Boolean(state.externalPhrase) || !isOnline() || state.videoUnavailable === true
 }
 
 function stopSpeechPlayback() {
@@ -1088,6 +1114,7 @@ async function fetchRebuiltSegments(videoId) {
 
 async function applyLesson({ videoId, videoUrl, title, segments, note }) {
     const timed = retimeSegments(segments)
+    state.externalPhrase = null
     state.current = { id: "", videoId, videoUrl, title, source: "auto", transcript: timed }
     state.currentIndex = 0
     state.translation = ""
@@ -1296,6 +1323,7 @@ function parseManual() {
         byId("shadowing-video-url")?.focus()
         return
     }
+    state.externalPhrase = null
     if (!state.current || state.current.videoId !== videoId) state.current = { id: "", videoId, videoUrl: youtubeUrl(raw), title: "Lección de YouTube", source: "manual", transcript: retimeSegments(segments) }
     else state.current = { ...state.current, transcript: retimeSegments(segments), source: "manual" }
     state.currentIndex = 0
@@ -1683,10 +1711,11 @@ async function startRecording() {
         })
         recorder.addEventListener("stop", () => {
             const blob = new Blob(state.chunks, { type: recorder.mimeType || "audio/webm" })
-            const recordings = state.recordings.get(state.currentIndex) || {}
+            const key = recordingKey()
+            const recordings = state.recordings.get(key) || {}
             recordings.blob = blob
             recordings.url = URL.createObjectURL(blob)
-            state.recordings.set(state.currentIndex, recordings)
+            state.recordings.set(key, recordings)
             state.chunks = []
             state.stream?.getTracks().forEach(track => track.stop())
             state.stream = null
@@ -1696,6 +1725,7 @@ async function startRecording() {
                 button.textContent = "● Grabar"
             }
             renderRecording()
+            finishRecordingAssessment()
         })
         recorder.start()
         startSpeechAssessment(state.current?.transcript?.[state.currentIndex]?.text || "")
@@ -1711,85 +1741,126 @@ async function startRecording() {
 }
 
 function playLastRecording() {
-    const recordings = state.recordings.get(state.currentIndex) || {}
+    const recordings = recordingsFor()
     if (!recordings?.url) return
     const audio = new Audio(recordings.url)
     audio.play().catch(error => console.warn("[shadowing] No se pudo reproducir la grabación:", error))
 }
 
-function normalizedWords(text) {
-    return String(text || "").toLowerCase().replace(/[^a-z0-9']+/g, " ").split(/\s+/).filter(Boolean)
+/* La comparación palabra por palabra vive en speaking-practice.js para poder
+ * probarla sin DOM; aquí solo se consume el resultado. */
+
+function escapeHtml(value) {
+    return String(value ?? "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char])
 }
 
-function editDistance(left, right) {
-    const rows = left.length + 1
-    const columns = right.length + 1
-    const matrix = Array.from({ length: rows }, () => Array(columns).fill(0))
-    for (let leftIndex = 0; leftIndex < rows; leftIndex += 1) matrix[leftIndex][0] = leftIndex
-    for (let rightIndex = 0; rightIndex < columns; rightIndex += 1) matrix[0][rightIndex] = rightIndex
-    for (let leftIndex = 1; leftIndex < rows; leftIndex += 1) {
-        for (let rightIndex = 1; rightIndex < columns; rightIndex += 1) {
-            const cost = left[leftIndex - 1] === right[rightIndex - 1] ? 0 : 1
-            matrix[leftIndex][rightIndex] = Math.min(matrix[leftIndex - 1][rightIndex] + 1, matrix[leftIndex][rightIndex - 1] + 1, matrix[leftIndex - 1][rightIndex - 1] + cost)
-        }
-    }
-    return matrix[rows - 1][columns - 1]
+function currentPhraseKey() {
+    return state.externalPhrase?.key || phraseKey({ id: state.current?.id, text: currentPhraseText() })
 }
 
-/* Mínimo Levenshtein realizado por el navegador con la transcripción hablada;
- * es una aproximación, pero permite colorear palabra por palabra. */
-function compareWords(target, spoken) {
-    const targetWords = normalizedWords(target)
-    const spokenWords = [...normalizedWords(spoken)]
-    let spokenCursor = 0
-    let matched = 0
-    let close = 0
-    const result = []
-    for (const referenceWord of targetWords) {
-        const lookAhead = spokenWords.slice(spokenCursor, spokenCursor + 4)
-        const exact = lookAhead.findIndex(word => word === referenceWord)
-        if (exact >= 0) {
-            const spokenWord = lookAhead[exact]
-            spokenCursor += exact + 1
-            matched += 1
-            result.push({ text: referenceWord, status: "match", spoken: spokenWord })
-            continue
-        }
-        const near = lookAhead.findIndex(word => editDistance(word, referenceWord) <= Math.max(1, Math.floor(referenceWord.length / 3)))
-        if (near >= 0) {
-            const spokenWord = lookAhead[near]
-            spokenCursor += near + 1
-            matched += 1
-            close += 1
-            result.push({ text: referenceWord, status: "near", spoken: spokenWord })
-            continue
-        }
-        result.push({ text: referenceWord, status: "miss", spoken: null })
+function currentPhraseText() {
+    return state.current?.transcript?.[state.currentIndex]?.text || ""
+}
+
+function attemptStorage() {
+    try {
+        return window.localStorage || null
+    } catch {
+        return null
     }
-    return { result, matched, close, total: targetWords.length, spoken: spokenWords.length }
+}
+
+function persistSpeakingAttempt(result) {
+    const key = currentPhraseKey()
+    if (!key || !result) return null
+    const storage = attemptStorage()
+    const saved = saveBestAttempt(readBestAttempts(storage), key, result)
+    writeBestAttempts(storage, saved.attempts)
+    renderBestAttempt()
+    return saved.best
+}
+
+function formatDueDate(dueAt) {
+    const date = new Date(Number(dueAt) || 0)
+    if (Number.isNaN(date.getTime())) return ""
+    return date.toLocaleDateString("es-ES", { day: "numeric", month: "short" })
+}
+
+function renderBestAttempt() {
+    const host = byId("shadowing-best-attempt")
+    if (!host) return
+    const best = readBestAttempts(attemptStorage())[currentPhraseKey()]
+    if (!best) {
+        host.textContent = ""
+        host.classList.add("hidden")
+        return
+    }
+    host.classList.remove("hidden")
+    const label = Number(best.score) >= MASTERY_THRESHOLD ? "✅ Dominada" : "🔁 Por practicar"
+    const origin = best.source === "manual" ? "autoevaluación" : "reconocimiento de voz"
+    const next = isDue(best) ? " · vuelve a grabar cuando quieras" : ` · próxima práctica: ${formatDueDate(best.dueAt)}`
+    host.textContent = `${label} · mejor ${best.score}% (${origin}, ${best.attempts} intentos)${next}`
+}
+
+function renderManualAssessment(message = "") {
+    const container = byId("shadowing-score")
+    if (!container) return
+    const lead = message || "Escucha tu grabación y califica cómo te salió. No es una puntuación automática."
+    container.innerHTML = `<section class="shadowing-score-card shadowing-manual-score" aria-label="Autoevaluación de pronunciación"><h4><span>TU EVALUACIÓN</span></h4><p>${escapeHtml(lead)}</p><div class="shadowing-manual-buttons"><button type="button" class="button primary" data-speaking-grade="good">✅ Me salió bien</button><button type="button" class="button secondary" data-speaking-grade="ok">🟡 Casi</button><button type="button" class="button secondary" data-speaking-grade="again">🔁 Repetir</button></div></section>`
+    container.querySelectorAll("[data-speaking-grade]").forEach(button => button.addEventListener("click", () => {
+        const score = manualScore(button.dataset.speakingGrade)
+        if (score === null) return
+        persistSpeakingAttempt({
+            score,
+            source: "manual",
+            accuracy: score,
+            fluency: score,
+            completeness: score,
+            missed: state.lastAssessment?.missed || []
+        })
+        const status = byId("shadowing-recording-status")
+        if (status) status.textContent = "Autoevaluación guardada. Vuelve a grabar para mejorar."
+        if (button.dataset.speakingGrade === "again") playPhrase(state.currentIndex)
+    }))
+}
+
+function finishRecordingAssessment() {
+    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!Recognition) {
+        renderManualAssessment("Este navegador no puntúa automáticamente. Escucha tu grabación y califica tú mismo.")
+    } else if (!state.autoResultReceived) {
+        renderManualAssessment("No se entendió la grabación. Escucha tu grabación y califica tú mismo.")
+    }
 }
 
 function renderScoreCard(target, hypothesis) {
     const container = byId("shadowing-score")
     const status = byId("shadowing-recording-status")
     if (!container) return
-    const comparison = compareWords(target, hypothesis)
-    const completeness = comparison.total ? Math.round(((comparison.matched - comparison.close * 0.5) / comparison.total) * 100) : 0
-    const accuracy = comparison.spoken ? Math.round(((comparison.matched - comparison.close * 0.5) / comparison.spoken) * 100) : 0
-    const fluency = Math.max(0, Math.min(100, Math.round((completeness * 0.75) + (accuracy * 0.25))))
-    const renderPanel = (value, label, tone) => `<div class="shadowing-score-panel ${tone || value >= 90 ? "good" : value >= 70 ? "warn" : "bad"}"><span>${label}</span><strong>${value}%</strong></div>`
-    const words = comparison.result.map(item => `<span class="shadowing-${item.status}">${item.text}${item.status === "near" && item.spoken ? `<small>≈ ${item.spoken}</small>` : ""}</span>`).join(" ")
-    container.innerHTML = `<section class="shadowing-score-card" aria-label="Análisis de pronunciación"><h4><span>SOUND BY SOUND CHECK</span><small>${Math.max(0, comparison.matched - comparison.close) + comparison.close}/${comparison.total} words clear</small></h4><div class="shadowing-score-grid">${renderPanel(Math.max(0, accuracy), "Accuracy")}${renderPanel(fluency, "Fluency")}${renderPanel(completeness, "Completeness")}</div><div class="shadowing-you-said"><label>YOU SAID</label><div class="shadowing-comparison">${words || "<em>No se detectaron palabras.</em>"}</div></div><small class="shadowing-comparison">Green = clear · amber = similar · red = unclear. La calificación es aproximada basada en el reconocimiento de voz.</small></section>`
+    const assessment = scoreAssessment(target, hypothesis)
+    state.lastAssessment = assessment
+    const best = persistSpeakingAttempt(assessment)
+    const { comparison, completeness, accuracy, fluency } = assessment
+    const renderPanel = (value, label) => `<div class="shadowing-score-panel ${value >= 90 ? "good" : value >= 70 ? "warn" : "bad"}"><span>${label}</span><strong>${value}%</strong></div>`
+    const words = comparison.result.map(item => `<span class="shadowing-${item.status}">${escapeHtml(item.text)}${item.status === "near" && item.spoken ? `<small>≈ ${escapeHtml(item.spoken)}</small>` : ""}</span>`).join(" ")
+    const missed = assessment.missed.length
+        ? `<div class="shadowing-missed"><span>Palabras a repetir · tócalas para oírlas</span>${assessment.missed.map(word => `<button type="button" class="shadowing-missed-word" data-speak-word="${escapeHtml(word)}">${escapeHtml(word)}</button>`).join("")}</div>`
+        : ""
+    container.innerHTML = `<section class="shadowing-score-card" aria-label="Análisis de pronunciación"><h4><span>SOUND BY SOUND CHECK</span><small>${Math.max(0, comparison.matched - comparison.close) + comparison.close}/${comparison.total} words clear</small></h4><div class="shadowing-score-grid">${renderPanel(accuracy, "Accuracy")}${renderPanel(fluency, "Fluency")}${renderPanel(completeness, "Completeness")}</div><div class="shadowing-you-said"><label>YOU SAID</label><div class="shadowing-comparison">${words || "<em>No se detectaron palabras.</em>"}</div></div>${missed}<small class="shadowing-comparison">Verde = claro · ámbar = parecido · rojo = no detectado. La calificación es aproximada, basada en el reconocimiento de voz${best?.source === "manual" ? "; el mejor intento fue una autoevaluación" : ""}.</small></section>`
+    container.querySelectorAll("[data-speak-word]").forEach(button => button.addEventListener("click", () => {
+        if (button.dataset.speakWord) playWordPronunciation(button.dataset.speakWord, "en")
+    }))
     if (status) {
-        status.textContent = `Resultado: ${completeness}% de la frase.`
+        status.textContent = `Resultado: ${fluency}% de la frase · mejor guardado: ${best?.score ?? fluency}%.`
         status.classList.remove("error")
     }
 }
 
 function startSpeechAssessment(target) {
     const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    state.autoResultReceived = false
     if (!Recognition) {
-        if (byId("shadowing-recording-status")) byId("shadowing-recording-status").textContent = "Grabación lista. Este navegador no puede puntuación automática."
+        renderManualAssessment("Este navegador no puntúa automáticamente. Escucha tu grabación y califica tú mismo.")
         return
     }
     stopSpeechAssessment()
@@ -1800,9 +1871,20 @@ function startSpeechAssessment(target) {
     recognizer.interimResults = false
     recognizer.addEventListener("result", event => {
         const transcript = Array.from(event.results).map(result => result[0]?.transcript || "").join(" ")
+        state.autoResultReceived = true
         renderScoreCard(target, transcript)
     })
-    try { recognizer.start() } catch { /* mic unavailable */ }
+    recognizer.addEventListener("error", () => {
+        if (!state.autoResultReceived) renderManualAssessment("No se pudo analizar la grabación. Escucha tu grabación y califica tú mismo.")
+    })
+    recognizer.addEventListener("nomatch", () => {
+        if (!state.autoResultReceived) renderManualAssessment("No se entendió la grabación. Escucha tu grabación y califica tú mismo.")
+    })
+    try {
+        recognizer.start()
+    } catch {
+        renderManualAssessment("No se pudo iniciar el análisis. Escucha tu grabación y califica tú mismo.")
+    }
 }
 
 function stopSpeechAssessment() {
@@ -1872,6 +1954,7 @@ async function openLesson(id) {
             showStatus("Tiempos de las frases corregidos.")
         }
     }
+    state.externalPhrase = null
     state.current = { ...lesson, transcript: retimeSegments(lesson.transcript) }
     state.currentIndex = 0
     state.translation = ""
@@ -1986,6 +2069,18 @@ function wireEvents() {
         startRecording()
     })
     byId("shadowing-play-recording")?.addEventListener("click", playLastRecording)
+    byId("shadowing-load-sentence")?.addEventListener("click", () => {
+        const id = String(byId("shadowing-sentence-select")?.value || "")
+        const sentence = state.savedSentences.find(item => String(item.id ?? "") === id)
+        if (!sentence) {
+            showStatus("Elige una frase guardada antes de practicar.", true)
+            return
+        }
+        openSpeakingPhrase(sentence)
+    })
+    byId("shadowing-refresh-sentences")?.addEventListener("click", () => {
+        refreshSavedSentences().catch(error => showStatus("No se pudieron cargar tus frases.", true))
+    })
     byId("shadowing-transcript-config")?.addEventListener("click", openTranscriptDialog)
     byId("shadowing-manual-open")?.addEventListener("click", () => showManualPanel(true))
     byId("shadowing-transcript-close")?.addEventListener("click", closeTranscriptDialog)
@@ -1995,6 +2090,84 @@ function wireEvents() {
     wireGuideWindow()
     window.setInterval(() => pollShadowing(), 100)
     updatePlayButton()
+}
+
+/* Practicar una frase del usuario sin depender de YouTube: la frase se carga
+ * como una "lección" de un solo segmento y se reproduce con voz del sistema.
+ * El texto siempre viene de la frase guardada; no se genera contenido. */
+export function openSpeakingPhrase(sentence) {
+    const english = String(sentence?.englishText || sentence?.english || sentence?.text || "").trim()
+    if (!english) return false
+    if (state.autoActive) stopAutoPractice("Práctica detenida.")
+    stopPhrasePronunciation()
+    stopSpeechAssessment()
+    const key = phraseKey(sentence || { text: english })
+    state.externalPhrase = {
+        key,
+        id: String(sentence?.id ?? ""),
+        english,
+        spanish: String(sentence?.spanishTranslation || sentence?.spanish || "")
+    }
+    state.current = {
+        id: sentence?.id || "",
+        videoId: "",
+        videoUrl: "",
+        title: "Frase guardada",
+        source: "external",
+        transcript: [{
+            start: 0,
+            end: Math.max(2.5, english.split(/\s+/).length * 0.6),
+            text: english,
+            words: suggestionWords(english)
+        }]
+    }
+    state.currentIndex = 0
+    state.player = null
+    state.playerReady = false
+    state.videoUnavailable = false
+    state.translation = state.externalPhrase.spanish
+    state.selectedWord = ""
+    state.lastAssessment = null
+    state.autoResultReceived = false
+    const score = byId("shadowing-score")
+    if (score) score.textContent = ""
+    clearMediaSession()
+    switchPracticePane("shadowing")
+    renderLesson()
+    renderPlayerState()
+    renderRecording()
+    showStatus("Frase cargada. Escúchala y grábate hablándola.")
+    byId("shadowing-record")?.focus()
+    return true
+}
+
+async function refreshSavedSentences() {
+    const select = byId("shadowing-sentence-select")
+    if (!select) return
+    const user = await ensureUser()
+    if (!user) {
+        requireSession("practicar tus frases guardadas")
+        select.replaceChildren(new Option("Inicia sesión para ver tus frases", ""))
+        return
+    }
+    state.savedSentences = sentenceRepository ? await sentenceRepository.list(user.id) : []
+    select.replaceChildren()
+    const placeholder = document.createElement("option")
+    placeholder.value = ""
+    placeholder.textContent = state.savedSentences.length ? "Elige una frase guardada…" : "Aún no tienes frases guardadas"
+    select.append(placeholder)
+    for (const sentence of state.savedSentences) {
+        const option = document.createElement("option")
+        option.value = String(sentence.id ?? "")
+        const english = String(sentence.englishText || "").slice(0, 90)
+        const spanish = String(sentence.spanishTranslation || "").slice(0, 40)
+        option.textContent = spanish ? `${english} — ${spanish}` : english
+        select.append(option)
+    }
+    const status = byId("shadowing-sentence-status")
+    if (status) status.textContent = state.savedSentences.length
+        ? `${state.savedSentences.length} frases listas para practicar.`
+        : "Guarda frases en Mi aprendizaje para practicarlas aquí."
 }
 
 export async function initializeShadowing(supabase) {
@@ -2010,7 +2183,13 @@ export async function initializeShadowing(supabase) {
     setupPracticePaneTabs()
     renderTranscriptConfig()
     state.user = await resolveSessionUser(supabaseClient)
+    window.startShadowingSentence = openSpeakingPhrase
     await refreshLessons().catch(error => console.warn("[shadowing] No se pudieron cargar las lecciones:", error))
+    if (state.user) {
+        await refreshSavedSentences().catch(error => console.warn("[shadowing] No se pudieron cargar las frases:", error))
+    } else {
+        byId("shadowing-sentence-select")?.replaceChildren(new Option("Inicia sesión para ver tus frases", ""))
+    }
 }
 
 function setupPracticePaneTabs() {
@@ -2046,6 +2225,7 @@ function setupPracticePaneTabs() {
         if (controls) controls.classList.toggle("hidden", name === "shadowing")
         practiceSection?.classList.toggle("practice-section--audio", name === "audio")
     }
+    switchPracticePane = switchPane
     if (shadowingPane?.hidden) {
         shadowingPane.hidden = false
         shadowingPane.classList.add("shadowing-pane--background")

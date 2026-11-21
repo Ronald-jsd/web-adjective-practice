@@ -174,7 +174,20 @@ function renderSentenceList(items = state.sentences) {
         playSentence.title = "Escuchar frase"
         playSentence.setAttribute("aria-label", `Escuchar frase: ${sentence.englishText}`)
         playSentence.addEventListener("click", () => playAudioEnhanced(sentence.englishText, "en"))
-        sentenceHeading.append(sentenceText, playSentence)
+        const practiceSpeaking = document.createElement("button")
+        practiceSpeaking.type = "button"
+        practiceSpeaking.className = "icon-button audio-button"
+        practiceSpeaking.textContent = "🎤"
+        practiceSpeaking.title = "Practicar pronunciación"
+        practiceSpeaking.setAttribute("aria-label", `Practicar pronunciación: ${sentence.englishText}`)
+        practiceSpeaking.addEventListener("click", () => {
+            if (typeof window.startShadowingSentence !== "function") {
+                showNotice("La práctica de pronunciación estará lista en un momento.")
+                return
+            }
+            window.startShadowingSentence(sentence)
+        })
+        sentenceHeading.append(sentenceText, playSentence, practiceSpeaking)
         const meta = document.createElement("div")
         meta.className = "sentence-meta"
         for (const tag of sentence.topicTags) {

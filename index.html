@@ -437,7 +437,15 @@
                 <section id="shadowing-pane" class="shadowing-pane" aria-label="Shadowing" hidden>
                     <div class="shadowing-heading">
                         <div><p class="practice-eyebrow">PRONUNCIACIÓN EN CONTEXTO</p><h2>Aprende como <span>Shadowing</span></h2><p>Busca un video, crea la lección y copia el ritmo, la entonación y las pausas de un hablante nativo.</p></div>
-                        <label class="shadowing-lessons-picker">Lección<select id="shadowing-lessons" aria-label="Lecciones guardadas"><option value="">Nueva lección</option></select></label>
+                        <div class="shadowing-heading-controls">
+                            <label class="shadowing-lessons-picker">Lección<select id="shadowing-lessons" aria-label="Lecciones guardadas"><option value="">Nueva lección</option></select></label>
+                            <div class="shadowing-sentence-picker">
+                                <label class="shadowing-practice-field">Tus frases<select id="shadowing-sentence-select" aria-label="Frases guardadas para practicar"><option value="">Cargando frases…</option></select></label>
+                                <button id="shadowing-load-sentence" class="button primary" type="button">🎤 Practicar frase</button>
+                                <button id="shadowing-refresh-sentences" class="button secondary" type="button">↻ Actualizar</button>
+                                <span id="shadowing-sentence-status" class="shadowing-config-state" aria-live="polite"></span>
+                            </div>
+                        </div>
                     </div>
                     <div class="shadowing-workspace">
                         <div class="shadowing-player-column">
@@ -512,7 +520,7 @@
                                 </div>
                             </aside>
                             <div id="shadowing-translation" class="shadowing-translation hidden"></div>
-                            <section class="shadowing-recorder panel"><div><p class="practice-eyebrow">TU GRABACIÓN</p><h3>Graba esta frase</h3><p class="muted">Escucha al hablante nativo, luego mantén el ritmo y repite la frase.</p></div><div class="shadowing-recording-controls"><button id="shadowing-record" class="button secondary shadowing-record" type="button">● Grabar</button><button id="shadowing-play-recording" class="button secondary" type="button" disabled>▶ Tu grabación</button><span id="shadowing-recording-status" class="shadowing-recording-status" aria-live="polite"></span></div><div id="shadowing-score" class="shadowing-score"></div></section>
+                            <section class="shadowing-recorder panel"><div><p class="practice-eyebrow">TU GRABACIÓN</p><h3>Graba esta frase</h3><p class="muted">Escucha al hablante nativo, luego mantén el ritmo y repite la frase.</p></div><div class="shadowing-recording-controls"><button id="shadowing-record" class="button secondary shadowing-record" type="button">● Grabar</button><button id="shadowing-play-recording" class="button secondary" type="button" disabled>▶ Tu grabación</button><span id="shadowing-recording-status" class="shadowing-recording-status" aria-live="polite"></span></div><div id="shadowing-score" class="shadowing-score"></div><div id="shadowing-best-attempt" class="shadowing-best-attempt hidden" aria-live="polite"></div></section>
                         </div>
                         <aside class="shadowing-sidebar panel">
                             <div class="shadowing-sidebar-heading"><div><p class="practice-eyebrow">LA LECCIÓN</p><h3 id="shadowing-lesson-title">Elige una lección</h3></div><span id="shadowing-progress" class="shadowing-progress">0/0</span></div>

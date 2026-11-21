@@ -513,6 +513,21 @@
 .shadowing-comparison em { color: #8a998f }
 .shadowing-comparison legend { color: #73857a; font: 500 10px "DM Sans", sans-serif }
 
+/* Práctica de speaking con frases guardadas */
+.shadowing-heading-controls { display: grid; gap: 10px; justify-items: end; min-width: 0 }
+.shadowing-sentence-picker { display: flex; align-items: end; gap: 9px; flex-wrap: wrap; max-width: 560px }
+.shadowing-sentence-picker .shadowing-practice-field { flex: 1 1 240px }
+.shadowing-sentence-picker .button { min-height: 40px }
+.shadowing-best-attempt { margin-top: 10px; padding: 9px 12px; border-radius: 11px; background: #eef4ef; color: var(--sh-primary-dark); font: 700 12px "DM Sans", sans-serif; line-height: 1.45 }
+.shadowing-best-attempt.hidden { display: none }
+.shadowing-missed { display: grid; gap: 7px; margin: 12px 0 }
+.shadowing-missed > span { color: #8a6530; font: 800 10px "DM Sans", sans-serif; letter-spacing: .06em; text-transform: uppercase }
+.shadowing-missed-word { justify-self: start; min-height: 34px; padding: 5px 11px; border: 1px solid #eed8a6; border-radius: 9px; background: #fff7e3; color: #8b6530; font: 800 13px "DM Sans", sans-serif; cursor: pointer }
+.shadowing-missed-word:hover { background: #ffedc4 }
+.shadowing-manual-score p { margin: 0 0 12px; color: var(--sh-ink-soft); font-size: 13px; line-height: 1.55 }
+.shadowing-manual-buttons { display: flex; gap: 8px; flex-wrap: wrap }
+.shadowing-manual-buttons .button { min-height: 40px }
+
 /* Barra de transcripción automática */
 .shadowing-transcript-bar { grid-column: 1 / -1; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding-top: 14px; border-top: 1px solid var(--sh-border) }
 .shadowing-config-button { min-height: 40px; padding: 8px 16px; border: 1px solid var(--sh-border-strong); border-radius: 11px; background: #fff; color: var(--sh-primary-dark); font: 800 12px "DM Sans", sans-serif; cursor: pointer; box-shadow: var(--sh-shadow-sm); transition: transform .16s, box-shadow .16s }
@@ -637,6 +652,7 @@
     .shadowing-sidebar { max-height: none; min-height: auto }
     .shadowing-lines { max-height: 420px }
     .shadowing-heading { align-items: stretch; flex-direction: column; gap: 14px }
+    .shadowing-heading-controls { justify-items: stretch }
     .shadowing-lessons-picker select { width: 100% }
 }
 
@@ -700,6 +716,10 @@
     .shadowing-practice-bar .button{grid-column:1/-1;min-height:46px}
     .shadowing-practice-status{grid-column:1/-1;min-width:0;text-align:center}
     .shadowing-practice-field select{width:100%;min-height:44px}
+    .shadowing-sentence-picker{display:grid;grid-template-columns:1fr 1fr;width:100%;max-width:none}
+    .shadowing-sentence-picker .shadowing-practice-field{grid-column:1/-1}
+    .shadowing-sentence-picker .button{min-height:44px}
+    .shadowing-sentence-picker .shadowing-config-state{grid-column:1/-1}
     .shadowing-word-actions{grid-template-columns:1fr}
     .shadowing-word-actions .button{width:100%;min-height:44px}
 }
