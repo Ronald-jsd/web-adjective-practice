@@ -2259,6 +2259,7 @@ function setupPracticePaneTabs() {
     const controls = document.querySelector("#practice-section .practice-controls")
     const practiceSection = byId("practice-section")
     const audioPane = byId("practice-pane-audio")
+    const questionsPane = byId("practice-pane-questions")
     const shadowingPane = byId("shadowing-pane")
 
     const switchPane = name => {
@@ -2269,6 +2270,7 @@ function setupPracticePaneTabs() {
         })
         generalParts.forEach(part => part?.classList.toggle("hidden", name !== "general"))
         if (audioPane) audioPane.hidden = name !== "audio"
+        if (questionsPane) questionsPane.hidden = name !== "questions"
         // El iframe de YouTube se mantiene montado para que el audio siga al
         // cambiar de pestaña: se saca de pantalla, no se oculta con display:none.
         if (shadowingPane) {
@@ -2276,8 +2278,9 @@ function setupPracticePaneTabs() {
             shadowingPane.classList.toggle("shadowing-pane--background", name !== "shadowing")
             shadowingPane.setAttribute("aria-hidden", String(name !== "shadowing"))
         }
-        if (controls) controls.classList.toggle("hidden", name === "shadowing")
+        if (controls) controls.classList.toggle("hidden", name === "shadowing" || name === "questions")
         practiceSection?.classList.toggle("practice-section--audio", name === "audio")
+        practiceSection?.classList.toggle("practice-section--questions", name === "questions")
     }
     switchPracticePane = switchPane
     if (shadowingPane?.hidden) {

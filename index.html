@@ -24,6 +24,7 @@
     <link rel="stylesheet" href="word-groups.css" />
     <link rel="stylesheet" href="editing.css" />
     <link rel="stylesheet" href="shadowing.css" />
+    <link rel="stylesheet" href="questions.css" />
     <link id="mysentences-styles" rel="stylesheet" href="sentences.css?v=1.8.4" disabled />
 </head>
 
@@ -297,6 +298,7 @@
             <div class="practice-layout">
                 <nav id="practice-pane-tabs" class="practice-pane-tabs" aria-label="Tipo de práctica">
                     <button class="practice-pane-tab active" data-practice-pane="general" type="button" aria-selected="true">Exercise</button>
+                    <button class="practice-pane-tab" data-practice-pane="questions" type="button" aria-selected="false">Preguntas <span aria-hidden="true">❓</span></button>
                     <button class="practice-pane-tab" data-practice-pane="audio" type="button" aria-selected="false"><span class="pane-label-long">Listening</span><span class="pane-label-short">Escucha</span> <span aria-hidden="true">🎧</span></button>
                     <button class="practice-pane-tab" data-practice-pane="shadowing" type="button" aria-selected="false">Shadowing <span aria-hidden="true">🎤</span></button>
                 </nav>
@@ -384,6 +386,63 @@
                         <button id="practice-next" type="button" class="practice-next-button hidden">Siguiente palabra <span aria-hidden="true">→</span></button>
                     </div>
                 </section>
+                </div>
+                <div id="practice-pane-questions" class="practice-pane practice-pane-questions" aria-label="Práctica de preguntas" hidden>
+                    <div class="practice-heading questions-heading">
+                        <p class="practice-eyebrow">INTERROGATIVAS EN INGLÉS</p>
+                        <h2>Practica <span>preguntas</span></h2>
+                        <p>Forma preguntas o respóndelas con ejemplos verificados de tu guía. Escucha cada pregunta con un clic. La IA es opcional y sus ejemplos se guardan solo en este dispositivo.</p>
+                    </div>
+                    <section class="questions-card" aria-label="Ejercicios de preguntas">
+                        <div class="questions-topline">
+                            <span id="questions-count" class="practice-count">0 preguntas disponibles</span>
+                            <span id="questions-score">0 correctas · 0 respondidas</span>
+                        </div>
+                        <p id="questions-summary" class="questions-summary">0 nuevas · 0 para repasar · 0 firmes</p>
+
+                        <div class="questions-filters">
+                            <label>Tiempo verbal<select id="questions-filter-tense"><option value="all">Todos los tiempos</option></select></label>
+                            <label>Palabra<select id="questions-filter-word"><option value="all">Todas las palabras</option></select></label>
+                            <label>Tipo<select id="questions-filter-type"><option value="all">Todos los tipos</option></select></label>
+                            <label>Estructura<select id="questions-filter-section"><option value="all">Todas las estructuras</option></select></label>
+                            <label>Fuente<select id="questions-filter-source"><option value="all">Offline + IA</option></select></label>
+                            <label>Modo<select id="questions-filter-mode"><option value="form">✍ Formar la pregunta</option><option value="answer">💬 Responder</option></select></label>
+                            <label class="questions-search">Buscar<input id="questions-filter-search" type="search" placeholder="how much, where, presente perfecto…" autocomplete="off" /></label>
+                        </div>
+                        <div class="questions-filter-actions">
+                            <button id="questions-start" type="button" class="button primary">▶ Empezar</button>
+                            <button id="questions-ai-generate" type="button" class="button secondary">🤖 Más ejemplos con IA</button>
+                            <button id="questions-ai-clear" type="button" class="button secondary">Borrar ejemplos de IA</button>
+                        </div>
+                        <p id="questions-status" class="questions-status" role="status" aria-live="polite">Preparando preguntas…</p>
+
+                        <div id="questions-exercise" class="questions-exercise" hidden>
+                            <div class="questions-meta">
+                                <span id="questions-source-label">Pregunta verificada</span>
+                                <span id="questions-pattern"></span>
+                            </div>
+                            <p id="questions-prompt" class="questions-prompt"></p>
+                            <button id="questions-hint-button" type="button" class="questions-link">💡 Ver pista</button>
+                            <p id="questions-hint" class="questions-hint" hidden></p>
+                            <div class="questions-audio-row">
+                                <button id="questions-listen" type="button" class="practice-listen-button" aria-label="Escuchar la pregunta en inglés"><span aria-hidden="true">▶</span> Escuchar pregunta</button>
+                            </div>
+                            <div id="questions-bank" class="questions-bank" hidden></div>
+                            <label class="questions-answer-label" for="questions-answer">Tu respuesta en inglés</label>
+                            <textarea id="questions-answer" rows="2" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Escribe aquí…"></textarea>
+                            <div class="questions-actions">
+                                <button id="questions-check" type="button" class="button primary">Comprobar</button>
+                                <button id="questions-reveal" type="button" class="button secondary">Ver guía</button>
+                                <button id="questions-good" type="button" class="button secondary" hidden>✅ Bien</button>
+                                <button id="questions-review" type="button" class="button secondary" hidden>🔁 Repasar</button>
+                            </div>
+                            <p id="questions-feedback" class="questions-feedback" role="status" aria-live="polite" hidden></p>
+                            <div class="questions-navigation">
+                                <button id="questions-prev" type="button" class="button secondary">← Anterior</button>
+                                <button id="questions-next" type="button" class="button primary">Siguiente pregunta →</button>
+                            </div>
+                        </div>
+                    </section>
                 </div>
                 <div id="practice-pane-audio" class="practice-pane practice-pane-audio" aria-label="Escucha continua" hidden>
                     <div class="practice-heading">
