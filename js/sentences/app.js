@@ -464,6 +464,83 @@ function renderReview() {
     host.append(kicker, prompt, reveal, answerArea, buttons)
 }
 
+/* Piezas compartidas por las prácticas para que todas se entiendan igual:
+ * cabecera con icono, progreso, pasos y estado vacío con acción. */
+function practiceHero({ icon, title, text }) {
+    const hero = document.createElement("div")
+    hero.className = "practice-hero"
+    const badge = document.createElement("span")
+    badge.className = "practice-hero-icon"
+    badge.textContent = icon
+    badge.setAttribute("aria-hidden", "true")
+    const body = document.createElement("div")
+    body.className = "practice-hero-body"
+    const heading = document.createElement("h3")
+    heading.textContent = title
+    const description = document.createElement("p")
+    description.textContent = text
+    body.append(heading, description)
+    hero.append(badge, body)
+    return hero
+}
+
+function practiceProgress(current, total, label) {
+    const wrap = document.createElement("div")
+    wrap.className = "practice-progress"
+    const meta = document.createElement("div")
+    meta.className = "practice-progress-meta"
+    const left = document.createElement("span")
+    left.textContent = label
+    const right = document.createElement("strong")
+    right.textContent = `${current} / ${total}`
+    meta.append(left, right)
+    const track = document.createElement("div")
+    track.className = "practice-progress-track"
+    track.setAttribute("role", "progressbar")
+    track.setAttribute("aria-valuemin", "0")
+    track.setAttribute("aria-valuemax", String(total))
+    track.setAttribute("aria-valuenow", String(current))
+    const fill = document.createElement("span")
+    fill.style.width = `${Math.max(0, Math.min(100, (current / Math.max(1, total)) * 100))}%`
+    track.append(fill)
+    wrap.append(meta, track)
+    return wrap
+}
+
+function practiceEmpty({ icon, title, text, actionLabel, onAction }) {
+    const box = document.createElement("div")
+    box.className = "practice-empty"
+    const badge = document.createElement("span")
+    badge.className = "practice-empty-icon"
+    badge.textContent = icon
+    badge.setAttribute("aria-hidden", "true")
+    const heading = document.createElement("h3")
+    heading.textContent = title
+    const description = document.createElement("p")
+    description.textContent = text
+    box.append(badge, heading, description)
+    if (actionLabel && onAction) {
+        const action = document.createElement("button")
+        action.type = "button"
+        action.className = "button primary"
+        action.textContent = actionLabel
+        action.addEventListener("click", onAction)
+        box.append(action)
+    }
+    return box
+}
+
+function practiceSteps(steps) {
+    const list = document.createElement("ol")
+    list.className = "practice-steps"
+    for (const step of steps) {
+        const item = document.createElement("li")
+        item.textContent = step
+        list.append(item)
+    }
+    return list
+}
+
 /* Lectura y comprensión: las preguntas salen únicamente de las frases que el
  * usuario guardó. Si una frase no sirve para completar huecos, se salta sin
  * inventar nada. */
@@ -486,85 +563,127 @@ function renderReading() {
     host.replaceChildren()
     const total = readingSourceCount(state.sentences)
     if (total < 3) {
-        const empty = document.createElement("div")
-        empty.className = "empty"
-        empty.textContent = `Guarda al menos 3 frases con traducción en «＋ Frases» para tener ejercicios de lectura. Ahora mismo hay ${total} disponibles.`
-        host.append(empty)
+        host.append(practiceEmpty({
+            icon: "📖",
+            title: "Necesitas 3 frases con traducción",
+            text: `Ahora mismo tienes ${total}. Las preguntas se crean solo con tus frases, así que guarda al menos tres en «＋ Frases».`,
+            actionLabel: "＋ Añadir frases",
+            onAction: () => switchScreen("add")
+        }))
         return
     }
     const question = nextReadingQuestion()
     if (!question) {
-        const empty = document.createElement("div")
-        empty.className = "empty"
-        empty.textContent = "Tus frases todavía no permiten crear preguntas. Añade frases más largas."
-        host.append(empty)
+        host.append(practiceEmpty({
+            icon: "📖",
+            title: "Tus frases todavía no permiten preguntas",
+            text: "Añade frases con más de una palabra y su traducción al español para poder practicar.",
+            actionLabel: "＋ Añadir frases",
+            onAction: () => switchScreen("add")
+        }))
         return
     }
     readingState.question = question
-    const kicker = document.createElement("div")
-    kicker.className = "exercise-kicker reading-kicker"
-    kicker.textContent = `${question.type === "meaning" ? "COMPRENSIÓN" : "LECTURA"} · ${readingState.index + 1}/${total} · solo tus frases`
+    const isMeaning = question.type === "meaning"
+    const hero = practiceHero({
+        icon: isMeaning ? "🧠" : "📝",
+        title: isMeaning ? "Elige el significado correcto" : "Completa la palabra que falta",
+        text: isMeaning
+            ? "Lee la frase en inglés y elige su traducción real. Las opciones salen de tus propias frases."
+            : "Lee la frase con el hueco y escribe la palabra que falta. La traducción te ayuda a recordarla."
+    })
+    const progress = practiceProgress(readingState.index + 1, total, "Pregunta")
+
+    const sentenceCard = document.createElement("div")
+    sentenceCard.className = "practice-sentence-card"
+    const sentenceLabel = document.createElement("span")
+    sentenceLabel.className = "practice-label"
+    sentenceLabel.textContent = isMeaning ? "FRASE EN INGLÉS" : "FRASE CON HUECO"
     const sentenceRow = document.createElement("div")
     sentenceRow.className = "reading-sentence-row"
-    const sentence = document.createElement("div")
-    sentence.className = "exercise-prompt reading-sentence"
+    const sentence = document.createElement("p")
+    sentence.className = "reading-sentence"
     sentence.lang = "en"
-    sentence.textContent = question.type === "cloze" ? question.prompt : question.sentence
+    sentence.textContent = isMeaning ? question.sentence : question.prompt
     const play = document.createElement("button")
     play.type = "button"
-    play.className = "icon-button audio-button"
-    play.textContent = "🔊"
-    play.title = "Escuchar frase"
-    play.setAttribute("aria-label", `Escuchar frase: ${question.sentence}`)
+    play.className = "button secondary practice-listen"
+    play.innerHTML = `<span aria-hidden="true">🔊</span> Escuchar`
     play.disabled = !window.speechSynthesis
     play.addEventListener("click", () => playAudioEnhanced(question.sentence, "en"))
     sentenceRow.append(sentence, play)
-    const prompt = document.createElement("p")
-    prompt.className = "reading-prompt"
-    prompt.textContent = question.prompt
+    sentenceCard.append(sentenceLabel, sentenceRow)
+    if (!isMeaning && question.translation) {
+        const translation = document.createElement("p")
+        translation.className = "practice-translation"
+        translation.textContent = `Pista: ${question.translation}`
+        sentenceCard.append(translation)
+    }
+
+    const instruction = document.createElement("p")
+    instruction.className = "practice-instruction"
+    instruction.textContent = isMeaning ? "¿Qué significa esta frase?" : "Escribe la palabra que falta."
     const answerArea = document.createElement("div")
     answerArea.className = "reading-answer-area"
     const feedback = document.createElement("div")
-    feedback.className = "reading-feedback hidden"
+    feedback.className = "practice-feedback hidden"
     feedback.setAttribute("role", "status")
+    const actions = document.createElement("div")
+    actions.className = "practice-actions"
     const next = document.createElement("button")
     next.type = "button"
-    next.className = "button primary reading-next hidden"
-    next.textContent = "Siguiente →"
+    next.className = "button primary practice-next hidden"
+    next.textContent = "Siguiente pregunta →"
     next.addEventListener("click", () => {
         readingState.index += 1
         readingState.answered = false
         readingState.correct = false
         renderReading()
     })
+    actions.append(next)
 
-    const showResult = correct => {
+    const showResult = (correct, chosenButton) => {
         recordPracticeResult(null, READING_STATS_STORAGE, correct)
         readingState.answered = true
         readingState.correct = correct
+        answerArea.querySelectorAll("button, input").forEach(node => node.disabled = true)
+        if (chosenButton) chosenButton.classList.add(correct ? "is-correct" : "is-wrong")
+        if (isMeaning) {
+            answerArea.querySelectorAll("[data-option-id]").forEach(node => {
+                if (node.dataset.optionId === String(question.answerId)) node.classList.add("is-correct")
+            })
+        }
         feedback.classList.remove("hidden")
         feedback.classList.toggle("correct", correct)
         feedback.classList.toggle("incorrect", !correct)
-        feedback.textContent = correct
-            ? `✅ Correcto. ${question.type === "meaning" ? question.sentence : question.answer} — ${question.translation || readingAnswerText(question)}`
-            : `❌ No era eso. Respuesta: ${readingAnswerText(question)}. ${question.sentence}${question.translation ? ` — ${question.translation}` : ""}`
+        const answer = readingAnswerText(question)
+        feedback.innerHTML = correct
+            ? `<strong>✅ Correcto</strong><p>${escapeHtml(question.sentence)} — ${escapeHtml(answer)}</p>`
+            : `<strong>❌ Casi</strong><p>Respuesta correcta: <b>${escapeHtml(answer)}</b></p><p>${escapeHtml(question.sentence)}${question.translation ? ` — ${escapeHtml(question.translation)}` : ""}</p>`
         next.classList.remove("hidden")
+        next.focus()
     }
 
-    if (question.type === "meaning") {
-        for (const option of question.options) {
+    if (isMeaning) {
+        const letters = ["A", "B", "C", "D", "E", "F"]
+        question.options.forEach((option, index) => {
             const button = document.createElement("button")
             button.type = "button"
-            button.className = "button secondary reading-option"
-            button.textContent = option.text
+            button.className = "reading-option"
             button.dataset.optionId = option.id
+            const letter = document.createElement("span")
+            letter.className = "reading-option-letter"
+            letter.textContent = letters[index] || String(index + 1)
+            const text = document.createElement("span")
+            text.className = "reading-option-text"
+            text.textContent = option.text
+            button.append(letter, text)
             button.addEventListener("click", () => {
                 if (readingState.answered) return
-                showResult(checkReadingAnswer(question, option.id))
-                answerArea.querySelectorAll("[data-option-id]").forEach(node => node.disabled = true)
+                showResult(checkReadingAnswer(question, option.id), button)
             })
             answerArea.append(button)
-        }
+        })
     } else {
         const form = document.createElement("form")
         form.className = "reading-cloze-form"
@@ -584,14 +703,15 @@ function renderReading() {
         form.addEventListener("submit", event => {
             event.preventDefault()
             if (readingState.answered) return
-            showResult(checkReadingAnswer(question, input.value))
-            check.disabled = true
-            input.disabled = true
+            const correct = checkReadingAnswer(question, input.value)
+            showResult(correct, null)
+            input.classList.toggle("is-correct", correct)
+            input.classList.toggle("is-wrong", !correct)
         })
         answerArea.append(form)
         input.focus()
     }
-    host.append(kicker, sentenceRow, prompt, answerArea, feedback, next)
+    host.append(hero, progress, sentenceCard, instruction, answerArea, feedback, actions)
 }
 
 /* Dictado: se reproduce la frase guardada con la voz del sistema y se compara
@@ -603,30 +723,44 @@ function renderDictation() {
     host.replaceChildren()
     const total = dictationSourceCount(state.sentences)
     if (!total) {
-        const empty = document.createElement("div")
-        empty.className = "empty"
-        empty.textContent = "Guarda al menos una frase en «＋ Frases» para practicar dictado."
-        host.append(empty)
+        host.append(practiceEmpty({
+            icon: "🎧",
+            title: "Todavía no tienes frases para dictar",
+            text: "Guarda al menos una frase en «＋ Frases». El dictado usa la voz de tu dispositivo y no necesita internet.",
+            actionLabel: "＋ Añadir frases",
+            onAction: () => switchScreen("add")
+        }))
         return
     }
     const question = buildDictation(state.sentences, dictationState.index)
     dictationState.question = question
     dictationState.answered = false
-    const kicker = document.createElement("div")
-    kicker.className = "exercise-kicker dictation-kicker"
-    kicker.textContent = `DICTADO · ${dictationState.index + 1}/${total} · ${question.wordCount} palabras`
-    const listenRow = document.createElement("div")
-    listenRow.className = "dictation-listen-row"
+    const hero = practiceHero({
+        icon: "🎧",
+        title: "Escucha y escribe",
+        text: "Pulsa «Escuchar», escribe la frase y comprueba. Puedes repetir el audio las veces que quieras."
+    })
+    const progress = practiceProgress(dictationState.index + 1, total, "Dictado")
+    const steps = practiceSteps([
+        "Pulsa «Escuchar frase».",
+        "Escribe lo que oyes, sin mirar la frase.",
+        "Comprueba y revisa las palabras marcadas."
+    ])
+    const listenCard = document.createElement("div")
+    listenCard.className = "practice-sentence-card practice-listen-card"
+    const listenLabel = document.createElement("span")
+    listenLabel.className = "practice-label"
+    listenLabel.textContent = "AUDIO"
     const listen = document.createElement("button")
     listen.type = "button"
-    listen.className = "button primary dictation-listen"
-    listen.textContent = "🔊 Escuchar frase"
+    listen.className = "button primary practice-listen-big"
+    listen.innerHTML = `<span aria-hidden="true">🔊</span> Escuchar frase`
     listen.disabled = !window.speechSynthesis
     listen.addEventListener("click", () => playAudioEnhanced(question.sentence, "en"))
-    const hint = document.createElement("span")
-    hint.className = "dictation-hint"
-    hint.textContent = "Escucha cuantas veces quieras."
-    listenRow.append(listen, hint)
+    const meta = document.createElement("p")
+    meta.className = "practice-meta"
+    meta.textContent = `${question.wordCount} palabras · voz de tu dispositivo`
+    listenCard.append(listenLabel, listen, meta)
 
     const form = document.createElement("form")
     form.className = "dictation-form"
@@ -644,16 +778,19 @@ function renderDictation() {
     form.append(textarea, check)
 
     const feedback = document.createElement("div")
-    feedback.className = "dictation-feedback hidden"
+    feedback.className = "practice-feedback hidden"
     feedback.setAttribute("role", "status")
+    const actions = document.createElement("div")
+    actions.className = "practice-actions"
     const next = document.createElement("button")
     next.type = "button"
-    next.className = "button primary dictation-next hidden"
-    next.textContent = "Siguiente →"
+    next.className = "button primary practice-next hidden"
+    next.textContent = "Siguiente dictado →"
     next.addEventListener("click", () => {
         dictationState.index += 1
         renderDictation()
     })
+    actions.append(next)
 
     form.addEventListener("submit", event => {
         event.preventDefault()
@@ -667,15 +804,17 @@ function renderDictation() {
         feedback.classList.toggle("correct", result.correct)
         feedback.classList.toggle("incorrect", !result.correct)
         const words = result.comparison.result
-            .map(item => `<span class="dictation-word ${item.status}">${item.text}</span>`)
+            .map(item => `<span class="dictation-word ${item.status}">${escapeHtml(item.text)}</span>`)
             .join(" ")
-        feedback.innerHTML = `<strong>${result.correct ? "✅ Correcto." : `📝 ${result.score}% de coincidencia.`}</strong><p>Frase: ${escapeHtml(question.sentence)}</p>${question.translation ? `<p>${escapeHtml(question.translation)}</p>` : ""}<div class="dictation-words">${words}</div><small>Verde = acertada · ámbar = parecida · rojo = no escrita.</small>`
+        feedback.innerHTML = `<strong>${result.correct ? "✅ Correcto" : `📝 ${result.score}% de coincidencia`}</strong><p>Frase: ${escapeHtml(question.sentence)}</p>${question.translation ? `<p>${escapeHtml(question.translation)}</p>` : ""}<div class="dictation-words">${words}</div><small>Verde = acertada · ámbar = parecida · rojo = no escrita.</small>`
         next.classList.remove("hidden")
+        next.focus()
     })
-    host.append(kicker, listenRow, form, feedback, next)
+    host.append(hero, progress, steps, listenCard, form, feedback, actions)
 }
 
-/* Panel de habilidades: solo muestra lo que la app registró localmente. */
+/* Panel de habilidades: reúne lo practicado en este dispositivo y propone el
+ * siguiente paso. No es una nota ni una comparación con nadie. */
 function renderSkills() {
     const host = byId("skills-card")
     if (!host) return
@@ -686,20 +825,66 @@ function renderSkills() {
         speaking: readBestAttempts(null)
     })
     host.replaceChildren()
+    const hero = practiceHero({
+        icon: "📊",
+        title: "Tu progreso por habilidad",
+        text: "Reúne lo que ya practicaste en este dispositivo y te dice qué hacer después. No es una nota: es una guía."
+    })
+    const grid = document.createElement("div")
+    grid.className = "skills-grid"
+    const actionScreens = { reading: "reading", listening: "dictation", writing: "dictation" }
+    const actionLabels = {
+        reading: "Practicar lectura",
+        listening: "Hacer un dictado",
+        writing: "Escribir un dictado",
+        speaking: "Elegir una frase"
+    }
     for (const skill of summary) {
         const card = document.createElement("article")
         card.className = `skill-card skill-${skill.level}`
         const heading = document.createElement("h3")
-        heading.textContent = `${skill.icon} ${skill.label}`
+        const title = document.createElement("span")
+        title.textContent = `${skill.icon} ${skill.label}`
         const badge = document.createElement("span")
         badge.className = "skill-badge"
         badge.textContent = skill.levelLabel
+        heading.append(title, badge)
         const detail = document.createElement("p")
+        detail.className = "skill-detail"
         detail.textContent = skill.detail
-        heading.append(badge)
-        card.append(heading, detail)
-        host.append(card)
+        const bar = document.createElement("div")
+        bar.className = "skill-progress"
+        const track = document.createElement("div")
+        track.className = "skill-progress-track"
+        track.setAttribute("role", "progressbar")
+        track.setAttribute("aria-valuemin", "0")
+        track.setAttribute("aria-valuemax", "100")
+        track.setAttribute("aria-valuenow", String(skill.progress))
+        const fill = document.createElement("span")
+        fill.style.width = `${skill.progress}%`
+        track.append(fill)
+        const percent = document.createElement("strong")
+        percent.textContent = `${skill.progress}%`
+        bar.append(track, percent)
+        const next = document.createElement("p")
+        next.className = "skill-next"
+        next.textContent = `Siguiente paso: ${skill.nextStep}`
+        const action = document.createElement("button")
+        action.type = "button"
+        action.className = "button secondary skill-action"
+        action.textContent = actionLabels[skill.key]
+        action.addEventListener("click", () => {
+            if (skill.key === "speaking") {
+                showNotice("Abre una frase en «＋ Frases» y pulsa 🎤 para practicar tu pronunciación.")
+                switchScreen("add")
+                return
+            }
+            switchScreen(actionScreens[skill.key])
+        })
+        card.append(heading, detail, bar, next, action)
+        grid.append(card)
     }
+    host.append(hero, grid)
 }
 
 async function submitReview(sentence, grade) {

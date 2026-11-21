@@ -61,39 +61,83 @@ const LEVEL_LABELS = {
 };
 
 /* `speaking` es el mapa de mejores intentos guardado por Shadowing. */
+function progress(answered, target) {
+    const goal = Math.max(1, Number(target) || 1);
+    return Math.min(100, Math.round((Number(answered) || 0) / goal * 100));
+}
+
+function accuracy(answered, correct) {
+    return answered ? Math.round(correct / answered * 100) : 0;
+}
+
+/* «1 pregunta» y «2 preguntas»: evita textos como «1 preguntas». */
+function count(number, singular, plural) {
+    const value = Number(number) || 0;
+    return `${value} ${value === 1 ? singular : plural}`;
+}
+
 export function buildSkillsSummary({ sentenceCount = 0, reading = {}, dictation = {}, speaking = {} } = {}) {
     const entries = Object.values(speaking || {}).filter(Boolean);
     const mastered = entries.filter(item => Number(item.score) >= MASTERY_THRESHOLD).length;
     const speakingAnswered = entries.reduce((sum, item) => sum + (Number(item.attempts) || 0), 0);
+    const readingAnswered = Number(reading.answered) || 0;
+    const readingCorrect = Number(reading.correct) || 0;
+    const dictationAnswered = Number(dictation.answered) || 0;
+    const dictationCorrect = Number(dictation.correct) || 0;
+    const readingTarget = Math.max(10, sentenceCount * 2);
+    const dictationTarget = Math.max(5, sentenceCount);
+    const writingTarget = Math.max(5, sentenceCount);
+    const speakingTarget = Math.max(5, entries.length);
+
     const skills = [
         {
             key: "reading",
             icon: "📖",
             label: "Lectura y comprensión",
-            level: level({ answered: reading.answered || 0, correct: reading.correct || 0 }, 5),
-            detail: `${reading.answered || 0} preguntas · ${reading.correct || 0} aciertos · ${sentenceCount} frases disponibles`
+            level: level({ answered: readingAnswered, correct: readingCorrect }, 5),
+            detail: `${count(readingAnswered, "pregunta", "preguntas")} · ${count(readingCorrect, "acierto", "aciertos")} · ${count(sentenceCount, "frase disponible", "frases disponibles")}`,
+            answered: readingAnswered,
+            correct: readingCorrect,
+            target: readingTarget,
+            progress: progress(readingAnswered, readingTarget),
+            nextStep: readingAnswered < 5 ? "Haz 5 preguntas para empezar" : "Sigue con 5 preguntas más"
         },
         {
             key: "listening",
             icon: "🎧",
             label: "Escucha (dictado)",
-            level: level({ answered: dictation.answered || 0, correct: dictation.correct || 0 }, 3),
-            detail: `${dictation.answered || 0} dictados · ${dictation.correct || 0} aciertos · audio en tu dispositivo`
+            level: level({ answered: dictationAnswered, correct: dictationCorrect }, 3),
+            detail: `${count(dictationAnswered, "dictado", "dictados")} · ${count(dictationCorrect, "acierto", "aciertos")} · audio en tu dispositivo`,
+            answered: dictationAnswered,
+            correct: dictationCorrect,
+            target: dictationTarget,
+            progress: progress(dictationAnswered, dictationTarget),
+            nextStep: dictationAnswered < 3 ? "Haz 3 dictados para empezar" : "Repite las frases que fallaste"
         },
         {
             key: "writing",
             icon: "✍️",
             label: "Escritura",
-            level: level({ answered: dictation.answered || 0, correct: dictation.correct || 0 }, 3),
-            detail: `${sentenceCount} frases guardadas · escribes lo que escuchas y lo comparas palabra por palabra`
+            level: level({ answered: dictationAnswered, correct: dictationCorrect }, 3),
+            detail: `${count(sentenceCount, "frase guardada", "frases guardadas")} · escribes lo que escuchas y lo comparas palabra por palabra`,
+            answered: dictationAnswered,
+            correct: dictationCorrect,
+            target: writingTarget,
+            progress: progress(dictationAnswered, writingTarget),
+            nextStep: dictationAnswered < 3 ? "Escribe 3 dictados para empezar" : "Escribe un dictado completo"
         },
         {
             key: "speaking",
             icon: "🎤",
             label: "Pronunciación",
             level: mastered ? "strong" : speakingAnswered ? "growing" : "empty",
-            detail: `${mastered} frases dominadas · ${speakingAnswered} intentos guardados · práctica con tu micrófono`
+            detail: `${count(mastered, "frase dominada", "frases dominadas")} · ${count(speakingAnswered, "intento guardado", "intentos guardados")} · práctica con tu micrófono`,
+            answered: speakingAnswered,
+            correct: mastered,
+            target: speakingTarget,
+            progress: progress(mastered, speakingTarget),
+            nextStep: mastered < 3 ? "Graba y domina 3 frases" : "Repasa las frases que bajaron del 90%"
         }
     ];
-    return skills.map(skill => ({ ...skill, levelLabel: LEVEL_LABELS[skill.level] }));
+    return skills.map(skill => ({ ...skill, levelLabel: LEVEL_LABELS[skill.level], accuracy: accuracy(skill.answered, skill.correct) }));
 }

@@ -161,14 +161,87 @@
 }
 
 /* Panel de habilidades: solo afecta a Mi aprendizaje. */
-#mysentences-section .skills-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
-#mysentences-section .skill-card{padding:16px;border:1px solid var(--line);border-radius:12px;background:#fff;box-shadow:0 6px 18px rgba(28,79,58,.05)}
-#mysentences-section .skill-card h3{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 8px;color:var(--green-dark);font:800 16px Manrope,sans-serif}
+#mysentences-section .skills-panel{display:block}
+#mysentences-section .skills-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px;margin-top:16px}
+#mysentences-section .skill-card{display:flex;flex-direction:column;gap:10px;padding:18px;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:0 6px 18px rgba(28,79,58,.05)}
+#mysentences-section .skill-card h3{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0;color:var(--green-dark);font:800 16px Manrope,sans-serif}
+#mysentences-section .skill-card h3>span:first-child{min-width:0;overflow-wrap:anywhere}
 #mysentences-section .skill-badge{padding:3px 9px;border-radius:999px;background:var(--soft);color:var(--green);font:700 10px "DM Sans",sans-serif;white-space:nowrap}
 #mysentences-section .skill-strong .skill-badge{background:#dff1e5;color:#1d6142}
 #mysentences-section .skill-growing .skill-badge{background:#fff0cf;color:#8b6530}
 #mysentences-section .skill-empty .skill-badge{background:#eef1ee;color:#77837c}
 #mysentences-section .skill-card p{margin:0;color:#4d6a5b;font-size:12px;line-height:1.6;overflow-wrap:anywhere}
+#mysentences-section .skill-detail{color:var(--muted)}
+#mysentences-section .skill-progress{display:flex;align-items:center;gap:10px}
+#mysentences-section .skill-progress-track{position:relative;flex:1;height:8px;border-radius:999px;background:#eef1ee;overflow:hidden}
+#mysentences-section .skill-progress-track span{display:block;height:100%;border-radius:999px;background:var(--green);transition:width .3s ease}
+#mysentences-section .skill-strong .skill-progress-track span{background:#1d6142}
+#mysentences-section .skill-growing .skill-progress-track span{background:#c08a34}
+#mysentences-section .skill-progress strong{flex:0 0 auto;color:var(--green-dark);font:800 13px Manrope,sans-serif}
+#mysentences-section .skill-next{margin-top:auto!important;padding-top:4px;color:var(--green-dark)!important;font-weight:700}
+#mysentences-section .skill-action{justify-self:start;align-self:flex-start;min-height:40px;margin-top:2px}
 @media(max-width:700px){
     #mysentences-section .skills-grid{grid-template-columns:1fr}
+    #mysentences-section .skill-action{width:100%;min-height:44px}
+}
+
+/* Piezas compartidas por Lectura, Dictado y Habilidades. */
+#mysentences-section .practice-hero{display:flex;align-items:flex-start;gap:14px;padding:18px;margin-bottom:16px;border:1px solid #d3e4d8;border-radius:14px;background:linear-gradient(135deg,#f2f7f1,#ffffff)}
+#mysentences-section .practice-hero-icon{display:grid;place-items:center;flex:0 0 auto;width:44px;height:44px;border-radius:12px;background:var(--soft);font-size:22px;line-height:1}
+#mysentences-section .practice-hero-body{min-width:0}
+#mysentences-section .practice-hero-body h3{margin:0 0 5px;color:var(--green-dark);font:800 18px/1.3 Manrope,sans-serif;letter-spacing:-.02em}
+#mysentences-section .practice-hero-body p{margin:0;color:#4d6a5b;font-size:13px;line-height:1.55}
+#mysentences-section .practice-progress{margin-bottom:16px}
+#mysentences-section .practice-progress-meta{display:flex;align-items:baseline;justify-content:space-between;gap:10px;margin-bottom:6px;color:var(--muted);font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
+#mysentences-section .practice-progress-meta strong{color:var(--green-dark);font:800 12px Manrope,sans-serif;letter-spacing:0;text-transform:none}
+#mysentences-section .practice-progress-track{height:7px;border-radius:999px;background:#e7ece6;overflow:hidden}
+#mysentences-section .practice-progress-track span{display:block;height:100%;border-radius:999px;background:var(--green);transition:width .3s ease}
+#mysentences-section .practice-steps{margin:0 0 18px;padding:0 0 0 20px;color:#4d6a5b;font-size:13px;line-height:1.7}
+#mysentences-section .practice-steps li{margin:2px 0;padding-left:2px}
+#mysentences-section .practice-steps li::marker{color:var(--green);font-weight:800}
+#mysentences-section .practice-empty{display:grid;justify-items:center;gap:8px;padding:30px 20px;border:1px dashed #cdd9cf;border-radius:14px;background:#fbfdfb;text-align:center}
+#mysentences-section .practice-empty-icon{font-size:30px;line-height:1}
+#mysentences-section .practice-empty h3{margin:0;color:var(--green-dark);font:800 18px Manrope,sans-serif}
+#mysentences-section .practice-empty p{margin:0;max-width:460px;color:var(--muted);font-size:13px;line-height:1.55}
+#mysentences-section .practice-empty .button{margin-top:8px;min-height:44px}
+#mysentences-section .practice-sentence-card{padding:18px;border:1px solid var(--line);border-radius:14px;background:#fff;box-shadow:0 6px 18px rgba(28,79,58,.05)}
+#mysentences-section .practice-label{display:block;margin-bottom:8px;color:var(--muted);font:800 10px "DM Sans",sans-serif;letter-spacing:.12em;text-transform:uppercase}
+#mysentences-section .practice-sentence-card .reading-sentence-row{margin-bottom:0}
+#mysentences-section .practice-listen{flex:0 0 auto;min-height:40px;white-space:nowrap}
+#mysentences-section .practice-translation{margin:12px 0 0;padding-top:12px;border-top:1px dashed var(--line);color:var(--muted);font-size:13px;line-height:1.5}
+#mysentences-section .practice-instruction{margin:18px 0 10px;color:var(--green-dark);font-size:14px;font-weight:700}
+#mysentences-section .practice-listen-card{display:grid;justify-items:center;gap:10px;text-align:center;background:linear-gradient(135deg,#f4f9f5,#ffffff)}
+#mysentences-section .practice-listen-big{min-height:56px;padding:0 26px;font-size:16px}
+#mysentences-section .practice-meta{margin:0;color:var(--muted);font-size:12px}
+#mysentences-section .practice-feedback{margin-top:16px;padding:13px 15px;border-radius:10px;font-size:13px;line-height:1.55}
+#mysentences-section .practice-feedback strong{display:block;margin-bottom:5px;font-size:14px}
+#mysentences-section .practice-feedback p{margin:4px 0;overflow-wrap:anywhere}
+#mysentences-section .practice-feedback.correct{background:#e8f5ec;color:#1d6142}
+#mysentences-section .practice-feedback.incorrect{background:#fdf0ea;color:#9d4b2f}
+#mysentences-section .practice-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
+#mysentences-section .practice-next{min-height:46px}
+
+/* Opciones de lectura con letra y estado de acierto/fallo. */
+#mysentences-section .reading-option{display:flex;align-items:flex-start;gap:12px;width:100%;min-height:50px;padding:12px 14px;border:1px solid var(--line);border-radius:10px;background:#fff;color:#2f4238;font:600 14px/1.45 "DM Sans",sans-serif;text-align:left;cursor:pointer;transition:border-color .15s ease,background .15s ease}
+#mysentences-section .reading-option:hover:not(:disabled){border-color:#9dbfa9;background:#f7fbf8}
+#mysentences-section .reading-option:focus-visible{outline:2px solid var(--green);outline-offset:2px}
+#mysentences-section .reading-option:disabled{cursor:default;opacity:.9}
+#mysentences-section .reading-option-letter{display:grid;place-items:center;flex:0 0 auto;width:26px;height:26px;border-radius:50%;background:var(--soft);color:var(--green-dark);font:800 12px Manrope,sans-serif}
+#mysentences-section .reading-option-text{min-width:0;overflow-wrap:anywhere}
+#mysentences-section .reading-option.is-correct{border-color:#2f8a5c;background:#e8f5ec}
+#mysentences-section .reading-option.is-correct .reading-option-letter{background:#2f8a5c;color:#fff}
+#mysentences-section .reading-option.is-wrong{border-color:#c9744f;background:#fdf0ea}
+#mysentences-section .reading-option.is-wrong .reading-option-letter{background:#c9744f;color:#fff}
+#mysentences-section .reading-cloze-form input.is-correct{border-color:#2f8a5c;background:#e8f5ec}
+#mysentences-section .reading-cloze-form input.is-wrong{border-color:#c9744f;background:#fdf0ea}
+@media(max-width:700px){
+    #mysentences-section .practice-hero{padding:15px;gap:11px}
+    #mysentences-section .practice-hero-icon{width:40px;height:40px;font-size:20px}
+    #mysentences-section .practice-hero-body h3{font-size:16px}
+    #mysentences-section .practice-sentence-card{padding:15px}
+    #mysentences-section .practice-sentence-card .reading-sentence-row{flex-direction:column;align-items:stretch;gap:10px}
+    #mysentences-section .practice-listen{width:100%;min-height:44px}
+    #mysentences-section .practice-listen-big{width:100%}
+    #mysentences-section .practice-actions .practice-next{width:100%;min-height:48px}
+    #mysentences-section .practice-steps{font-size:12px}
 }

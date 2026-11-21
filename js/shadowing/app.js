@@ -62,8 +62,9 @@ const state = {
     lookupCache: new Map(),
     selectedWord: "",
     wordSpans: [],
-    guideWindowShown: false,
     guideDrag: null,
+    suppressAssessment: false,
+    renderedLessonKey: "",
     speakingIndex: -1,
     externalPhrase: null,
     savedSentences: [],
@@ -71,6 +72,7 @@ const state = {
     autoResultReceived: false,
     recordings: new Map(),
     mediaRecorder: null,
+    pendingRecording: null,
     chunks: [],
     recognizer: null,
     stream: null
@@ -168,7 +170,6 @@ function toggleGuideWindow(open) {
     button?.setAttribute("aria-expanded", String(visible))
     button?.classList.toggle("active", visible)
     if (visible && !guideIsMobile()) placeGuideWindow(node)
-    if (visible) state.guideWindowShown = true
 }
 
 function wireGuideWindow() {
@@ -218,9 +219,10 @@ function wireGuideWindow() {
     const section = byId("practice-section")
     if (section) {
         new MutationObserver(() => {
+            // Al salir de Practicar se cierra la guía, pero no se vuelve a abrir
+            // sola: solo aparece cuando el usuario pulsa el botón 🎯.
             if (section.classList.contains("active") || node.classList.contains("hidden")) return
             toggleGuideWindow(false)
-            state.guideWindowShown = false // se reabre al volver a Practicar si estaba abierta
         }).observe(section, { attributes: true, attributeFilter: ["class"] })
     }
 }
@@ -380,19 +382,29 @@ function renderLesson() {
     renderTimingControl()
     const lines = byId("shadowing-lines")
     if (!lines) return
-    lines.replaceChildren()
-    transcript.forEach((segment, index) => {
-        const button = document.createElement("button")
-        button.type = "button"
-        button.className = `shadowing-line${index === state.currentIndex ? " active" : ""}`
-        button.setAttribute("aria-current", index === state.currentIndex ? "true" : "false")
-        const number = document.createElement("span")
-        number.textContent = String(index + 1)
-        const text = document.createElement("strong")
-        text.textContent = segment.text
-        button.append(number, text)
-        button.addEventListener("click", () => seekToLine(index, true))
-        lines.append(button)
+    // Reconstruir la lista en cada cambio de frase hacía parpadear el texto y
+    // perdía el desplazamiento. Solo se reconstruye si cambia la lección.
+    const key = `${current?.id || ""}|${current?.videoId || ""}|${current?.source || ""}|${transcript.length}|${transcript[0]?.text || ""}|${transcript[transcript.length - 1]?.text || ""}`
+    if (state.renderedLessonKey !== key) {
+        lines.replaceChildren()
+        transcript.forEach((segment, index) => {
+            const button = document.createElement("button")
+            button.type = "button"
+            button.className = "shadowing-line"
+            const number = document.createElement("span")
+            number.textContent = String(index + 1)
+            const text = document.createElement("strong")
+            text.textContent = segment.text
+            button.append(number, text)
+            button.addEventListener("click", () => seekToLine(index, true))
+            lines.append(button)
+        })
+        state.renderedLessonKey = key
+    }
+    lines.querySelectorAll(".shadowing-line").forEach((element, index) => {
+        const active = index === state.currentIndex
+        element.classList.toggle("active", active)
+        element.setAttribute("aria-current", active ? "true" : "false")
     })
     // Desplaza solo la lista lateral: scrollIntoView también movería la página
     // y sacaría de su sitio la barra de controles fija en móvil.
@@ -516,7 +528,6 @@ function renderGuideWindow(guide, lesson) {
             ? `Tiempos medidos palabra por palabra en los subtítulos del video. ${timing}`
             : `Duración y estrés estimados de los subtítulos, no medidos del audio. ${timing}`
     }
-    if (!state.guideWindowShown) toggleGuideWindow(true)
 }
 
 function guidePauseTitle(item) {
@@ -603,10 +614,11 @@ function seekToLine(index, keepFrame = false) {
     const current = state.current
     if (!current?.transcript?.length) return
     if (state.autoActive) stopAutoPractice("Práctica detenida.")
+    stopRecording({ silent: true })
+    stopPhraseTimer()
     state.currentIndex = Math.max(0, Math.min(current.transcript.length - 1, index))
     state.translation = ""
     state.selectedWord = ""
-    stopPhraseTimer()
     renderLesson()
     if (keepFrame) playPhrase(state.currentIndex)
 }
@@ -797,6 +809,7 @@ function playPhrase(index = state.currentIndex) {
     stopPhraseTimer()
     const nextIndex = Math.max(0, Math.min(state.current.transcript.length - 1, index))
     const indexChanged = nextIndex !== state.currentIndex
+    if (indexChanged) stopRecording({ silent: true })
     state.currentIndex = nextIndex
     if (indexChanged) {
         state.translation = ""
@@ -1113,6 +1126,10 @@ async function fetchRebuiltSegments(videoId) {
 }
 
 async function applyLesson({ videoId, videoUrl, title, segments, note }) {
+    if (state.autoActive) stopAutoPractice("")
+    stopRecording({ silent: true })
+    stopPhraseTimer()
+    state.player?.pauseVideo?.()
     const timed = retimeSegments(segments)
     state.externalPhrase = null
     state.current = { id: "", videoId, videoUrl, title, source: "auto", transcript: timed }
@@ -1323,7 +1340,12 @@ function parseManual() {
         byId("shadowing-video-url")?.focus()
         return
     }
+    if (state.autoActive) stopAutoPractice("")
+    stopRecording({ silent: true })
+    stopPhraseTimer()
+    state.player?.pauseVideo?.()
     state.externalPhrase = null
+    state.videoUnavailable = false
     if (!state.current || state.current.videoId !== videoId) state.current = { id: "", videoId, videoUrl: youtubeUrl(raw), title: "Lección de YouTube", source: "manual", transcript: retimeSegments(segments) }
     else state.current = { ...state.current, transcript: retimeSegments(segments), source: "manual" }
     state.currentIndex = 0
@@ -1689,11 +1711,29 @@ async function saveSelectedTarget() {
     return saveCatalogWord(target, word, sentence)
 }
 
+/* Detiene la grabación antes de cambiar de frase o de lección. Así la toma se
+ * guarda con la clave correcta y no se abre la autoevaluación de la frase
+ * anterior encima de la nueva. */
+function stopRecording({ silent = false } = {}) {
+    stopSpeechAssessment()
+    if (!state.mediaRecorder) return false
+    state.suppressAssessment = silent
+    // El evento `stop` llega después de cambiar de lección o de frase. Se guarda
+    // aquí la clave y los trozos para que la toma quede en la frase correcta.
+    state.pendingRecording = { key: recordingKey(), chunks: state.chunks.slice() }
+    try {
+        state.mediaRecorder.stop()
+    } catch {
+        state.mediaRecorder = null
+        state.pendingRecording = null
+    }
+    return true
+}
+
 async function startRecording() {
     const button = byId("shadowing-record")
     if (state.mediaRecorder) {
-        state.mediaRecorder.stop()
-        stopSpeechAssessment()
+        stopRecording()
         return
     }
     if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
@@ -1710,22 +1750,29 @@ async function startRecording() {
             if (event.data?.size) state.chunks.push(event.data)
         })
         recorder.addEventListener("stop", () => {
-            const blob = new Blob(state.chunks, { type: recorder.mimeType || "audio/webm" })
-            const key = recordingKey()
+            const pending = state.pendingRecording
+            const chunks = pending?.chunks?.length ? pending.chunks : state.chunks
+            const key = pending?.key || recordingKey()
+            state.pendingRecording = null
+            const blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" })
             const recordings = state.recordings.get(key) || {}
             recordings.blob = blob
             recordings.url = URL.createObjectURL(blob)
             state.recordings.set(key, recordings)
-            state.chunks = []
-            state.stream?.getTracks().forEach(track => track.stop())
-            state.stream = null
-            state.mediaRecorder = null
-            if (button) {
-                button.dataset.recording = "false"
-                button.textContent = "● Grabar"
+            const isCurrent = state.mediaRecorder === recorder
+            if (isCurrent) {
+                state.chunks = []
+                state.stream?.getTracks().forEach(track => track.stop())
+                state.stream = null
+                state.mediaRecorder = null
+                if (button) {
+                    button.dataset.recording = "false"
+                    button.textContent = "● Grabar"
+                }
             }
             renderRecording()
-            finishRecordingAssessment()
+            if (isCurrent && !state.suppressAssessment) finishRecordingAssessment()
+            if (isCurrent) state.suppressAssessment = false
         })
         recorder.start()
         startSpeechAssessment(state.current?.transcript?.[state.currentIndex]?.text || "")
@@ -1940,6 +1987,12 @@ async function openLesson(id) {
     let lesson = state.lessons.find(item => item.id === id)
     if (!lesson) return
     if (state.autoActive) stopAutoPractice("")
+    // Cambiar de lección no debe dejar sonando la frase anterior ni guardar la
+    // grabación en la lección equivocada.
+    stopRecording({ silent: true })
+    stopPhraseTimer()
+    state.player?.pauseVideo?.()
+    state.videoUnavailable = false
     if (needsTimingRebuild(lesson.transcript)) {
         showStatus("Ajustando los tiempos de las frases…")
         const rebuilt = await fetchRebuiltSegments(lesson.videoId)
@@ -2099,8 +2152,9 @@ export function openSpeakingPhrase(sentence) {
     const english = String(sentence?.englishText || sentence?.english || sentence?.text || "").trim()
     if (!english) return false
     if (state.autoActive) stopAutoPractice("Práctica detenida.")
+    stopRecording({ silent: true })
+    stopPhraseTimer()
     stopPhrasePronunciation()
-    stopSpeechAssessment()
     const key = phraseKey(sentence || { text: english })
     state.externalPhrase = {
         key,
