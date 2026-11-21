@@ -136,3 +136,26 @@
     #mysentences-section .reading-cloze-form input{width:100%}
     #mysentences-section .reading-cloze-form .button{width:100%}
 }
+
+/* Dictado: solo afecta a Mi aprendizaje. */
+#mysentences-section .dictation-kicker{color:var(--green);font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+#mysentences-section .dictation-listen-row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px}
+#mysentences-section .dictation-listen{min-height:46px}
+#mysentences-section .dictation-hint{color:var(--muted);font-size:12px}
+#mysentences-section .dictation-form{display:grid;gap:10px;max-width:620px}
+#mysentences-section .dictation-form textarea{width:100%;font-size:16px;line-height:1.5;resize:vertical}
+#mysentences-section .dictation-form .button{justify-self:start;min-height:44px}
+#mysentences-section .dictation-feedback{margin-top:16px;padding:13px;border-radius:9px;font-size:13px;line-height:1.55}
+#mysentences-section .dictation-feedback.correct{background:#e8f5ec;color:#1d6142}
+#mysentences-section .dictation-feedback.incorrect{background:#fdf0ea;color:#9d4b2f}
+#mysentences-section .dictation-feedback p{margin:7px 0;overflow-wrap:anywhere}
+#mysentences-section .dictation-words{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+#mysentences-section .dictation-word{padding:3px 9px;border-radius:7px;font-weight:700}
+#mysentences-section .dictation-word.match{background:#dff1e5;color:#1d6142}
+#mysentences-section .dictation-word.near{background:#fff0cf;color:#8b6530}
+#mysentences-section .dictation-word.miss{background:#fbe0d8;color:#9d4b2f}
+#mysentences-section .dictation-next{margin-top:14px;min-height:46px}
+@media(max-width:700px){
+    #mysentences-section .dictation-form .button{width:100%}
+    #mysentences-section .dictation-listen{width:100%}
+}

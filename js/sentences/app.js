@@ -12,11 +12,14 @@ import { renderGroupWordButton } from "../word-groups/modal.js"
 import { showLoading, hideLoading } from "../ui-status.js"
 import { isAuthError, loginRequiredMessage, requireSession } from "../auth-required.js"
 import { buildReadingQuestion, checkReadingAnswer, readingAnswerText, readingSourceCount } from "../reading/exercises.js"
+import { buildDictation, checkDictation, dictationSourceCount } from "../practice/dictation.js"
 
 const repository = createSentenceRepository(supabase)
 const state = { user: null, sentences: [], vocabulary: null, review: null, reviewLogs: [], reviewCards: [], settings: loadReviewSettings() }
 const readingState = { index: 0, question: null, answered: false, correct: false, seed: Date.now() % 1000 }
+const dictationState = { index: 0, question: null, answered: false }
 const byId = id => document.getElementById(id)
+const escapeHtml = value => String(value ?? "").replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[char])
 const VOCABULARY_AI_HINT = "Escribe la palabra en español y la IA completará el inglés, la pronunciación, el significado y los ejemplos. Puedes elegir si también completa las notas."
 
 function showNotice(message, isError = false) {
@@ -588,6 +591,86 @@ function renderReading() {
     host.append(kicker, sentenceRow, prompt, answerArea, feedback, next)
 }
 
+/* Dictado: se reproduce la frase guardada con la voz del sistema y se compara
+ * lo que escribe el usuario. No se genera texto ni se corrige gramática aparte
+ * de la coincidencia de palabras. */
+function renderDictation() {
+    const host = byId("dictation-card")
+    if (!host) return
+    host.replaceChildren()
+    const total = dictationSourceCount(state.sentences)
+    if (!total) {
+        const empty = document.createElement("div")
+        empty.className = "empty"
+        empty.textContent = "Guarda al menos una frase en «＋ Frases» para practicar dictado."
+        host.append(empty)
+        return
+    }
+    const question = buildDictation(state.sentences, dictationState.index)
+    dictationState.question = question
+    dictationState.answered = false
+    const kicker = document.createElement("div")
+    kicker.className = "exercise-kicker dictation-kicker"
+    kicker.textContent = `DICTADO · ${dictationState.index + 1}/${total} · ${question.wordCount} palabras`
+    const listenRow = document.createElement("div")
+    listenRow.className = "dictation-listen-row"
+    const listen = document.createElement("button")
+    listen.type = "button"
+    listen.className = "button primary dictation-listen"
+    listen.textContent = "🔊 Escuchar frase"
+    listen.disabled = !window.speechSynthesis
+    listen.addEventListener("click", () => playAudioEnhanced(question.sentence, "en"))
+    const hint = document.createElement("span")
+    hint.className = "dictation-hint"
+    hint.textContent = "Escucha cuantas veces quieras."
+    listenRow.append(listen, hint)
+
+    const form = document.createElement("form")
+    form.className = "dictation-form"
+    const textarea = document.createElement("textarea")
+    textarea.rows = 3
+    textarea.placeholder = "Escribe aquí lo que escuchaste…"
+    textarea.autocomplete = "off"
+    textarea.autocorrect = "off"
+    textarea.spellcheck = false
+    textarea.setAttribute("aria-label", "Escribe la frase que escuchaste")
+    const check = document.createElement("button")
+    check.type = "submit"
+    check.className = "button secondary"
+    check.textContent = "Comprobar"
+    form.append(textarea, check)
+
+    const feedback = document.createElement("div")
+    feedback.className = "dictation-feedback hidden"
+    feedback.setAttribute("role", "status")
+    const next = document.createElement("button")
+    next.type = "button"
+    next.className = "button primary dictation-next hidden"
+    next.textContent = "Siguiente →"
+    next.addEventListener("click", () => {
+        dictationState.index += 1
+        renderDictation()
+    })
+
+    form.addEventListener("submit", event => {
+        event.preventDefault()
+        if (dictationState.answered) return
+        const result = checkDictation(question.sentence, textarea.value)
+        dictationState.answered = true
+        check.disabled = true
+        textarea.disabled = true
+        feedback.classList.remove("hidden")
+        feedback.classList.toggle("correct", result.correct)
+        feedback.classList.toggle("incorrect", !result.correct)
+        const words = result.comparison.result
+            .map(item => `<span class="dictation-word ${item.status}">${item.text}</span>`)
+            .join(" ")
+        feedback.innerHTML = `<strong>${result.correct ? "✅ Correcto." : `📝 ${result.score}% de coincidencia.`}</strong><p>Frase: ${escapeHtml(question.sentence)}</p>${question.translation ? `<p>${escapeHtml(question.translation)}</p>` : ""}<div class="dictation-words">${words}</div><small>Verde = acertada · ámbar = parecida · rojo = no escrita.</small>`
+        next.classList.remove("hidden")
+    })
+    host.append(kicker, listenRow, form, feedback, next)
+}
+
 async function submitReview(sentence, grade) {
     if (!requireSession("guardar el repaso")) return
     try {
@@ -621,6 +704,7 @@ function renderAll() {
     renderSentenceList(filteredSentences())
     renderReview()
     renderReading()
+    renderDictation()
 }
 
 function filteredSentences() {
@@ -753,6 +837,7 @@ function switchScreen(name) {
     document.querySelectorAll(".screen").forEach(screen => screen.classList.toggle("active", screen.id === `${name}-screen`))
     if (name === "review") renderReview()
     if (name === "reading") renderReading()
+    if (name === "dictation") renderDictation()
     if (name === "vocabulary") loadVocabulary()
 }
 
