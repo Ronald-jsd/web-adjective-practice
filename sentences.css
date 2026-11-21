@@ -159,3 +159,16 @@
     #mysentences-section .dictation-form .button{width:100%}
     #mysentences-section .dictation-listen{width:100%}
 }
+
+/* Panel de habilidades: solo afecta a Mi aprendizaje. */
+#mysentences-section .skills-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+#mysentences-section .skill-card{padding:16px;border:1px solid var(--line);border-radius:12px;background:#fff;box-shadow:0 6px 18px rgba(28,79,58,.05)}
+#mysentences-section .skill-card h3{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin:0 0 8px;color:var(--green-dark);font:800 16px Manrope,sans-serif}
+#mysentences-section .skill-badge{padding:3px 9px;border-radius:999px;background:var(--soft);color:var(--green);font:700 10px "DM Sans",sans-serif;white-space:nowrap}
+#mysentences-section .skill-strong .skill-badge{background:#dff1e5;color:#1d6142}
+#mysentences-section .skill-growing .skill-badge{background:#fff0cf;color:#8b6530}
+#mysentences-section .skill-empty .skill-badge{background:#eef1ee;color:#77837c}
+#mysentences-section .skill-card p{margin:0;color:#4d6a5b;font-size:12px;line-height:1.6;overflow-wrap:anywhere}
+@media(max-width:700px){
+    #mysentences-section .skills-grid{grid-template-columns:1fr}
+}

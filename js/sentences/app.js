@@ -13,6 +13,8 @@ import { showLoading, hideLoading } from "../ui-status.js"
 import { isAuthError, loginRequiredMessage, requireSession } from "../auth-required.js"
 import { buildReadingQuestion, checkReadingAnswer, readingAnswerText, readingSourceCount } from "../reading/exercises.js"
 import { buildDictation, checkDictation, dictationSourceCount } from "../practice/dictation.js"
+import { buildSkillsSummary, readPracticeStats, recordPracticeResult, READING_STATS_STORAGE, DICTATION_STATS_STORAGE } from "../practice/skills-panel.js"
+import { readBestAttempts } from "../shadowing/speaking-practice.js"
 
 const repository = createSentenceRepository(supabase)
 const state = { user: null, sentences: [], vocabulary: null, review: null, reviewLogs: [], reviewCards: [], settings: loadReviewSettings() }
@@ -537,6 +539,7 @@ function renderReading() {
     })
 
     const showResult = correct => {
+        recordPracticeResult(null, READING_STATS_STORAGE, correct)
         readingState.answered = true
         readingState.correct = correct
         feedback.classList.remove("hidden")
@@ -656,6 +659,7 @@ function renderDictation() {
         event.preventDefault()
         if (dictationState.answered) return
         const result = checkDictation(question.sentence, textarea.value)
+        recordPracticeResult(null, DICTATION_STATS_STORAGE, result.correct)
         dictationState.answered = true
         check.disabled = true
         textarea.disabled = true
@@ -669,6 +673,33 @@ function renderDictation() {
         next.classList.remove("hidden")
     })
     host.append(kicker, listenRow, form, feedback, next)
+}
+
+/* Panel de habilidades: solo muestra lo que la app registró localmente. */
+function renderSkills() {
+    const host = byId("skills-card")
+    if (!host) return
+    const summary = buildSkillsSummary({
+        sentenceCount: state.sentences.length,
+        reading: readPracticeStats(null, READING_STATS_STORAGE),
+        dictation: readPracticeStats(null, DICTATION_STATS_STORAGE),
+        speaking: readBestAttempts(null)
+    })
+    host.replaceChildren()
+    for (const skill of summary) {
+        const card = document.createElement("article")
+        card.className = `skill-card skill-${skill.level}`
+        const heading = document.createElement("h3")
+        heading.textContent = `${skill.icon} ${skill.label}`
+        const badge = document.createElement("span")
+        badge.className = "skill-badge"
+        badge.textContent = skill.levelLabel
+        const detail = document.createElement("p")
+        detail.textContent = skill.detail
+        heading.append(badge)
+        card.append(heading, detail)
+        host.append(card)
+    }
 }
 
 async function submitReview(sentence, grade) {
@@ -705,6 +736,7 @@ function renderAll() {
     renderReview()
     renderReading()
     renderDictation()
+    renderSkills()
 }
 
 function filteredSentences() {
@@ -838,6 +870,7 @@ function switchScreen(name) {
     if (name === "review") renderReview()
     if (name === "reading") renderReading()
     if (name === "dictation") renderDictation()
+    if (name === "skills") renderSkills()
     if (name === "vocabulary") loadVocabulary()
 }
 
