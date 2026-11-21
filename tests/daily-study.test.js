@@ -52,9 +52,9 @@ const AI_TARGETS = [
     { id: "q3", label: "Pronunciación de -ed" }
 ]
 
-test("the six study activities point to real sections of the app", () => {
+test("the eight study activities point to real sections of the app", () => {
     assert.deepEqual(STUDY_ACTIVITIES.map(activity => activity.id), [
-        "practice", "listening", "shadowing", "vocabulary", "sentences", "ai"
+        "practice", "listening", "shadowing", "reading", "dictation", "vocabulary", "sentences", "ai"
     ])
     for (const activity of STUDY_ACTIVITIES) {
         assert.ok(activity.label && activity.icon && activity.section)
@@ -62,10 +62,12 @@ test("the six study activities point to real sections of the app", () => {
         assert.equal(getActivityMinutes(activity.id), activity.minutes)
         assert.equal(getActivity(activity.id), activity)
     }
-    assert.equal(getTotalPlanMinutes(), 30)
+    assert.equal(getTotalPlanMinutes(), 40)
     assert.deepEqual(getActivity("practice").pane, "general")
     assert.deepEqual(getActivity("listening").pane, "audio")
     assert.deepEqual(getActivity("shadowing").pane, "shadowing")
+    assert.deepEqual(getActivity("reading").screen, "reading")
+    assert.deepEqual(getActivity("dictation").screen, "dictation")
     assert.deepEqual(getActivity("vocabulary").screen, "vocabulary")
     assert.deepEqual(getActivity("sentences").screen, "review")
 })
@@ -99,8 +101,8 @@ test("the commitment must literally say that the user will study", () => {
 
 test("each daily pick is deterministic and never repeats yesterday's activity", () => {
     const seen = new Set()
-    for (let day = 1; day <= 30; day += 1) {
-        const dateKey = `2026-12-${String(day).padStart(2, "0")}`
+    for (let day = 1; day <= 60; day += 1) {
+        const dateKey = getLocalDateKey(new Date(2026, 10, 18 + day))
         const previousId = STUDY_ACTIVITIES[(day - 1) % STUDY_ACTIVITIES.length].id
         const first = chooseDailyActivity({ dateKey, previousId, random: createDailyRandom(dateKey, previousId) })
         const second = chooseDailyActivity({ dateKey, previousId, random: createDailyRandom(dateKey, previousId) })
@@ -118,6 +120,8 @@ test("review due activities are preferred over already consolidated ones", () =>
         practice: { memoryState: "review", nextReviewAt: future },
         listening: { memoryState: "review", nextReviewAt: future },
         shadowing: { memoryState: "new" },
+        reading: { memoryState: "review", nextReviewAt: future },
+        dictation: { memoryState: "review", nextReviewAt: future },
         vocabulary: { memoryState: "review", nextReviewAt: future },
         sentences: { memoryState: "review", nextReviewAt: future },
         ai: { memoryState: "review", nextReviewAt: future }
@@ -173,6 +177,41 @@ test("the three missions of a day alternate with the previous day", () => {
         }
         assert.equal(new Set(DAILY_SLOTS.map(slot => ensured.missions[slot].activityId)).size, 3)
     }
+})
+
+test("reading and dictation join the weekly active-recall rotation", () => {
+    for (const pool of [MAIN_ACTIVITY_IDS, REVIEW_ACTIVITY_IDS, EXTRA_ACTIVITY_IDS]) {
+        assert.ok(pool.includes("reading"))
+        assert.ok(pool.includes("dictation"))
+    }
+
+    const now = new Date(2026, 10, 19, 9, 0)
+    const future = new Date(2026, 10, 26, 9, 0).toISOString()
+    const cards = {
+        reading: { memoryState: "review", nextReviewAt: future },
+        dictation: { memoryState: "new" }
+    }
+    assert.equal(chooseDailyActivity({
+        cards,
+        allowedIds: ["reading", "dictation"],
+        dateKey: "2026-11-19",
+        now
+    }), "dictation")
+
+    const seen = new Set()
+    let state = normalizeDailyState(null)
+    for (let day = 1; day <= 21; day += 1) {
+        const dateKey = `2026-12-${String(day).padStart(2, "0")}`
+        const ensured = ensureDailyMissions(state, {
+            dateKey,
+            now: new Date(2026, 11, day, 9, 0),
+            targets: AI_TARGETS
+        })
+        state = ensured.state
+        for (const slot of DAILY_SLOTS) seen.add(ensured.missions[slot].activityId)
+    }
+    assert.ok(seen.has("reading"))
+    assert.ok(seen.has("dictation"))
 })
 
 test("reviewing requires real interactions before scoring and schedules at least one day ahead", () => {

@@ -400,11 +400,12 @@ async function deleteAdjectiveRow(item) {
     }
 }
 
-export { editCell, deleteAdjectiveRow, getStatusBadge, updateWordStatus, openInlineEditor }
+export { editCell, deleteAdjectiveRow, getStatusBadge, updateWordStatus, openInlineEditor, refreshCategoryViewFromLocalCopy }
 
 window.editCell = editCell
 window.deleteAdjectiveRow = deleteAdjectiveRow
 window.updateWordStatus = updateWordStatus
+window.refreshCategoryViewFromLocalCopy = refreshCategoryViewFromLocalCopy
 window.editWordInline = function (encoded) {
     try {
         const data = JSON.parse(decodeURIComponent(encoded || ''))

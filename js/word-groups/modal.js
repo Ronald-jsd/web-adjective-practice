@@ -22,10 +22,13 @@ import {
     removeMember,
     sameIdentity,
     setRelationship,
+    SYNCED_FIELDS,
+    syncedFieldsFrom,
     updateMember,
     upsertExample
 } from "./model.js"
 import { createWordGroupRepository } from "./repository.js"
+import { deleteMemberFromCatalog, pushMemberToCatalog } from "./catalog-bridge.js"
 
 const byId = id => document.getElementById(id)
 let initialized = false
@@ -45,7 +48,8 @@ const state = {
     candidates: [],
     candidateQuery: "",
     syncedCount: 0,
-    syncedByGroup: new Map()
+    syncedByGroup: new Map(),
+    editedMemberIds: new Set()
 }
 
 function escapeHtml(value) {
@@ -82,6 +86,12 @@ function setDirty(dirty) {
     state.dirty = dirty
     const save = byId("word-groups-save")
     if (save) save.textContent = dirty ? "Guardar cambios *" : "Guardar grupo"
+}
+
+/* Marca un miembro tocado para empujar solo esos datos a la tabla principal al
+ * guardar, sin sobrescribir los demás con copias antiguas. */
+function markMemberEdited(memberId) {
+    if (memberId) state.editedMemberIds.add(String(memberId))
 }
 
 function currentMember() {
@@ -347,6 +357,7 @@ function renderExamples(onStructureChange = null) {
         remove.setAttribute("aria-label", `Eliminar ejemplo ${index + 1}`)
         remove.addEventListener("click", () => {
             state.draft = removeExample(state.draft, member.id, example.id)
+            markMemberEdited(member.id)
             setDirty(true)
             if (onStructureChange) onStructureChange()
             else renderDialog()
@@ -368,6 +379,7 @@ function renderExamples(onStructureChange = null) {
                 ? { ...row, examples: row.examples.map(ex => String(ex.id) === String(example.id) ? { ...ex, en: en.value } : ex) }
                 : row)
             state.draft = { ...state.draft, members: updated }
+            markMemberEdited(member.id)
             setDirty(true)
         })
         enWrap.append(en)
@@ -385,6 +397,7 @@ function renderExamples(onStructureChange = null) {
                 ? { ...row, examples: row.examples.map(ex => String(ex.id) === String(example.id) ? { ...ex, es: es.value } : ex) }
                 : row)
             state.draft = { ...state.draft, members: updated }
+            markMemberEdited(member.id)
             setDirty(true)
         })
         esWrap.append(es)
@@ -444,6 +457,7 @@ function bindEditor(onStructureChange = null) {
         const event = isSelect ? "change" : "input"
         element.addEventListener(event, () => {
             state.draft = updateMember(state.draft, member.id, { [field]: element.value })
+            if (SYNCED_FIELDS.includes(field)) markMemberEdited(member.id)
             setDirty(true)
         })
     }
@@ -460,6 +474,7 @@ function bindEditor(onStructureChange = null) {
     byId("word-group-add-example")?.addEventListener("click", () => {
         const empty = { id: `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`, en: "", es: "" }
         state.draft = upsertExample(state.draft, member.id, empty)
+        markMemberEdited(member.id)
         setDirty(true)
         if (onStructureChange) onStructureChange()
         else renderDialog()
@@ -733,13 +748,29 @@ function renderComparisonTable() {
         examplesCell.append(renderExamplesCell(member))
 
         const actionCell = el("td", "word-groups-table-actions")
+        const actionStack = el("div", "word-groups-table-action-stack")
         const edit = el("button", "button secondary word-groups-table-edit", "Editar todo")
         edit.type = "button"
         edit.addEventListener("click", event => {
             event.stopPropagation()
             openEditorDialog(member.id, "all")
         })
-        actionCell.append(edit)
+        const remove = el("button", "button secondary word-groups-table-remove", "Quitar del grupo")
+        remove.type = "button"
+        remove.title = "Quitar esta palabra solo del grupo"
+        remove.addEventListener("click", event => {
+            event.stopPropagation()
+            removeMemberFromDraft(member)
+        })
+        const del = el("button", "button danger word-groups-table-delete", "🗑️ Eliminar")
+        del.type = "button"
+        del.title = "Eliminar esta palabra de la tabla principal"
+        del.addEventListener("click", event => {
+            event.stopPropagation()
+            deleteMemberEverywhere(member)
+        })
+        actionStack.append(edit, remove, del)
+        actionCell.append(actionStack)
 
         wordCell.dataset.label = headings[0]
         translationCell.dataset.label = headings[1]
@@ -897,6 +928,7 @@ function openEditorDialog(memberId, field = "all") {
 
     const snapshot = normalizeGroup(JSON.parse(JSON.stringify(state.draft)))
     const wasDirty = state.dirty
+    const editedBefore = new Set(state.editedMemberIds)
     state.activeMemberId = member.id
     document.querySelectorAll("#word-groups-dialog .word-groups-table tbody tr").forEach(row => {
         row.classList.toggle("is-active", row.dataset.memberId === String(member.id))
@@ -980,6 +1012,7 @@ function openEditorDialog(memberId, field = "all") {
 
     const closeWithRevert = () => {
         state.draft = snapshot
+        state.editedMemberIds = new Set(editedBefore)
         setDirty(wasDirty)
         dialog.close()
     }
@@ -1138,6 +1171,7 @@ function closeDialog() {
     const dialog = byId("word-groups-dialog")
     if (!dialog) return
     if (state.dirty && !window.confirm("¿Descartar los cambios sin guardar?")) return
+    state.editedMemberIds.clear()
     dialog.close()
 }
 
@@ -1151,6 +1185,21 @@ async function saveCurrentGroup() {
         modalStatus("Agrega al menos una palabra al grupo.", true)
         return
     }
+    // Lo editado dentro del modal también se escribe en la tabla principal.
+    // Solo se envían los miembros tocados para no sobrescribir los demás.
+    const pushed = []
+    for (const id of state.editedMemberIds) {
+        const member = clean.members.find(row => String(row.id) === String(id))
+        if (!member?.itemId) continue
+        try {
+            await pushMemberToCatalog(member, state.user.id)
+            member.synced = syncedFieldsFrom(member)
+            pushed.push(member.word)
+        } catch (error) {
+            console.warn("[word-groups] No se pudo actualizar la tabla principal:", error)
+        }
+    }
+    state.editedMemberIds.clear()
     try {
         const saved = await repository.save(state.user.id, clean)
         state.syncedByGroup.delete(saved.id)
@@ -1159,7 +1208,9 @@ async function saveCurrentGroup() {
         state.activeMemberId = currentMember()?.id || state.draft.members[0]?.id || null
         setDirty(false)
         renderDialog()
-        modalStatus("Grupo guardado.")
+        modalStatus(pushed.length
+            ? `Grupo guardado y ${pushed.length === 1 ? "1 palabra actualizada" : `${pushed.length} palabras actualizadas`} en la tabla principal.`
+            : "Grupo guardado.")
     } catch (error) {
         console.error("[word-groups] No se pudo guardar:", error)
         modalStatus(error?.message || "No se pudo guardar el grupo.", true)
@@ -1179,6 +1230,7 @@ async function deleteCurrentGroup() {
         }
         state.draft = null
         state.activeMemberId = null
+        state.editedMemberIds.clear()
         setDirty(false)
         byId("word-groups-dialog")?.close()
         showToast("Grupo eliminado.", "info")
@@ -1188,22 +1240,67 @@ async function deleteCurrentGroup() {
     }
 }
 
-async function removeCurrentMember() {
-    const member = currentMember()
-    if (!member) return
-    if (!window.confirm(`¿Quitar “${member.word}” de este grupo?`)) return
-    const next = removeMember(state.draft, member.id)
+/* Quita una palabra solo del grupo. La tabla principal no se toca: es la
+ * diferencia entre "quitar del grupo" y "eliminar". */
+function removeMemberFromDraft(member) {
+    if (!member || !state.draft) return
+    if (!window.confirm(`¿Quitar “${member.word}” del grupo? La palabra seguirá en la tabla principal.`)) return
+    const snapshot = normalizeGroup(JSON.parse(JSON.stringify(state.draft)))
+    const wasDirty = state.dirty
+    const editedBefore = new Set(state.editedMemberIds)
     const wasOnly = state.draft.members.length <= 1
+    state.editedMemberIds.delete(String(member.id))
+    const next = removeMember(state.draft, member.id)
     state.draft = next
     state.activeMemberId = next.members[0]?.id || null
     setDirty(true)
-    if (wasOnly && state.groups.some(group => group.id === state.draft.id)) {
-        if (!window.confirm("El grupo quedó vacío. ¿Quieres eliminarlo en lugar de guardarlo vacío?")) return
+    if (wasOnly && state.groups.some(group => String(group.id) === String(state.draft.id))) {
+        if (!window.confirm("El grupo quedó vacío. ¿Quieres eliminarlo en lugar de guardarlo vacío?")) {
+            state.draft = snapshot
+            state.editedMemberIds = editedBefore
+            setDirty(wasDirty)
+            return
+        }
         state.dirty = true
-        await deleteCurrentGroup()
+        void deleteCurrentGroup()
         return
     }
     renderDialog()
+    modalStatus(`“${member.word}” quitada del grupo. Guarda para conservar el cambio.`)
+}
+
+/* Elimina la palabra también de la tabla principal (catálogo o vocabulario
+ * propio) y la quita de todos los grupos abiertos en este dispositivo. */
+async function deleteMemberEverywhere(member) {
+    if (!member || !state.draft) return
+    if (!requireSession("eliminar la palabra de tu vocabulario")) return
+    const isCustom = member.source === "custom"
+    const message = isCustom
+        ? `¿Eliminar “${member.word}” de tu vocabulario personal? Esta acción no se puede deshacer.`
+        : `¿Eliminar “${member.word}” de la guía compartida? Se quitará para todos los usuarios y no se puede deshacer.`
+    if (!window.confirm(message)) return
+
+    const snapshot = normalizeGroup(JSON.parse(JSON.stringify(state.draft)))
+    const editedBefore = new Set(state.editedMemberIds)
+    state.editedMemberIds.delete(String(member.id))
+    state.draft = removeMember(state.draft, member.id)
+    state.activeMemberId = state.draft.members[0]?.id || null
+    setDirty(true)
+    try {
+        await deleteMemberFromCatalog(member, state.user.id)
+        renderDialog()
+        modalStatus(`“${member.word}” eliminada de la tabla principal y del grupo.`)
+    } catch (error) {
+        state.draft = snapshot
+        state.editedMemberIds = editedBefore
+        setDirty(true)
+        renderDialog()
+        modalStatus(error?.message || "No se pudo eliminar la palabra.", true)
+    }
+}
+
+async function removeCurrentMember() {
+    removeMemberFromDraft(currentMember())
 }
 
 export async function openWordGroup(payload) {
@@ -1211,6 +1308,7 @@ export async function openWordGroup(payload) {
     await waitForCatalog()
     if (!payload?.word) return
     state.syncedCount = 0
+    state.editedMemberIds.clear()
     const matches = relatedGroups(payload).sort((left, right) => new Date(right.updatedAt || right.updated_at || 0) - new Date(left.updatedAt || left.updated_at || 0))
     let autoIncluded = 0
     if (matches.length) {
@@ -1247,16 +1345,34 @@ async function handleDelegatedClick(event) {
     if (payload) await openWordGroup(payload)
 }
 
-/* Llamado cuando se elimina una palabra del catálogo principal. */
+/* Llamado cuando se edita o elimina una palabra desde la tabla principal.
+ * Refresca las copias del modal con los datos reales del catálogo: si la
+ * palabra desapareció, se quita; si cambió, se vuelve a sincronizar. */
 export function invalidateWordGroupData() {
-    state.candidates = []
-    state.groups = []
+    if (autoPickerDialog) {
+        autoPickerDialog.close()
+        autoPickerDialog = null
+    }
+    byId("word-groups-field-dialog")?.remove()
+    state.candidates = store.categoriesData?.length ? collectWordCandidates() : []
     state.syncedByGroup.clear()
+
+    if (state.draft) {
+        const wasDirty = state.dirty
+        state.draft = reconcileGroupAgainstCatalog(state.draft, state.candidates)
+        if (!state.draft.members.some(member => String(member.id) === String(state.activeMemberId))) {
+            state.activeMemberId = state.draft.members[0]?.id || null
+        }
+        setDirty(wasDirty)
+    }
+    if (byId("word-groups-dialog")) renderDialog()
+
+    // Los grupos guardados también se releen para quitar copias obsoletas.
     state.loaded = false
     state.loadPromise = null
-    if (state.draft) state.draft = reconcileGroupAgainstCatalog(state.draft)
-    byId("word-groups-field-dialog")?.remove()
-    if (byId("word-groups-dialog")) renderDialog()
+    if (initialized && state.user) {
+        ensureLoaded().catch(error => console.warn("[word-groups] No se pudieron recargar los grupos:", error))
+    }
 }
 
 export async function initializeWordGroups(supabase) {
