@@ -3,6 +3,7 @@
  * «No tiene». No se generan formas por reglas. */
 
 import { ADJECTIVES_VERIFIED } from "../data/adjectives-verified.module.js";
+import { makeClickableText } from "./audio.js";
 
 function normalize(value) {
     return String(value || "").trim().toLowerCase();
@@ -75,11 +76,13 @@ export function deriveAdjectiveDerivedFields(word, pronunciation, spanish) {
 
 function displayCell(word, pron, translation, examples = []) {
     const lines = [];
-    if (word) lines.push(`<span class="text-sm font-semibold">${word}</span>`);
+    if (word) lines.push(`<span class="text-sm font-semibold">${makeClickableText(word, "en")}</span>`);
     if (pron) lines.push(`<span class="text-xs text-gray-400">[${pron}]</span>`);
     if (translation) lines.push(`<span class="block text-xs text-gray-500">${translation}</span>`);
     for (const example of examples) {
-        if (example) lines.push(`<span class="block text-xs text-gray-400">${example}</span>`);
+        if (example?.text) {
+            lines.push(`<span class="block text-xs text-gray-400">${makeClickableText(example.text, example.lang || "en")}</span>`);
+        }
     }
     if (!lines.length) lines.push(`<span class="text-gray-400">No tiene</span>`);
     return `<div class="text-sm">${lines.join(" ")}</div>`;
@@ -87,16 +90,22 @@ function displayCell(word, pron, translation, examples = []) {
 
 export function derivedDisplayCell(fields, type) {
     if (type === "adverb") {
-        return displayCell(fields.adverb_en, fields.adverb_en_pron, fields.adverb_es,
-            [fields.adverb_en_example, fields.adverb_es_example].filter(Boolean));
+        return displayCell(fields.adverb_en, fields.adverb_en_pron, fields.adverb_es, [
+            { text: fields.adverb_en_example, lang: "en" },
+            { text: fields.adverb_es_example, lang: "es" }
+        ]);
     }
     if (type === "comparative") {
-        return displayCell(fields.comparative_en, fields.comparative_en_pron, fields.comparative_es,
-            [fields.comparative_en_example, fields.comparative_es_example].filter(Boolean));
+        return displayCell(fields.comparative_en, fields.comparative_en_pron, fields.comparative_es, [
+            { text: fields.comparative_en_example, lang: "en" },
+            { text: fields.comparative_es_example, lang: "es" }
+        ]);
     }
     if (type === "superlative") {
-        return displayCell(fields.superlative_en, fields.superlative_en_pron, fields.superlative_es,
-            [fields.superlative_en_example, fields.superlative_es_example].filter(Boolean));
+        return displayCell(fields.superlative_en, fields.superlative_en_pron, fields.superlative_es, [
+            { text: fields.superlative_en_example, lang: "en" },
+            { text: fields.superlative_es_example, lang: "es" }
+        ]);
     }
     return `<span class="text-gray-400">—</span>`;
 }

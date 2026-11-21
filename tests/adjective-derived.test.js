@@ -64,6 +64,14 @@ test("adverbios reales del volcado no declarados en derived también aparecen", 
     }
 });
 
+test("la celda derivada permite reproducir la forma y el ejemplo en inglés", () => {
+    const fields = deriveAdjectiveDerivedFields("quick", "/kwɪk/", "rápido");
+    const html = derivedDisplayCell(fields, "adverb");
+    assert.match(html, /playAudioFromGlobal\('quickly', 'en'\)/);
+    assert.match(html, /playAudioFromGlobal\('Luckily, the error was quickly corrected\.', 'en'\)/);
+    assert.match(html, /class="audio-clickable/);
+});
+
 test("si no hay forma verificada no se muestra pronunciación ni ejemplos", () => {
     for (const [word, entry] of Object.entries(ADJECTIVES_VERIFIED)) {
         const fields = deriveAdjectiveDerivedFields(word, "/base/", "base");
