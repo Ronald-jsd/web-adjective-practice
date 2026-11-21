@@ -78,9 +78,11 @@ function injectStyles() {
         .ds-plan-status { font-size: 11px; color: #64748b; overflow-wrap: anywhere; }
         .ds-plan-row.selected .ds-plan-status { color: #b45309; font-weight: 700; }
         .ds-plan-minutes { font-size: 12px; font-weight: 800; color: #4338ca; white-space: nowrap; }
-        .ds-step label { display: block; margin-bottom: 7px; font-size: 13px; font-weight: 600; }
-        .ds-step input { width: 100%; box-sizing: border-box; padding: 11px 12px; border: 1px solid #cbd5e1;
-            border-radius: 10px; font: inherit; font-size: 14px; }
+        .ds-commit-choice { display: flex; align-items: center; justify-content: center; gap: 10px;
+            width: 100%; min-height: 52px; padding: 12px 16px; border: 1px solid #c7d2fe; border-radius: 12px;
+            background: #eef2ff; color: #3730a3; font: inherit; font-size: 15px; font-weight: 800; cursor: pointer; }
+        .ds-commit-choice:hover, .ds-commit-choice:focus-visible { border-color: #818cf8; background: #e0e7ff; outline: none; }
+        .ds-commit-hint { margin: 8px 0 0; font-size: 12px; color: #64748b; text-align: center; }
         .ds-check { margin: 12px 0; padding: 11px 12px; border-radius: 10px; background: #f8fafc;
             border: 1px solid #e2e8f0; font-size: 12px; color: #475569; }
         .ds-check strong { color: #0f172a; }
@@ -166,19 +168,13 @@ function mount() {
     card.appendChild(element("div", "ds-plan"));
 
     const commitStep = element("div", "ds-step");
-    commitStep.appendChild(element("label", "", "Para empezar, escribe: Estudiaré [actividad]"));
-    const commitInput = element("input");
-    commitInput.type = "text";
-    commitInput.id = "ds-commit-input";
-    commitInput.placeholder = "Estudiaré Ejercicios";
-    commitInput.autocomplete = "off";
-    commitStep.appendChild(commitInput);
-    commitStep.appendChild(element("p", "ds-error hidden", ""));
-    const start = element("button", "ds-primary", "Sí, estudiaré");
+    const start = element("button", "ds-primary ds-commit-choice", "✅ Estudiaré");
     start.id = "ds-start";
     start.type = "button";
     start.addEventListener("click", startMission);
     commitStep.appendChild(start);
+    commitStep.appendChild(element("p", "ds-commit-hint", "Un clic y empieza el reto."));
+    commitStep.appendChild(element("p", "ds-error hidden", ""));
     card.appendChild(commitStep);
 
     const verifyStep = element("div", "ds-step hidden");
@@ -250,12 +246,6 @@ function mount() {
         document.body.appendChild(badge);
     }
 
-    commitInput.addEventListener("input", () => {
-        overlay.querySelector(".ds-error")?.classList.add("hidden");
-        const valid = commitInput.value.toLocaleLowerCase().normalize("NFD")
-            .replace(/[\u0300-\u036f]/g, "").includes("estudiare");
-        if (start) start.disabled = !valid;
-    });
     reminderEnabled.addEventListener("change", updateReminder);
     reminderTime.addEventListener("change", updateReminder);
 }
@@ -374,19 +364,18 @@ function render() {
             ? `Tema de hoy: «${mission.targetLabel}». Mantente en la sección y trabaja ${activity.minutes} min.`
             : `Mantente en la sección y trabaja ${activity.minutes} min. El reloj se pausa si sales.`;
     } else {
-        subtitle.textContent = "Uno de práctica y uno de repaso, distintos a ayer. El texto ya está escrito: solo pulsa el botón.";
+        subtitle.textContent = "Uno de práctica y uno de repaso, distintos a ayer. Solo pulsa el botón para aceptar el reto.";
     }
     renderPlan(now);
 
     if (!mission.commitmentAt) {
         setStep("commit");
         const label = missionLabel(mission);
-        overlay.querySelector(".ds-step label").textContent = `Para empezar, escribe: Estudiaré ${label}`;
-        const input = overlay.querySelector("#ds-commit-input");
-        input.value = `Estudiaré ${label}`;
-        input.placeholder = input.value;
         const start = overlay.querySelector("#ds-start");
-        if (start) start.disabled = false;
+        if (start) {
+            start.textContent = `✅ Estudiaré ${label}`;
+            start.disabled = false;
+        }
     } else if (!mission.completedAt) {
         setStep("verify");
     } else {
@@ -634,14 +623,9 @@ function focusMission(mission, { startTimer = true } = {}) {
 function startMission() {
     const mission = currentMission();
     if (!mission) return;
-    const input = overlay.querySelector("#ds-commit-input");
-    const result = recordCommitment(state, mission.date, mission.slot, input.value, new Date());
-    if (!result.valid) {
-        const error = overlay.querySelector(".ds-error");
-        error.textContent = `Escribe «Estudiaré ${missionLabel(mission)}» para aceptar el reto.`;
-        error.classList.remove("hidden");
-        return;
-    }
+    const commitment = `Estudiaré ${missionLabel(mission)}`;
+    const result = recordCommitment(state, mission.date, mission.slot, commitment, new Date());
+    if (!result.valid) return;
     state = result.state;
     missions[mission.slot] = result.mission;
     persist();

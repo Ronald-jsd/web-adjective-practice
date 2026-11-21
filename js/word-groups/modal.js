@@ -526,9 +526,10 @@ function renderAutoPanel() {
     if (!list) return
     list.textContent = ""
     if (!missing.length) {
-        list.append(el("p", "", "No hay coincidencias pendientes con esta traducción."))
+        panel.hidden = true
         return
     }
+    panel.hidden = false
     missing.forEach(candidate => {
         const row = el("div", "word-groups-autos-row")
         row.append(el("span", "word-groups-autos-word", candidate.word || ""))
@@ -665,7 +666,10 @@ function renderComparisonTable() {
         "¿Con cuáles es intercambiable?",
         "Posiciones válidas",
         "Ejemplos y traducción",
-        ""
+        "Acciones"
+    ]
+    const cardLabels = [
+        "Palabra", "Traducción", "Diferencia", "Intercambiable", "Posición", "Ejemplos", "Acciones"
     ]
     for (const heading of headings) {
         const th = el("th", "", heading)
@@ -749,22 +753,26 @@ function renderComparisonTable() {
 
         const actionCell = el("td", "word-groups-table-actions")
         const actionStack = el("div", "word-groups-table-action-stack")
-        const edit = el("button", "button secondary word-groups-table-edit", "Editar todo")
+        const edit = el("button", "button secondary word-groups-table-edit", "Editar")
         edit.type = "button"
+        edit.title = `Editar todos los datos de ${member.word}`
+        edit.setAttribute("aria-label", edit.title)
         edit.addEventListener("click", event => {
             event.stopPropagation()
             openEditorDialog(member.id, "all")
         })
-        const remove = el("button", "button secondary word-groups-table-remove", "Quitar del grupo")
+        const remove = el("button", "button secondary word-groups-table-remove", "Quitar")
         remove.type = "button"
-        remove.title = "Quitar esta palabra solo del grupo"
+        remove.title = `Quitar “${member.word}” del grupo; la palabra seguirá en la tabla principal`
+        remove.setAttribute("aria-label", remove.title)
         remove.addEventListener("click", event => {
             event.stopPropagation()
             removeMemberFromDraft(member)
         })
-        const del = el("button", "button danger word-groups-table-delete", "🗑️ Eliminar")
+        const del = el("button", "button danger word-groups-table-delete", "Eliminar")
         del.type = "button"
-        del.title = "Eliminar esta palabra de la tabla principal"
+        del.title = `Eliminar “${member.word}” también de la tabla principal`
+        del.setAttribute("aria-label", del.title)
         del.addEventListener("click", event => {
             event.stopPropagation()
             deleteMemberEverywhere(member)
@@ -772,14 +780,10 @@ function renderComparisonTable() {
         actionStack.append(edit, remove, del)
         actionCell.append(actionStack)
 
-        wordCell.dataset.label = headings[0]
-        translationCell.dataset.label = headings[1]
-        differenceCell.dataset.label = headings[2]
-        relationshipsCell.dataset.label = headings[3]
-        positionCell.dataset.label = headings[4]
-        examplesCell.dataset.label = headings[5]
-        actionCell.dataset.label = headings[6]
         row.append(wordCell, translationCell, differenceCell, relationshipsCell, positionCell, examplesCell, actionCell)
+        cardLabels.forEach((label, index) => {
+            row.children[index].dataset.label = label
+        })
         tbody.append(row)
     }
     table.append(thead, tbody)
@@ -1137,9 +1141,7 @@ function renderDialog() {
     const deleteActions = el("div", "word-groups-delete-actions")
     const removeGroup = el("button", "button danger word-groups-delete-group", "Eliminar grupo")
     removeGroup.type = "button"
-    const removeMemberButton = el("button", "button secondary word-groups-remove-member", "Quitar esta palabra del grupo")
-    removeMemberButton.type = "button"
-    deleteActions.append(removeGroup, removeMemberButton)
+    deleteActions.append(removeGroup)
     const actions = el("div", "word-groups-actions")
     const cancel = el("button", "button secondary", "Descartar")
     cancel.type = "button"
@@ -1151,7 +1153,6 @@ function renderDialog() {
     actions.append(cancel, save)
     footer.append(status, deleteActions, actions)
     removeGroup.addEventListener("click", deleteCurrentGroup)
-    removeMemberButton.addEventListener("click", removeCurrentMember)
 
     shell.append(header, autoPanel, body, footer)
     dialog.append(shell)
@@ -1297,10 +1298,6 @@ async function deleteMemberEverywhere(member) {
         renderDialog()
         modalStatus(error?.message || "No se pudo eliminar la palabra.", true)
     }
-}
-
-async function removeCurrentMember() {
-    removeMemberFromDraft(currentMember())
 }
 
 export async function openWordGroup(payload) {
