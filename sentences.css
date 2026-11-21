@@ -115,3 +115,24 @@
     .notion-embed-blocked-text{font-size:13px}
     .notion-embed-empty{min-height:120px;padding:20px 12px}
 }
+
+/* Lectura y comprensión: solo afecta a Mi aprendizaje. */
+#mysentences-section .reading-kicker{color:var(--green);font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+#mysentences-section .reading-sentence-row{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px}
+#mysentences-section .reading-sentence{flex:1;min-width:0;margin:0;font:700 19px/1.5 Manrope,sans-serif;color:var(--green-dark);overflow-wrap:anywhere}
+#mysentences-section .reading-prompt{margin:0 0 14px;color:#4d6a5b;font-size:13px;font-weight:600}
+#mysentences-section .reading-answer-area{display:grid;gap:9px;max-width:560px}
+#mysentences-section .reading-option{min-height:46px;text-align:left;overflow-wrap:anywhere}
+#mysentences-section .reading-cloze-form{display:flex;gap:9px;flex-wrap:wrap}
+#mysentences-section .reading-cloze-form input{flex:1;min-width:180px;font-size:16px}
+#mysentences-section .reading-cloze-form .button{min-height:46px}
+#mysentences-section .reading-feedback{margin-top:16px;padding:11px 13px;border-radius:9px;font-size:13px;line-height:1.55}
+#mysentences-section .reading-feedback.correct{background:#e8f5ec;color:#1d6142}
+#mysentences-section .reading-feedback.incorrect{background:#fdf0ea;color:#9d4b2f}
+#mysentences-section .reading-next{margin-top:14px;min-height:46px}
+@media(max-width:700px){
+    #mysentences-section .reading-sentence{font-size:17px}
+    #mysentences-section .reading-option{width:100%;min-height:48px}
+    #mysentences-section .reading-cloze-form input{width:100%}
+    #mysentences-section .reading-cloze-form .button{width:100%}
+}

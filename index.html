@@ -640,6 +640,7 @@
                     <nav class="tabs" aria-label="Navegación de Mi aprendizaje">
                         <button class="tab active" data-screen="add">＋ Frases</button>
                         <button class="tab" data-screen="vocabulary">📚 Vocabulario</button>
+                        <button class="tab" data-screen="reading">📖 Lectura</button>
                         <button class="tab" data-screen="notion">📒 Notion</button>
                         <button class="tab" data-screen="review">↻ Repasar <span id="review-tab-count" class="tab-count">0</span></button>
                     </nav>
@@ -694,6 +695,10 @@
                         </form>
                         <div class="section-heading list-heading"><div><p class="eyebrow">TU COLECCIÓN</p><h2>Mi vocabulario</h2></div><input id="vocabulary-search-input" class="search" type="search" placeholder="Buscar en mi vocabulario…" aria-label="Buscar vocabulario" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false" inputmode="search" data-lpignore="true" data-1p-ignore="true" data-form-type="other"></div>
                         <div id="vocabulary-list" class="sentence-list"><div class="empty">Abre esta pestaña para cargar tu vocabulario.</div></div>
+                    </section>
+                    <section id="reading-screen" class="screen">
+                        <div class="section-heading"><div><p class="eyebrow">LECTURA Y COMPRENSIÓN</p><h2>Entiende lo que guardaste</h2><p class="muted">Preguntas hechas solo con tus frases reales: elige su significado o completa una palabra. No hay textos inventados.</p></div></div>
+                        <div id="reading-card" class="exercise-card panel"></div>
                     </section>
                     <section id="notion-screen" class="screen">
                         <div class="section-heading"><div><p class="eyebrow">NOTAS Y MATERIAL</p><h2>Páginas de Notion</h2><p class="muted">Pega el enlace público que termina en <code>.notion.site</code> de tus páginas de Notion. Cada página se guarda en tu cuenta y vuelve a aparecer en esta pestaña después de recargar.</p></div></div>

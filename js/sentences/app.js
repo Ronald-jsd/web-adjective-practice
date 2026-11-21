@@ -11,9 +11,11 @@ import { filterVocabulary } from "./vocabulary-search.js"
 import { renderGroupWordButton } from "../word-groups/modal.js"
 import { showLoading, hideLoading } from "../ui-status.js"
 import { isAuthError, loginRequiredMessage, requireSession } from "../auth-required.js"
+import { buildReadingQuestion, checkReadingAnswer, readingAnswerText, readingSourceCount } from "../reading/exercises.js"
 
 const repository = createSentenceRepository(supabase)
 const state = { user: null, sentences: [], vocabulary: null, review: null, reviewLogs: [], reviewCards: [], settings: loadReviewSettings() }
+const readingState = { index: 0, question: null, answered: false, correct: false, seed: Date.now() % 1000 }
 const byId = id => document.getElementById(id)
 const VOCABULARY_AI_HINT = "Escribe la palabra en español y la IA completará el inglés, la pronunciación, el significado y los ejemplos. Puedes elegir si también completa las notas."
 
@@ -457,6 +459,135 @@ function renderReview() {
     host.append(kicker, prompt, reveal, answerArea, buttons)
 }
 
+/* Lectura y comprensión: las preguntas salen únicamente de las frases que el
+ * usuario guardó. Si una frase no sirve para completar huecos, se salta sin
+ * inventar nada. */
+function nextReadingQuestion() {
+    const total = readingSourceCount(state.sentences)
+    for (let step = 0; step < total; step += 1) {
+        const index = (readingState.index + step) % total
+        const question = buildReadingQuestion(state.sentences, index, readingState.seed)
+        if (question) {
+            readingState.index = index
+            return question
+        }
+    }
+    return null
+}
+
+function renderReading() {
+    const host = byId("reading-card")
+    if (!host) return
+    host.replaceChildren()
+    const total = readingSourceCount(state.sentences)
+    if (total < 3) {
+        const empty = document.createElement("div")
+        empty.className = "empty"
+        empty.textContent = `Guarda al menos 3 frases con traducción en «＋ Frases» para tener ejercicios de lectura. Ahora mismo hay ${total} disponibles.`
+        host.append(empty)
+        return
+    }
+    const question = nextReadingQuestion()
+    if (!question) {
+        const empty = document.createElement("div")
+        empty.className = "empty"
+        empty.textContent = "Tus frases todavía no permiten crear preguntas. Añade frases más largas."
+        host.append(empty)
+        return
+    }
+    readingState.question = question
+    const kicker = document.createElement("div")
+    kicker.className = "exercise-kicker reading-kicker"
+    kicker.textContent = `${question.type === "meaning" ? "COMPRENSIÓN" : "LECTURA"} · ${readingState.index + 1}/${total} · solo tus frases`
+    const sentenceRow = document.createElement("div")
+    sentenceRow.className = "reading-sentence-row"
+    const sentence = document.createElement("div")
+    sentence.className = "exercise-prompt reading-sentence"
+    sentence.lang = "en"
+    sentence.textContent = question.type === "cloze" ? question.prompt : question.sentence
+    const play = document.createElement("button")
+    play.type = "button"
+    play.className = "icon-button audio-button"
+    play.textContent = "🔊"
+    play.title = "Escuchar frase"
+    play.setAttribute("aria-label", `Escuchar frase: ${question.sentence}`)
+    play.disabled = !window.speechSynthesis
+    play.addEventListener("click", () => playAudioEnhanced(question.sentence, "en"))
+    sentenceRow.append(sentence, play)
+    const prompt = document.createElement("p")
+    prompt.className = "reading-prompt"
+    prompt.textContent = question.prompt
+    const answerArea = document.createElement("div")
+    answerArea.className = "reading-answer-area"
+    const feedback = document.createElement("div")
+    feedback.className = "reading-feedback hidden"
+    feedback.setAttribute("role", "status")
+    const next = document.createElement("button")
+    next.type = "button"
+    next.className = "button primary reading-next hidden"
+    next.textContent = "Siguiente →"
+    next.addEventListener("click", () => {
+        readingState.index += 1
+        readingState.answered = false
+        readingState.correct = false
+        renderReading()
+    })
+
+    const showResult = correct => {
+        readingState.answered = true
+        readingState.correct = correct
+        feedback.classList.remove("hidden")
+        feedback.classList.toggle("correct", correct)
+        feedback.classList.toggle("incorrect", !correct)
+        feedback.textContent = correct
+            ? `✅ Correcto. ${question.type === "meaning" ? question.sentence : question.answer} — ${question.translation || readingAnswerText(question)}`
+            : `❌ No era eso. Respuesta: ${readingAnswerText(question)}. ${question.sentence}${question.translation ? ` — ${question.translation}` : ""}`
+        next.classList.remove("hidden")
+    }
+
+    if (question.type === "meaning") {
+        for (const option of question.options) {
+            const button = document.createElement("button")
+            button.type = "button"
+            button.className = "button secondary reading-option"
+            button.textContent = option.text
+            button.dataset.optionId = option.id
+            button.addEventListener("click", () => {
+                if (readingState.answered) return
+                showResult(checkReadingAnswer(question, option.id))
+                answerArea.querySelectorAll("[data-option-id]").forEach(node => node.disabled = true)
+            })
+            answerArea.append(button)
+        }
+    } else {
+        const form = document.createElement("form")
+        form.className = "reading-cloze-form"
+        const input = document.createElement("input")
+        input.type = "text"
+        input.name = "answer"
+        input.autocomplete = "off"
+        input.autocorrect = "off"
+        input.spellcheck = false
+        input.placeholder = "Escribe la palabra que falta…"
+        input.setAttribute("aria-label", "Palabra que falta")
+        const check = document.createElement("button")
+        check.type = "submit"
+        check.className = "button primary"
+        check.textContent = "Comprobar"
+        form.append(input, check)
+        form.addEventListener("submit", event => {
+            event.preventDefault()
+            if (readingState.answered) return
+            showResult(checkReadingAnswer(question, input.value))
+            check.disabled = true
+            input.disabled = true
+        })
+        answerArea.append(form)
+        input.focus()
+    }
+    host.append(kicker, sentenceRow, prompt, answerArea, feedback, next)
+}
+
 async function submitReview(sentence, grade) {
     if (!requireSession("guardar el repaso")) return
     try {
@@ -489,6 +620,7 @@ function renderAll() {
     updateStats()
     renderSentenceList(filteredSentences())
     renderReview()
+    renderReading()
 }
 
 function filteredSentences() {
@@ -620,6 +752,7 @@ function switchScreen(name) {
     document.querySelectorAll(".tab").forEach(tab => tab.classList.toggle("active", tab.dataset.screen === name))
     document.querySelectorAll(".screen").forEach(screen => screen.classList.toggle("active", screen.id === `${name}-screen`))
     if (name === "review") renderReview()
+    if (name === "reading") renderReading()
     if (name === "vocabulary") loadVocabulary()
 }
 
