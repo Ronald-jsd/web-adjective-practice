@@ -76,6 +76,9 @@ function refreshPool({ reset = true } = {}) {
         state.answeredInSession = 0;
         byId("questions-exercise")?.closest(".questions-card")?.classList.remove("has-exercise");
         setHidden("questions-exercise", true);
+        setHidden("questions-question", true);
+        setHidden("questions-explanation", true);
+        setHidden("questions-answer-listen", true);
         setText("questions-status", state.pool.length
             ? "Pulsa «Empezar» para practicar con esta selección."
             : "No hay preguntas con estos filtros. Prueba otra combinación o genera ejemplos con IA.");
@@ -199,6 +202,7 @@ function renderBank(bank) {
             const input = byId("questions-answer");
             if (!input) return;
             input.value = `${input.value.trim()} ${token}`.trim();
+            button.classList.add("is-used");
             input.focus();
         });
         host.append(button);
@@ -213,7 +217,16 @@ function renderExercise() {
     setHidden("questions-exercise", false);
     setText("questions-source-label", exercise.sourceLabel);
     setText("questions-pattern", [exercise.categoryTitle, exercise.questionWord, exercise.tense].filter(Boolean).join(" · "));
+    const mixed = currentFilters().mode === "mixed";
+    setText("questions-mode-badge", exercise.mode === "form" ? "✍ Formar" : "💬 Responder");
+    setHidden("questions-mode-badge", !mixed);
+    setText("questions-question", exercise.question);
+    setHidden("questions-question", exercise.mode !== "answer");
     setText("questions-prompt", exercise.prompt);
+    setText("questions-explanation-title", `📘 ${exercise.explanationLabel}`);
+    setText("questions-explanation-text", "");
+    setHidden("questions-explanation", true);
+    setHidden("questions-answer-listen", true);
     setText("questions-hint", exercise.hint);
     setHidden("questions-hint", true);
     setText("questions-feedback", "");
@@ -226,7 +239,8 @@ function renderExercise() {
     setHidden("questions-check", false);
     const check = byId("questions-check");
     if (check) check.disabled = false;
-    setText("questions-check", exercise.mode === "form" ? "Comprobar" : "Ya respondí");
+    setText("questions-check", exercise.mode === "form" ? "✅ Comprobar" : "💾 Guardar respuesta");
+    setText("questions-reveal", "📘 Ver explicación");
     const input = byId("questions-answer");
     if (input) {
         input.value = "";
@@ -240,12 +254,12 @@ function renderExercise() {
 function showQuestion(entry, { push = true } = {}) {
     if (!entry) return;
     state.current = entry;
-    state.exercise = buildQuestionExercise(entry, { mode: currentFilters().mode });
     if (push) {
         state.history = state.history.slice(0, state.historyIndex + 1);
         state.history.push(entry);
         state.historyIndex = state.history.length - 1;
     }
+    state.exercise = buildQuestionExercise(entry, { mode: currentFilters().mode, index: state.historyIndex });
     renderExercise();
 }
 
@@ -267,7 +281,7 @@ function previousQuestion() {
     if (state.historyIndex <= 0) return;
     state.historyIndex -= 1;
     state.current = state.history[state.historyIndex];
-    state.exercise = buildQuestionExercise(state.current, { mode: currentFilters().mode });
+    state.exercise = buildQuestionExercise(state.current, { mode: currentFilters().mode, index: state.historyIndex });
     renderExercise();
 }
 
@@ -279,6 +293,17 @@ function setFeedback(text, tone) {
     setHidden("questions-feedback", false);
 }
 
+/* Cada respuesta termina con una explicación derivada del documento: forma
+ * correcta o guía, estructura, tiempo, tipo, significado y contexto. */
+function showExplanation() {
+    const exercise = state.exercise;
+    if (!exercise) return;
+    setText("questions-explanation-title", `📘 ${exercise.explanationLabel}`);
+    setText("questions-explanation-text", exercise.explanation);
+    setHidden("questions-explanation", false);
+    setHidden("questions-answer-listen", !exercise.answer);
+}
+
 function showAnswer() {
     const answer = state.exercise?.answer || "";
     const label = state.exercise?.answerLabel || "Guía del documento";
@@ -286,6 +311,7 @@ function showAnswer() {
         ? `${label}: ${answer}`
         : "No hay respuesta modelo verificada. Compara con la traducción y el contexto del documento y decide si la respondiste bien.";
     setFeedback(text, "is-guide");
+    showExplanation();
 }
 
 function recordOutcome(isCorrect) {
@@ -318,12 +344,14 @@ function checkAnswer() {
         const correct = checkFormedAnswer(state.exercise, value);
         recordOutcome(correct);
         setFeedback(correct
-            ? "✅ Correcta. Escucha la pregunta para fijar la entonación."
+            ? "✅ Correcta. Lee la explicación y escucha la entonación."
             : `❌ La forma correcta es: ${state.exercise.answer}`, correct ? "is-correct" : "is-wrong");
+        showExplanation();
         if (window.speechSynthesis) playAudioEnhanced(state.exercise.question, "en");
         return;
     }
-    setFeedback("Guardé tu respuesta. Mira la guía y puntúa con «Bien» o «Repasar».", "is-guide");
+    setFeedback("Guardé tu respuesta. Lee la explicación y puntúa con «Bien» o «Repasar».", "is-guide");
+    showExplanation();
     setHidden("questions-good", false);
     setHidden("questions-review", false);
     setHidden("questions-check", true);
@@ -366,6 +394,9 @@ function wireEvents() {
     byId("questions-listen")?.addEventListener("click", () => {
         if (state.exercise?.question) playAudioEnhanced(state.exercise.question, "en");
     });
+    byId("questions-answer-listen")?.addEventListener("click", () => {
+        if (state.exercise?.answer) playAudioEnhanced(state.exercise.answer, "en");
+    });
     byId("questions-hint-button")?.addEventListener("click", () => setHidden("questions-hint", false));
     byId("questions-reveal")?.addEventListener("click", () => {
         showAnswer();
@@ -390,6 +421,7 @@ function wireEvents() {
             ? ` ${state.exercise.answerLabel || "Guía del documento"}: ${state.exercise.answer}`
             : " No hay respuesta modelo verificada; compara con la traducción y el contexto.";
         setFeedback(`🔁 La dejamos para repasar.${guide}`, "is-guide");
+        showExplanation();
     });
     byId("questions-ai-generate")?.addEventListener("click", generateMore);
     byId("questions-ai-clear")?.addEventListener("click", () => {

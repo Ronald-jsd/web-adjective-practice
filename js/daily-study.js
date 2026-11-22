@@ -15,15 +15,16 @@ export const STUDY_ACTIVITIES = Object.freeze([
     { id: "dictation", label: "Dictado", icon: "🎧", minutes: 5, section: "mysentences", screen: "dictation" },
     { id: "vocabulary", label: "Mi vocabulario", icon: "📚", minutes: 5, section: "mysentences", screen: "vocabulary" },
     { id: "sentences", label: "Frases · Repaso", icon: "💬", minutes: 4, section: "mysentences", screen: "review" },
-    { id: "ai", label: "Consultas IA", icon: "🤖", minutes: 4, section: "browser-ai" }
+    { id: "ai", label: "Consultas IA", icon: "🤖", minutes: 4, section: "browser-ai" },
+    { id: "questions", label: "Preguntas", icon: "❓", minutes: 5, section: "practice", pane: "questions" }
 ]);
 
 export const MAIN_SLOT = "main";
 export const REVIEW_SLOT = "review";
 export const EXTRA_SLOT = "extra";
 export const DAILY_SLOTS = Object.freeze([MAIN_SLOT, REVIEW_SLOT, EXTRA_SLOT]);
-export const MAIN_ACTIVITY_IDS = Object.freeze(["practice", "listening", "shadowing", "reading", "dictation", "vocabulary"]);
-export const REVIEW_ACTIVITY_IDS = Object.freeze(["sentences", "vocabulary", "reading", "dictation", "ai"]);
+export const MAIN_ACTIVITY_IDS = Object.freeze(["practice", "listening", "shadowing", "reading", "dictation", "vocabulary", "questions"]);
+export const REVIEW_ACTIVITY_IDS = Object.freeze(["sentences", "vocabulary", "reading", "dictation", "ai", "questions"]);
 export const EXTRA_ACTIVITY_IDS = Object.freeze(["sentences", "vocabulary", "reading", "dictation", "ai"]);
 export const MIN_REAL_INTERACTIONS = 3;
 

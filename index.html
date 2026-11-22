@@ -409,7 +409,7 @@
                                 <label>Tipo<select id="questions-filter-type"><option value="all">Todos los tipos</option></select></label>
                                 <label>Estructura<select id="questions-filter-section"><option value="all">Todas las estructuras</option></select></label>
                                 <label>Fuente<select id="questions-filter-source"><option value="all">Offline + IA</option></select></label>
-                                <label>Modo<select id="questions-filter-mode"><option value="form">✍ Formar la pregunta</option><option value="answer">💬 Responder</option></select></label>
+                                <label>Modo<select id="questions-filter-mode"><option value="form">✍ Formar la pregunta</option><option value="answer">💬 Responder</option><option value="mixed">🔀 Mixto (alternar)</option></select></label>
                                 <label class="questions-search">Buscar<input id="questions-filter-search" type="search" placeholder="how much, where, presente perfecto…" autocomplete="off" /></label>
                             </div>
                         </details>
@@ -433,7 +433,9 @@
                             <div class="questions-meta">
                                 <span id="questions-source-label">Pregunta verificada</span>
                                 <span id="questions-pattern"></span>
+                                <span id="questions-mode-badge" class="questions-mode-badge" hidden></span>
                             </div>
+                            <p id="questions-question" class="questions-question" hidden></p>
                             <p id="questions-prompt" class="questions-prompt"></p>
                             <button id="questions-hint-button" type="button" class="questions-link">💡 Ver pista</button>
                             <p id="questions-hint" class="questions-hint" hidden></p>
@@ -444,12 +446,17 @@
                             <label class="questions-answer-label" for="questions-answer">Tu respuesta en inglés</label>
                             <textarea id="questions-answer" rows="2" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Escribe aquí…"></textarea>
                             <div class="questions-actions">
-                                <button id="questions-check" type="button" class="button primary">Comprobar</button>
-                                <button id="questions-reveal" type="button" class="button secondary">Ver guía</button>
-                                <button id="questions-good" type="button" class="button secondary" hidden>✅ Bien</button>
-                                <button id="questions-review" type="button" class="button secondary" hidden>🔁 Repasar</button>
+                                <button id="questions-check" type="button" class="button primary">✅ Comprobar</button>
+                                <button id="questions-reveal" type="button" class="button secondary">📘 Ver explicación</button>
+                                <button id="questions-good" type="button" class="button secondary good" hidden>✅ Bien</button>
+                                <button id="questions-review" type="button" class="button secondary review" hidden>🔁 Repasar</button>
                             </div>
                             <p id="questions-feedback" class="questions-feedback" role="status" aria-live="polite" hidden></p>
+                            <div id="questions-explanation" class="questions-explanation" hidden>
+                                <p id="questions-explanation-title" class="questions-explanation-title">📘 Explicación</p>
+                                <p id="questions-explanation-text" class="questions-explanation-text"></p>
+                                <button id="questions-answer-listen" type="button" class="button mini" hidden>🔊 Escuchar respuesta modelo</button>
+                            </div>
                             <div class="questions-navigation">
                                 <button id="questions-prev" type="button" class="button secondary">← Anterior</button>
                                 <button id="questions-next" type="button" class="button primary">Siguiente pregunta →</button>

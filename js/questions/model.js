@@ -262,9 +262,45 @@ function shuffleTokens(tokens, random) {
     return result;
 }
 
-export function buildQuestionExercise(entry, { mode = "form", random = Math.random } = {}) {
+/* El modo mixto alterna formar y responder por posición de ejercicio, de modo
+ * que la misma pregunta siempre conserve su tipo al navegar hacia atrás. */
+export function resolveQuestionMode(mode, { index = 0 } = {}) {
+    if (mode === "mixed") return index % 2 === 0 ? "form" : "answer";
+    return mode === "answer" ? "answer" : "form";
+}
+
+function answerLabelFor(entry) {
+    return entry.answerSource === "generada"
+        ? "Respuesta sugerida (generada)"
+        : entry.answerGuide ? "Guía del documento" : "Pregunta directa relacionada";
+}
+
+function asSentence(value) {
+    const text = String(value || "").trim();
+    return text && !/[.?!]$/.test(text) ? `${text}.` : text;
+}
+
+/* Explicación derivada solo de los campos verificados del documento: forma
+ * correcta o guía, estructura, tiempo, tipo, significado y contexto. */
+function buildExplanation(entry, { mode, answer }) {
+    const parts = [];
+    parts.push(mode === "form"
+        ? `Forma correcta: ${asSentence(entry.english)}`
+        : `${answerLabelFor(entry)}: ${asSentence(answer || "sin respuesta modelo")}`);
+    const pattern = String(entry.pattern || "").trim();
+    if (pattern) parts.push(`Estructura: ${asSentence(pattern)}`);
+    if (entry.tense) parts.push(`Tiempo: ${asSentence(TENSE_LABELS[entry.tense] || entry.tense)}`);
+    if (entry.type) parts.push(`Tipo: ${asSentence(TYPE_LABELS[entry.type] || entry.type)}`);
+    parts.push(`Significado: ${asSentence(entry.spanish)}`);
+    const context = String(entry.context || "").trim();
+    if (context) parts.push(`Contexto del documento: ${asSentence(context)}`);
+    return parts.join(" ");
+}
+
+export function buildQuestionExercise(entry, { mode = "form", random = Math.random, index = 0 } = {}) {
     if (!entry) return null;
-    const isForm = mode !== "answer";
+    const resolvedMode = resolveQuestionMode(mode, { index });
+    const isForm = resolvedMode === "form";
     const guide = String(entry.answerGuide || entry.related || "");
     const context = String(entry.context || "");
     const questionWord = entry.questionWord === "yes-no" ? "Sí / no: elige el auxiliar correcto" : entry.questionWord;
@@ -272,11 +308,12 @@ export function buildQuestionExercise(entry, { mode = "form", random = Math.rand
         String(entry.english).replace(/[?!]+$/, "").split(/\s+/).filter(Boolean),
         random
     );
+    const answer = isForm ? String(entry.english) : guide;
 
     return {
         id: entry.id,
         source: entry.source || "verified",
-        mode: isForm ? "form" : "answer",
+        mode: resolvedMode,
         question: String(entry.english),
         translation: String(entry.spanish),
         pattern: String(entry.pattern || ""),
@@ -286,16 +323,14 @@ export function buildQuestionExercise(entry, { mode = "form", random = Math.rand
         sourceLabel: entry.source === "ai" ? "IA opcional" : `Pregunta verificada · ${entry.section === "incorporadas" ? "dentro de oraciones" : "enciclopedia"}`,
         prompt: isForm
             ? `Forma la pregunta en inglés: ${entry.spanish}`
-            : `Responde esta pregunta en inglés. Después compara con la guía y autoevalúate.`,
+            : `Lee la pregunta, responde en inglés y compara con la explicación.`,
         hint: isForm
             ? `💡 Empieza con: ${questionWord}${entry.pattern ? ` · Estructura: ${entry.pattern}` : ""}`
             : `💡 Significado: ${entry.spanish}${context ? ` · Contexto del documento: ${context}` : ""}`,
-        answer: isForm ? String(entry.english) : guide,
-        answerLabel: isForm
-            ? ""
-            : entry.answerSource === "generada"
-                ? "Respuesta sugerida (generada)"
-                : entry.answerGuide ? "Guía del documento" : "Pregunta directa relacionada",
+        answer,
+        answerLabel: isForm ? "" : answerLabelFor(entry),
+        explanation: buildExplanation(entry, { mode: resolvedMode, answer }),
+        explanationLabel: isForm ? "Cómo se forma esta pregunta" : "Cómo se responde esta pregunta",
         hasModelAnswer: Boolean(guide),
         bank: isForm ? tokens : []
     };

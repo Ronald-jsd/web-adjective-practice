@@ -16,6 +16,7 @@ import {
     loadQuestionProgress,
     normalizeQuestionAnswer,
     recordQuestionOutcome,
+    resolveQuestionMode,
     saveAIQuestions,
     saveQuestionProgress,
     selectNextQuestion,
@@ -199,4 +200,24 @@ test("los ejemplos de IA se guardan localmente, se deduplican y se pueden borrar
     assert.equal(loadAIQuestions(storage).length, 0);
     storage.setItem(AI_QUESTIONS_STORAGE_KEY, "[]");
     assert.equal(loadAIQuestions(storage).length, 0);
+});
+
+test("el modo mixto alterna ejercicios y cada respuesta incluye su explicación", () => {
+    assert.equal(resolveQuestionMode("mixed", { index: 0 }), "form");
+    assert.equal(resolveQuestionMode("mixed", { index: 1 }), "answer");
+    assert.equal(resolveQuestionMode("mixed", { index: 2 }), "form");
+    assert.equal(resolveQuestionMode("answer", { index: 1 }), "answer");
+    const entry = VERIFIED_QUESTIONS.find(item => item.english === "How much does it cost?");
+    const form = buildQuestionExercise(entry, { mode: "mixed", index: 0, random: () => 0 });
+    const answer = buildQuestionExercise(entry, { mode: "mixed", index: 1, random: () => 0 });
+    assert.equal(form.mode, "form");
+    assert.equal(answer.mode, "answer");
+    assert.equal(form.explanationLabel, "Cómo se forma esta pregunta");
+    assert.match(form.explanation, /Forma correcta: How much does it cost\?/);
+    assert.match(form.explanation, /Significado:/);
+    assert.equal(answer.explanationLabel, "Cómo se responde esta pregunta");
+    assert.match(answer.explanation, /(Guía del documento|Respuesta sugerida \(generada\)):/);
+    assert.match(answer.explanation, /Estructura:|Tiempo:/);
+    assert.ok(answer.explanation.includes(answer.answer));
+    assert.ok(VERIFIED_QUESTIONS.every(item => buildQuestionExercise(item, { mode: "mixed", index: 0 }).explanation));
 });

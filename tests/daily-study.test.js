@@ -52,9 +52,9 @@ const AI_TARGETS = [
     { id: "q3", label: "Pronunciación de -ed" }
 ]
 
-test("the eight study activities point to real sections of the app", () => {
+test("the nine study activities point to real sections of the app", () => {
     assert.deepEqual(STUDY_ACTIVITIES.map(activity => activity.id), [
-        "practice", "listening", "shadowing", "reading", "dictation", "vocabulary", "sentences", "ai"
+        "practice", "listening", "shadowing", "reading", "dictation", "vocabulary", "sentences", "ai", "questions"
     ])
     for (const activity of STUDY_ACTIVITIES) {
         assert.ok(activity.label && activity.icon && activity.section)
@@ -62,10 +62,11 @@ test("the eight study activities point to real sections of the app", () => {
         assert.equal(getActivityMinutes(activity.id), activity.minutes)
         assert.equal(getActivity(activity.id), activity)
     }
-    assert.equal(getTotalPlanMinutes(), 40)
+    assert.equal(getTotalPlanMinutes(), 45)
     assert.deepEqual(getActivity("practice").pane, "general")
     assert.deepEqual(getActivity("listening").pane, "audio")
     assert.deepEqual(getActivity("shadowing").pane, "shadowing")
+    assert.deepEqual(getActivity("questions").pane, "questions")
     assert.deepEqual(getActivity("reading").screen, "reading")
     assert.deepEqual(getActivity("dictation").screen, "dictation")
     assert.deepEqual(getActivity("vocabulary").screen, "vocabulary")
@@ -124,7 +125,8 @@ test("review due activities are preferred over already consolidated ones", () =>
         dictation: { memoryState: "review", nextReviewAt: future },
         vocabulary: { memoryState: "review", nextReviewAt: future },
         sentences: { memoryState: "review", nextReviewAt: future },
-        ai: { memoryState: "review", nextReviewAt: future }
+        ai: { memoryState: "review", nextReviewAt: future },
+        questions: { memoryState: "review", nextReviewAt: future }
     }
     assert.equal(chooseDailyActivity({ cards, dateKey: "2026-11-19", now }), "shadowing")
     assert.equal(chooseDailyActivity({
