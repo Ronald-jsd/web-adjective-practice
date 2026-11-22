@@ -2,7 +2,7 @@
  * ejercicios guardados por el usuario (IA opcional). Sin red, sin Supabase. */
 
 import { QUESTIONS_VERIFIED } from "../../data/questions-verified.module.js";
-import { normalizeWrittenAnswer } from "../practice-utils.js";
+import { normalizeWrittenAnswer, selectPracticeDistractors } from "../practice-utils.js";
 
 export const QUESTION_PROGRESS_STORAGE_KEY = "english_questions_progress_v1";
 export const AI_QUESTIONS_STORAGE_KEY = "english_questions_ai_v1";
@@ -262,11 +262,50 @@ function shuffleTokens(tokens, random) {
     return result;
 }
 
-/* El modo mixto alterna formar y responder por posición de ejercicio, de modo
- * que la misma pregunta siempre conserve su tipo al navegar hacia atrás. */
+const EXERCISE_MODES = ["form", "answer", "choice"];
+
+/* El modo mixto rota los tres formatos por posición de ejercicio, de modo que
+ * la misma pregunta siempre conserve su tipo al navegar hacia atrás. */
 export function resolveQuestionMode(mode, { index = 0 } = {}) {
-    if (mode === "mixed") return index % 2 === 0 ? "form" : "answer";
-    return mode === "answer" ? "answer" : "form";
+    if (mode === "mixed") return EXERCISE_MODES[((index % EXERCISE_MODES.length) + EXERCISE_MODES.length) % EXERCISE_MODES.length];
+    return EXERCISE_MODES.includes(mode) ? mode : "form";
+}
+
+/* Compara la respuesta escrita con la guía: ignora mayúsculas, tildes,
+ * apóstrofos y puntuación. Acepta variaciones que conserven las palabras
+ * clave; en modo estricto (opciones) solo vale la coincidencia exacta. */
+export function checkWrittenAnswer(entry, answer, { strict = false } = {}) {
+    const clean = value => normalizeWrittenAnswer(value)
+        .replace(/[.,;:!?¿¡"'“”‘’()]/g, "")
+        .replace(/\s+/g, " ")
+        .trim();
+    const expected = clean(entry?.answer || "");
+    const given = clean(answer);
+    if (!expected || !given) return false;
+    if (expected === given) return true;
+    if (strict) return false;
+    const expectedWords = expected.split(" ").filter(Boolean);
+    const givenWords = new Set(given.split(" "));
+    const hits = expectedWords.filter(word => givenWords.has(word)).length;
+    if (!expectedWords.length) return false;
+    return expectedWords.length <= 3
+        ? hits === expectedWords.length
+        : hits / expectedWords.length >= 0.8;
+}
+
+/* Opciones para «Elegir respuesta»: la guía correcta más tres respuestas
+ * distintas del propio grupo de preguntas (incluidas las generadas con IA). */
+function buildChoiceOptions(entry, pool = [], random = Math.random) {
+    const correct = String(entry?.answerGuide || entry?.related || "").trim();
+    if (!correct) return [];
+    const source = pool.length ? pool : VERIFIED_QUESTIONS;
+    const candidates = source
+        .filter(item => item && item.id !== entry?.id)
+        .map(item => String(item.answerGuide || "").trim())
+        .filter(Boolean)
+        .map(word => ({ word }));
+    const distractors = selectPracticeDistractors(candidates, correct, 3, random).map(item => item.word);
+    return shuffleTokens([correct, ...distractors], random);
 }
 
 function answerLabelFor(entry) {
@@ -297,10 +336,11 @@ function buildExplanation(entry, { mode, answer }) {
     return parts.join(" ");
 }
 
-export function buildQuestionExercise(entry, { mode = "form", random = Math.random, index = 0 } = {}) {
+export function buildQuestionExercise(entry, { mode = "form", random = Math.random, index = 0, pool = [] } = {}) {
     if (!entry) return null;
     const resolvedMode = resolveQuestionMode(mode, { index });
     const isForm = resolvedMode === "form";
+    const isChoice = resolvedMode === "choice";
     const guide = String(entry.answerGuide || entry.related || "");
     const context = String(entry.context || "");
     const questionWord = entry.questionWord === "yes-no" ? "Sí / no: elige el auxiliar correcto" : entry.questionWord;
@@ -323,7 +363,9 @@ export function buildQuestionExercise(entry, { mode = "form", random = Math.rand
         sourceLabel: entry.source === "ai" ? "IA opcional" : `Pregunta verificada · ${entry.section === "incorporadas" ? "dentro de oraciones" : "enciclopedia"}`,
         prompt: isForm
             ? `Forma la pregunta en inglés: ${entry.spanish}`
-            : `Lee la pregunta, responde en inglés y compara con la explicación.`,
+            : isChoice
+                ? "Lee la pregunta y elige la mejor respuesta."
+                : `Lee la pregunta, responde en inglés y compara con la explicación.`,
         hint: isForm
             ? `💡 Empieza con: ${questionWord}${entry.pattern ? ` · Estructura: ${entry.pattern}` : ""}`
             : `💡 Significado: ${entry.spanish}${context ? ` · Contexto del documento: ${context}` : ""}`,
@@ -332,6 +374,7 @@ export function buildQuestionExercise(entry, { mode = "form", random = Math.rand
         explanation: buildExplanation(entry, { mode: resolvedMode, answer }),
         explanationLabel: isForm ? "Cómo se forma esta pregunta" : "Cómo se responde esta pregunta",
         hasModelAnswer: Boolean(guide),
-        bank: isForm ? tokens : []
+        bank: isForm ? tokens : [],
+        options: isChoice ? buildChoiceOptions(entry, pool, random) : []
     };
 }

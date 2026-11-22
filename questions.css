@@ -249,6 +249,48 @@
 #practice-section .questions-token.is-used { border-color: #a34f2d; background: #fbf0e9; color: #8c4326 }
 #practice-section .questions-token:disabled { opacity: .45; cursor: default; box-shadow: none }
 
+#practice-section .questions-options { display: grid; gap: 8px }
+#practice-section .questions-options[hidden] { display: none }
+#practice-section .questions-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    min-height: 46px;
+    padding: 11px 14px;
+    border: 1px solid #d5dfd8;
+    border-radius: 12px;
+    background: #fff;
+    color: #20392f;
+    font: inherit;
+    font-size: .94rem;
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+    transition: transform .12s ease, background .12s ease, border-color .12s ease, box-shadow .12s ease;
+}
+#practice-section .questions-option::before {
+    flex: 0 0 auto;
+    width: 22px;
+    height: 22px;
+    border: 1px solid #cbd8cf;
+    border-radius: 50%;
+    background: #f7faf8;
+    color: #6d7c72;
+    font-size: .72rem;
+    font-weight: 800;
+    line-height: 20px;
+    text-align: center;
+    content: "•";
+}
+#practice-section .questions-option:hover:not(:disabled) { border-color: #28745a; background: #f1f7f2; transform: translateY(-1px) }
+#practice-section .questions-option:active:not(:disabled) { transform: translateY(1px) }
+#practice-section .questions-option.is-correct { border-color: #79c79b; border-left: 5px solid #1f7a4d; background: #eaf8ef; color: #145c38 }
+#practice-section .questions-option.is-correct::before { border-color: #1f7a4d; background: #1f7a4d; color: #fff; content: "✓" }
+#practice-section .questions-option.is-wrong { border-color: #e9b6a3; border-left: 5px solid #a34f2d; background: #fdf0ea; color: #8c4326 }
+#practice-section .questions-option.is-wrong::before { border-color: #a34f2d; background: #a34f2d; color: #fff; content: "✕" }
+#practice-section .questions-option:disabled { cursor: default }
+
 #practice-section .questions-answer-label { color: #526057; font-size: .76rem; font-weight: 800; text-transform: uppercase }
 #practice-section .questions-exercise textarea {
     width: 100%;

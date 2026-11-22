@@ -9,6 +9,7 @@ import {
     VERIFIED_QUESTIONS,
     buildQuestionExercise,
     checkFormedAnswer,
+    checkWrittenAnswer,
     filterQuestions,
     getQuestionFilterOptions,
     getQuestionProgress,
@@ -202,16 +203,20 @@ test("los ejemplos de IA se guardan localmente, se deduplican y se pueden borrar
     assert.equal(loadAIQuestions(storage).length, 0);
 });
 
-test("el modo mixto alterna ejercicios y cada respuesta incluye su explicación", () => {
+test("el modo mixto rota tres formatos y cada respuesta incluye su explicación", () => {
     assert.equal(resolveQuestionMode("mixed", { index: 0 }), "form");
     assert.equal(resolveQuestionMode("mixed", { index: 1 }), "answer");
-    assert.equal(resolveQuestionMode("mixed", { index: 2 }), "form");
+    assert.equal(resolveQuestionMode("mixed", { index: 2 }), "choice");
+    assert.equal(resolveQuestionMode("mixed", { index: 3 }), "form");
     assert.equal(resolveQuestionMode("answer", { index: 1 }), "answer");
+    assert.equal(resolveQuestionMode("choice", { index: 1 }), "choice");
     const entry = VERIFIED_QUESTIONS.find(item => item.english === "How much does it cost?");
     const form = buildQuestionExercise(entry, { mode: "mixed", index: 0, random: () => 0 });
     const answer = buildQuestionExercise(entry, { mode: "mixed", index: 1, random: () => 0 });
+    const choice = buildQuestionExercise(entry, { mode: "mixed", index: 2, random: () => 0, pool: VERIFIED_QUESTIONS });
     assert.equal(form.mode, "form");
     assert.equal(answer.mode, "answer");
+    assert.equal(choice.mode, "choice");
     assert.equal(form.explanationLabel, "Cómo se forma esta pregunta");
     assert.match(form.explanation, /Forma correcta: How much does it cost\?/);
     assert.match(form.explanation, /Significado:/);
@@ -219,5 +224,26 @@ test("el modo mixto alterna ejercicios y cada respuesta incluye su explicación"
     assert.match(answer.explanation, /(Guía del documento|Respuesta sugerida \(generada\)):/);
     assert.match(answer.explanation, /Estructura:|Tiempo:/);
     assert.ok(answer.explanation.includes(answer.answer));
+    assert.equal(choice.explanation, answer.explanation);
     assert.ok(VERIFIED_QUESTIONS.every(item => buildQuestionExercise(item, { mode: "mixed", index: 0 }).explanation));
+});
+
+test("la corrección escrita tolera variaciones y distingue una sola opción correcta", () => {
+    const exercise = { answer: "It costs ten dollars." };
+    assert.equal(checkWrittenAnswer(exercise, "it costs ten dollars"), true);
+    assert.equal(checkWrittenAnswer(exercise, "  It Costs TEN dollars!  "), true);
+    assert.equal(checkWrittenAnswer(exercise, "It costs ten dollars, please."), true);
+    assert.equal(checkWrittenAnswer(exercise, "It costs five dollars."), false);
+    assert.equal(checkWrittenAnswer(exercise, "Something else."), false);
+    assert.equal(checkWrittenAnswer(exercise, ""), false);
+    assert.equal(checkWrittenAnswer(exercise, "it costs ten dollars", { strict: true }), true);
+    assert.equal(checkWrittenAnswer(exercise, "Costs ten dollars.", { strict: true }), false);
+
+    const entry = VERIFIED_QUESTIONS.find(item => item.english === "How much does it cost?");
+    const choice = buildQuestionExercise(entry, { mode: "choice", random: () => 0.42, pool: VERIFIED_QUESTIONS });
+    assert.equal(choice.options.length, 4);
+    assert.equal(new Set(choice.options.map(value => value.toLocaleLowerCase())).size, 4);
+    assert.ok(choice.options.includes(choice.answer));
+    assert.ok(["Guía del documento", "Respuesta sugerida (generada)", "Pregunta directa relacionada"].includes(choice.answerLabel));
+    assert.equal(choice.options.filter(option => checkWrittenAnswer(choice, option, { strict: true })).length, 1);
 });

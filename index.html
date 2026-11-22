@@ -391,7 +391,7 @@
                     <div class="practice-heading questions-heading">
                         <p class="practice-eyebrow">INTERROGATIVAS EN INGLÉS</p>
                         <h2>Practica <span>preguntas</span></h2>
-                        <p>Forma preguntas o respóndelas con ejemplos verificados de tu guía. Escucha cada pregunta con un clic. La IA es opcional y sus ejemplos se guardan solo en este dispositivo.</p>
+                        <p>Forma preguntas, respóndelas o elige la mejor respuesta con ejemplos verificados de tu guía. Cada intento se corrige al momento y muestra su explicación. Escucha cada pregunta con un clic. La IA es opcional y sus ejemplos se guardan solo en este dispositivo.</p>
                     </div>
                     <section class="questions-card" aria-label="Ejercicios de preguntas">
                         <div class="questions-topline">
@@ -409,7 +409,7 @@
                                 <label>Tipo<select id="questions-filter-type"><option value="all">Todos los tipos</option></select></label>
                                 <label>Estructura<select id="questions-filter-section"><option value="all">Todas las estructuras</option></select></label>
                                 <label>Fuente<select id="questions-filter-source"><option value="all">Offline + IA</option></select></label>
-                                <label>Modo<select id="questions-filter-mode"><option value="form">✍ Formar la pregunta</option><option value="answer">💬 Responder</option><option value="mixed">🔀 Mixto (alternar)</option></select></label>
+                                <label>Modo<select id="questions-filter-mode"><option value="form">✍ Formar la pregunta</option><option value="answer">💬 Responder</option><option value="choice">🎯 Elegir respuesta</option><option value="mixed">🔀 Mixto (3 formatos)</option></select></label>
                                 <label class="questions-search">Buscar<input id="questions-filter-search" type="search" placeholder="how much, where, presente perfecto…" autocomplete="off" /></label>
                             </div>
                         </details>
@@ -443,13 +443,12 @@
                                 <button id="questions-listen" type="button" class="practice-listen-button" aria-label="Escuchar la pregunta en inglés"><span aria-hidden="true">▶</span> Escuchar pregunta</button>
                             </div>
                             <div id="questions-bank" class="questions-bank" hidden></div>
-                            <label class="questions-answer-label" for="questions-answer">Tu respuesta en inglés</label>
+                            <div id="questions-options" class="questions-options" hidden></div>
+                            <label id="questions-answer-label" class="questions-answer-label" for="questions-answer">Tu respuesta en inglés</label>
                             <textarea id="questions-answer" rows="2" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Escribe aquí…"></textarea>
                             <div class="questions-actions">
                                 <button id="questions-check" type="button" class="button primary">✅ Comprobar</button>
                                 <button id="questions-reveal" type="button" class="button secondary">📘 Ver explicación</button>
-                                <button id="questions-good" type="button" class="button secondary good" hidden>✅ Bien</button>
-                                <button id="questions-review" type="button" class="button secondary review" hidden>🔁 Repasar</button>
                             </div>
                             <p id="questions-feedback" class="questions-feedback" role="status" aria-live="polite" hidden></p>
                             <div id="questions-explanation" class="questions-explanation" hidden>
