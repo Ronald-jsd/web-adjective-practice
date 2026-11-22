@@ -6,7 +6,7 @@
  *  - Supabase, IA y Notion: siempre red (nunca se cachean datos privados).
  * Sube VERSION cuando cambies archivos para forzar la actualización.
  */
-const VERSION = "v1.10.3";
+const VERSION = "v1.10.5";
 const SHELL_CACHE = `vg-shell-${VERSION}`;
 const RUNTIME_CACHE = `vg-runtime-${VERSION}`;
 
@@ -161,6 +161,15 @@ self.addEventListener("activate", (event) => {
 self.addEventListener("message", (event) => {
     if (event.data?.type === "SKIP_WAITING") {
         self.skipWaiting();
+        return;
+    }
+    if (event.data?.type === "PING") {
+        event.source?.postMessage({
+            type: "PONG",
+            version: VERSION,
+            shell: SHELL_CACHE,
+            runtime: RUNTIME_CACHE
+        });
     }
 });
 

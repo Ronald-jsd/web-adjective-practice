@@ -399,16 +399,20 @@
                             <span id="questions-score">0 correctas · 0 respondidas</span>
                         </div>
                         <p id="questions-summary" class="questions-summary">0 nuevas · 0 para repasar · 0 firmes</p>
+                        <div class="questions-progress" aria-hidden="true"><span id="questions-progress-bar"></span></div>
 
-                        <div class="questions-filters">
-                            <label>Tiempo verbal<select id="questions-filter-tense"><option value="all">Todos los tiempos</option></select></label>
-                            <label>Palabra<select id="questions-filter-word"><option value="all">Todas las palabras</option></select></label>
-                            <label>Tipo<select id="questions-filter-type"><option value="all">Todos los tipos</option></select></label>
-                            <label>Estructura<select id="questions-filter-section"><option value="all">Todas las estructuras</option></select></label>
-                            <label>Fuente<select id="questions-filter-source"><option value="all">Offline + IA</option></select></label>
-                            <label>Modo<select id="questions-filter-mode"><option value="form">✍ Formar la pregunta</option><option value="answer">💬 Responder</option></select></label>
-                            <label class="questions-search">Buscar<input id="questions-filter-search" type="search" placeholder="how much, where, presente perfecto…" autocomplete="off" /></label>
-                        </div>
+                        <details id="questions-filters-panel" class="questions-filters" open>
+                            <summary>⚙️ Filtros y ajustes</summary>
+                            <div class="questions-filters-grid">
+                                <label>Tiempo verbal<select id="questions-filter-tense"><option value="all">Todos los tiempos</option></select></label>
+                                <label>Palabra<select id="questions-filter-word"><option value="all">Todas las palabras</option></select></label>
+                                <label>Tipo<select id="questions-filter-type"><option value="all">Todos los tipos</option></select></label>
+                                <label>Estructura<select id="questions-filter-section"><option value="all">Todas las estructuras</option></select></label>
+                                <label>Fuente<select id="questions-filter-source"><option value="all">Offline + IA</option></select></label>
+                                <label>Modo<select id="questions-filter-mode"><option value="form">✍ Formar la pregunta</option><option value="answer">💬 Responder</option></select></label>
+                                <label class="questions-search">Buscar<input id="questions-filter-search" type="search" placeholder="how much, where, presente perfecto…" autocomplete="off" /></label>
+                            </div>
+                        </details>
                         <div class="questions-filter-actions">
                             <button id="questions-start" type="button" class="button primary">▶ Empezar</button>
                             <button id="questions-ai-generate" type="button" class="button secondary">🤖 Más ejemplos con IA</button>

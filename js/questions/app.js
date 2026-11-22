@@ -74,6 +74,7 @@ function refreshPool({ reset = true } = {}) {
         state.checked = false;
         state.correctInSession = 0;
         state.answeredInSession = 0;
+        byId("questions-exercise")?.closest(".questions-card")?.classList.remove("has-exercise");
         setHidden("questions-exercise", true);
         setText("questions-status", state.pool.length
             ? "Pulsa «Empezar» para practicar con esta selección."
@@ -85,6 +86,12 @@ function refreshPool({ reset = true } = {}) {
 
 function updateScore() {
     setText("questions-score", `${state.correctInSession} correctas · ${state.answeredInSession} respondidas`);
+    const bar = byId("questions-progress-bar");
+    if (bar) {
+        const total = state.pool.length || 1;
+        const percent = Math.round((state.answeredInSession / total) * 100);
+        bar.style.width = `${state.answeredInSession && percent < 1 ? 1 : Math.min(100, percent)}%`;
+    }
 }
 
 function fillSelect(id, options, defaultLabel) {
@@ -117,7 +124,10 @@ function teachingTable(table) {
         body.append(rowNode);
     });
     node.append(head, body);
-    return node;
+    const scroll = document.createElement("div");
+    scroll.className = "questions-table-scroll";
+    scroll.append(node);
+    return scroll;
 }
 
 function renderTeaching() {
@@ -199,6 +209,7 @@ function renderExercise() {
     const exercise = state.exercise;
     if (!exercise) return;
     state.checked = false;
+    byId("questions-exercise")?.closest(".questions-card")?.classList.add("has-exercise");
     setHidden("questions-exercise", false);
     setText("questions-source-label", exercise.sourceLabel);
     setText("questions-pattern", [exercise.categoryTitle, exercise.questionWord, exercise.tense].filter(Boolean).join(" · "));
@@ -206,6 +217,7 @@ function renderExercise() {
     setText("questions-hint", exercise.hint);
     setHidden("questions-hint", true);
     setText("questions-feedback", "");
+    byId("questions-feedback")?.classList.remove("is-correct", "is-wrong", "is-guide");
     setHidden("questions-feedback", true);
     setHidden("questions-bank", exercise.mode !== "form");
     renderBank(exercise.bank);
@@ -259,14 +271,21 @@ function previousQuestion() {
     renderExercise();
 }
 
+function setFeedback(text, tone) {
+    const node = byId("questions-feedback");
+    node?.classList.remove("is-correct", "is-wrong", "is-guide");
+    if (tone) node?.classList.add(tone);
+    setText("questions-feedback", text);
+    setHidden("questions-feedback", false);
+}
+
 function showAnswer() {
     const answer = state.exercise?.answer || "";
     const label = state.exercise?.answerLabel || "Guía del documento";
     const text = answer
         ? `${label}: ${answer}`
         : "No hay respuesta modelo verificada. Compara con la traducción y el contexto del documento y decide si la respondiste bien.";
-    setText("questions-feedback", text);
-    setHidden("questions-feedback", false);
+    setFeedback(text, "is-guide");
 }
 
 function recordOutcome(isCorrect) {
@@ -292,22 +311,19 @@ function checkAnswer() {
     const input = byId("questions-answer");
     const value = input?.value || "";
     if (!value.trim()) {
-        setText("questions-feedback", "Escribe tu respuesta antes de comprobar.");
-        setHidden("questions-feedback", false);
+        setFeedback("Escribe tu respuesta antes de comprobar.", "is-guide");
         return;
     }
     if (state.exercise.mode === "form") {
         const correct = checkFormedAnswer(state.exercise, value);
         recordOutcome(correct);
-        setText("questions-feedback", correct
+        setFeedback(correct
             ? "✅ Correcta. Escucha la pregunta para fijar la entonación."
-            : `❌ La forma correcta es: ${state.exercise.answer}`);
-        setHidden("questions-feedback", false);
+            : `❌ La forma correcta es: ${state.exercise.answer}`, correct ? "is-correct" : "is-wrong");
         if (window.speechSynthesis) playAudioEnhanced(state.exercise.question, "en");
         return;
     }
-    setText("questions-feedback", "Guardé tu respuesta. Mira la guía y puntúa con «Bien» o «Repasar».");
-    setHidden("questions-feedback", false);
+    setFeedback("Guardé tu respuesta. Mira la guía y puntúa con «Bien» o «Repasar».", "is-guide");
     setHidden("questions-good", false);
     setHidden("questions-review", false);
     setHidden("questions-check", true);
@@ -366,14 +382,14 @@ function wireEvents() {
     });
     byId("questions-good")?.addEventListener("click", () => {
         recordOutcome(true);
-        setText("questions-feedback", "✅ Marcada como respondida bien.");
+        setFeedback("✅ Marcada como respondida bien.", "is-correct");
     });
     byId("questions-review")?.addEventListener("click", () => {
         recordOutcome(false);
         const guide = state.exercise?.answer
             ? ` ${state.exercise.answerLabel || "Guía del documento"}: ${state.exercise.answer}`
             : " No hay respuesta modelo verificada; compara con la traducción y el contexto.";
-        setText("questions-feedback", `🔁 La dejamos para repasar.${guide}`);
+        setFeedback(`🔁 La dejamos para repasar.${guide}`, "is-guide");
     });
     byId("questions-ai-generate")?.addEventListener("click", generateMore);
     byId("questions-ai-clear")?.addEventListener("click", () => {
