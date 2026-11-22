@@ -1,6 +1,7 @@
 /* Modo Preguntas: formar y responder interrogativas con datos verificados.
  * El audio usa el mismo TTS que el resto de la app; la IA es opcional. */
 
+import { QUESTIONS_TEACHING } from "../../data/questions-teaching.module.js";
 import { playAudioEnhanced } from "../audio.js";
 import { showToast } from "../cache.js";
 import {
@@ -93,6 +94,66 @@ function fillSelect(id, options, defaultLabel) {
         new Option(defaultLabel, "all"),
         ...options.map(option => new Option(option.label, option.id))
     );
+}
+
+function teachingTable(table) {
+    const node = document.createElement("table");
+    const head = document.createElement("thead");
+    const headRow = document.createElement("tr");
+    table.headers.forEach(value => {
+        const cell = document.createElement("th");
+        cell.textContent = value;
+        headRow.append(cell);
+    });
+    head.append(headRow);
+    const body = document.createElement("tbody");
+    table.rows.forEach(row => {
+        const rowNode = document.createElement("tr");
+        row.forEach(value => {
+            const cell = document.createElement("td");
+            cell.textContent = value;
+            rowNode.append(cell);
+        });
+        body.append(rowNode);
+    });
+    node.append(head, body);
+    return node;
+}
+
+function renderTeaching() {
+    const host = byId("questions-teaching-content");
+    const select = byId("questions-teaching-filter");
+    if (!host || !select) return;
+    if (select.options.length <= 1) {
+        QUESTIONS_TEACHING.sections.forEach(section => {
+            const indent = "— ".repeat(Math.max(0, section.level - 1));
+            select.append(new Option(`${indent}${section.title}`, section.id));
+        });
+    }
+    const selected = select.value || "all";
+    const sections = selected === "all"
+        ? QUESTIONS_TEACHING.sections
+        : QUESTIONS_TEACHING.sections.filter(section => section.id === selected);
+    host.replaceChildren(...sections.map(section => {
+        const article = document.createElement("article");
+        article.className = "questions-teaching-block";
+        const heading = document.createElement("h3");
+        heading.textContent = section.title;
+        article.append(heading);
+        section.paragraphs.forEach(value => {
+            const paragraph = document.createElement("p");
+            paragraph.textContent = value;
+            article.append(paragraph);
+        });
+        section.notes.forEach(value => {
+            const note = document.createElement("p");
+            note.className = "questions-teaching-note";
+            note.textContent = value;
+            article.append(note);
+        });
+        section.tables.forEach(table => article.append(teachingTable(table)));
+        return article;
+    }));
 }
 
 function setupFilters() {
@@ -282,6 +343,7 @@ function wireEvents() {
     ["questions-filter-tense", "questions-filter-word", "questions-filter-type", "questions-filter-section", "questions-filter-source", "questions-filter-mode"]
         .forEach(id => byId(id)?.addEventListener("change", () => refreshPool()));
     byId("questions-filter-search")?.addEventListener("input", () => refreshPool());
+    byId("questions-teaching-filter")?.addEventListener("change", renderTeaching);
     byId("questions-start")?.addEventListener("click", startSession);
     byId("questions-next")?.addEventListener("click", nextQuestion);
     byId("questions-prev")?.addEventListener("click", previousQuestion);
@@ -327,6 +389,7 @@ export function initializeQuestions() {
     state.initialized = true;
     setupFilters();
     wireEvents();
+    renderTeaching();
     refreshPool();
 }
 

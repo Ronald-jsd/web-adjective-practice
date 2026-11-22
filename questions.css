@@ -167,6 +167,56 @@
 #practice-section .questions-feedback[hidden] { display: none }
 #practice-section .questions-navigation { justify-content: space-between; margin-top: 4px }
 
+#practice-section .questions-teaching {
+    border: 1px solid #e1e9e2;
+    border-radius: 14px;
+    background: #fbfdfb;
+    padding: 10px 14px;
+}
+#practice-section .questions-teaching > summary {
+    cursor: pointer;
+    color: #205c45;
+    font-size: .9rem;
+    font-weight: 800;
+}
+#practice-section .questions-teaching-filter {
+    display: grid;
+    gap: 5px;
+    margin: 12px 0;
+    color: #526057;
+    font-size: .72rem;
+    font-weight: 800;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+#practice-section .questions-teaching-filter select {
+    width: 100%;
+    min-height: 42px;
+    padding: 8px 10px;
+    border: 1px solid #d5dfd8;
+    border-radius: 10px;
+    background: #fff;
+    color: #20392f;
+    font: inherit;
+    font-size: .86rem;
+}
+#practice-section .questions-teaching-content { max-height: 520px; overflow: auto; display: grid; gap: 12px }
+#practice-section .questions-teaching-block {
+    padding: 12px 14px;
+    border: 1px solid #e7ede8;
+    border-radius: 12px;
+    background: #fff;
+}
+#practice-section .questions-teaching-block h3 { margin: 0 0 8px; color: #20392f; font-size: .96rem }
+#practice-section .questions-teaching-block p { margin: 6px 0; color: #526057; font-size: .86rem; line-height: 1.5 }
+#practice-section .questions-teaching-block p.questions-teaching-note { color: #a34f2d; font-weight: 700 }
+#practice-section .questions-teaching-note { margin: 8px 0; color: #7d8a81; font-size: .8rem }
+#practice-section .questions-teaching-block table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: .8rem }
+#practice-section .questions-teaching-block th,
+#practice-section .questions-teaching-block td { padding: 7px 9px; border: 1px solid #e1e9e2; text-align: left; vertical-align: top }
+#practice-section .questions-teaching-block th { background: #f4f8f4; color: #20392f }
+#practice-section .questions-teaching-block td { color: #526057 }
+
 @media (max-width: 900px) {
     #practice-section .questions-filters { grid-template-columns: repeat(2, minmax(0, 1fr)) }
 }

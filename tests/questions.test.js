@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import { QUESTIONS_VERIFIED } from "../data/questions-verified.module.js";
+import { QUESTIONS_TEACHING } from "../data/questions-teaching.module.js";
 import {
     AI_QUESTIONS_STORAGE_KEY,
     QUESTION_PROGRESS_STORAGE_KEY,
@@ -126,6 +127,34 @@ test("los ejercicios de formar y responder usan la pregunta verificada", () => {
     assert.equal(answer.hasModelAnswer, true);
     assert.ok(answer.hint.includes("Significado:"));
     assert.equal(answer.bank.length, 0);
+});
+
+test("todas las preguntas tienen respuesta: las del documento y las sugeridas localmente", () => {
+    const questions = VERIFIED_QUESTIONS;
+    assert.ok(questions.every(item => item.answerGuide && item.answerGuide.trim()), "falta respuesta modelo");
+    assert.ok(questions.every(item => ["documento", "generada"].includes(item.answerSource)));
+    assert.ok(questions.some(item => item.answerSource === "documento"));
+    const generated = questions.filter(item => item.answerSource === "generada");
+    assert.ok(generated.length > 400);
+    assert.ok(generated.every(item => !/undefined|null|\[object/.test(item.answerGuide)));
+    const exercise = buildQuestionExercise(generated[0], { mode: "answer" });
+    assert.equal(exercise.answerLabel, "Respuesta sugerida (generada)");
+    assert.equal(exercise.hasModelAnswer, true);
+});
+
+test("la guía de enseñanza del documento incluye reglas, estructuras y notas", () => {
+    assert.match(QUESTIONS_TEACHING.meta.source, /PREGUNTAS - DRIVE/);
+    assert.ok(QUESTIONS_TEACHING.sections.length >= 100);
+    const sections = QUESTIONS_TEACHING.sections;
+    assert.ok(sections.some(item => /REGLA DE ORO/i.test(item.title) && item.paragraphs.length >= 4));
+    assert.ok(sections.some(item => /CATEGORÍA 1:/i.test(item.title)));
+    assert.ok(sections.some(item => /1\.1 WH-words/i.test(item.title) && item.tables.length > 0));
+    assert.ok(sections.some(item => item.notes.some(note => /Nota|Uso/i.test(note))));
+    sections.forEach(item => {
+        item.paragraphs.concat(item.notes).forEach(value => {
+            assert.ok(!/[*`|]/.test(value), `Markdown en ${item.id}: ${value}`);
+        });
+    });
 });
 
 test("el progreso prioriza preguntas vencidas y persiste en localStorage", () => {

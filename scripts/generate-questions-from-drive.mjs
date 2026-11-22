@@ -8,6 +8,7 @@
 
 import { readFile, writeFile } from "node:fs/promises";
 import { basename } from "node:path";
+import { fillMissingAnswers } from "./question-answers.mjs";
 
 const sourcePath = process.argv[2];
 if (!sourcePath) {
@@ -235,6 +236,77 @@ function detectType(categoryTitle, english, isEmbedded) {
     return "yes-no";
 }
 
+/* La parte de enseñanza del documento (reglas, estructuras, notas y tablas
+ * explicativas) se guarda aparte, tal cual aparece en el Markdown. */
+function buildTeaching(lines, sourceFile) {
+    const blocks = [];
+    let current = null;
+    let table = null;
+
+    const flushTable = () => {
+        if (table && current) current.tables.push(table);
+        table = null;
+    };
+    const startBlock = (level, title) => {
+        flushTable();
+        current = {
+            id: `teaching-${blocks.length + 1}`,
+            level,
+            title: clean(title),
+            paragraphs: [],
+            notes: [],
+            tables: []
+        };
+        blocks.push(current);
+    };
+
+    lines.forEach(line => {
+        const heading = line.match(/^(#{1,3})\s+(.+)$/);
+        if (heading) {
+            startBlock(heading[1].length, heading[2]);
+            return;
+        }
+        if (/^#{4,}\s/.test(line)) return;
+        if (line.trim().startsWith("|")) {
+            const cells = splitCells(line);
+            if (cells.every(cell => /^:?-{2,}:?$/.test(cell))) return;
+            if (!current) startBlock(1, "PREGUNTAS - DRIVE");
+            if (!table) table = { headers: cells.map(clean), rows: [] };
+            else table.rows.push(cells.map(clean));
+            return;
+        }
+        flushTable();
+        const trimmed = line.trim();
+        if (!trimmed || trimmed === "---") return;
+        if (!current) startBlock(1, "PREGUNTAS - DRIVE");
+        if (/^\*\*[^*]+\*\*[:：]?/.test(trimmed)) {
+            const note = clean(trimmed);
+            if (!current.notes.includes(note)) current.notes.push(note);
+            return;
+        }
+        if (/^[-*>]\s/.test(trimmed) || /^\d+\.\s/.test(trimmed)) {
+            current.paragraphs.push(clean(trimmed.replace(/^(?:[-*>]|\d+\.)\s*/, "")));
+            return;
+        }
+        current.paragraphs.push(clean(trimmed));
+    });
+    flushTable();
+
+    const sections = blocks.filter(block =>
+        block.paragraphs.length || block.notes.length || block.tables.length
+    );
+    return {
+        meta: {
+            source: "PREGUNTAS - DRIVE (documento compartido por el usuario)",
+            sourceFile,
+            generatedAt: new Date().toISOString().slice(0, 10),
+            note: "Reglas, estructuras, notas y tablas copiadas del documento; sin contenido inventado.",
+            total: sections.length
+        },
+        sections
+    };
+}
+
 async function main(markdown) {
     const lines = markdown.split(/\r?\n/);
     const answerBanks = collectAnswerBanks(lines);
@@ -322,16 +394,19 @@ async function main(markdown) {
         });
     });
 
+    const withAnswers = fillMissingAnswers(questions);
     const payload = {
         meta: {
             source: "PREGUNTAS - DRIVE (documento compartido por el usuario)",
             sourceFile: basename(sourcePath),
             generatedAt: new Date().toISOString().slice(0, 10),
-            note: "Ejemplos y traducciones extraídos de las tablas del documento; sin preguntas inventadas.",
-            total: questions.length
+            note: "Preguntas y traducciones extraídas del documento. Las respuestas marcadas como 'generada' son sugerencias locales, no texto del documento.",
+            total: withAnswers.length
         },
-        questions
+        questions: withAnswers
     };
+
+    const teaching = buildTeaching(lines, basename(sourcePath));
 
     const jsonPath = new URL("../data/questions-verified.json", import.meta.url);
     const modulePath = new URL("../data/questions-verified.module.js", import.meta.url);
@@ -339,6 +414,15 @@ async function main(markdown) {
     await writeFile(
         modulePath,
         `/* Generado por scripts/generate-questions-from-drive.mjs. No editar a mano. */\nexport const QUESTIONS_VERIFIED = ${JSON.stringify(payload, null, 2)};\n`,
+        "utf8"
+    );
+
+    const teachingJsonPath = new URL("../data/questions-teaching.json", import.meta.url);
+    const teachingModulePath = new URL("../data/questions-teaching.module.js", import.meta.url);
+    await writeFile(teachingJsonPath, `${JSON.stringify(teaching, null, 2)}\n`, "utf8");
+    await writeFile(
+        teachingModulePath,
+        `/* Generado por scripts/generate-questions-from-drive.mjs. No editar a mano. */\nexport const QUESTIONS_TEACHING = ${JSON.stringify(teaching, null, 2)};\n`,
         "utf8"
     );
 

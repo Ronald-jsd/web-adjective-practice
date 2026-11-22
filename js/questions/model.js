@@ -291,7 +291,11 @@ export function buildQuestionExercise(entry, { mode = "form", random = Math.rand
             ? `💡 Empieza con: ${questionWord}${entry.pattern ? ` · Estructura: ${entry.pattern}` : ""}`
             : `💡 Significado: ${entry.spanish}${context ? ` · Contexto del documento: ${context}` : ""}`,
         answer: isForm ? String(entry.english) : guide,
-        answerLabel: entry.answerGuide ? "Guía del documento" : "Pregunta directa relacionada",
+        answerLabel: isForm
+            ? ""
+            : entry.answerSource === "generada"
+                ? "Respuesta sugerida (generada)"
+                : entry.answerGuide ? "Guía del documento" : "Pregunta directa relacionada",
         hasModelAnswer: Boolean(guide),
         bank: isForm ? tokens : []
     };

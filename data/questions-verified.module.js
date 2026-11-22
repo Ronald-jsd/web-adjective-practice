@@ -4,7 +4,7 @@ export const QUESTIONS_VERIFIED = {
     "source": "PREGUNTAS - DRIVE (documento compartido por el usuario)",
     "sourceFile": "PREGUNTAS - DRIVE 3eb639ee2ad880b38d5bd668ac33a1ca.md",
     "generatedAt": "2026-11-21",
-    "note": "Ejemplos y traducciones extraídos de las tablas del documento; sin preguntas inventadas.",
+    "note": "Preguntas y traducciones extraídas del documento. Las respuestas marcadas como 'generada' son sugerencias locales, no texto del documento.",
     "total": 547
   },
   "questions": [
@@ -21,9 +21,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 35
+      "sourceLine": 35,
+      "answerSource": "generada"
     },
     {
       "id": "q-002",
@@ -38,9 +39,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 36
+      "sourceLine": 36,
+      "answerSource": "generada"
     },
     {
       "id": "q-003",
@@ -55,9 +57,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "it-impersonal",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It was five o'clock.",
       "context": "",
-      "sourceLine": 37
+      "sourceLine": 37,
+      "answerSource": "generada"
     },
     {
       "id": "q-004",
@@ -72,9 +75,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Someone.",
       "context": "",
-      "sourceLine": 38
+      "sourceLine": 38,
+      "answerSource": "generada"
     },
     {
       "id": "q-005",
@@ -89,9 +93,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Someone.",
       "context": "",
-      "sourceLine": 39
+      "sourceLine": 39,
+      "answerSource": "generada"
     },
     {
       "id": "q-006",
@@ -106,9 +111,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Someone.",
       "context": "",
-      "sourceLine": 40
+      "sourceLine": 40,
+      "answerSource": "generada"
     },
     {
       "id": "q-007",
@@ -123,9 +129,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Someone.",
       "context": "",
-      "sourceLine": 41
+      "sourceLine": 41,
+      "answerSource": "generada"
     },
     {
       "id": "q-008",
@@ -140,9 +147,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is mine.",
       "context": "",
-      "sourceLine": 42
+      "sourceLine": 42,
+      "answerSource": "generada"
     },
     {
       "id": "q-009",
@@ -157,9 +165,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is mine.",
       "context": "",
-      "sourceLine": 43
+      "sourceLine": 43,
+      "answerSource": "generada"
     },
     {
       "id": "q-010",
@@ -174,9 +183,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "The blue one.",
       "context": "",
-      "sourceLine": 44
+      "sourceLine": 44,
+      "answerSource": "generada"
     },
     {
       "id": "q-011",
@@ -191,9 +201,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "indirecta",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "The one to Paris.",
       "context": "",
-      "sourceLine": 45
+      "sourceLine": 45,
+      "answerSource": "generada"
     },
     {
       "id": "q-012",
@@ -208,9 +219,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "At home.",
       "context": "",
-      "sourceLine": 46
+      "sourceLine": 46,
+      "answerSource": "generada"
     },
     {
       "id": "q-013",
@@ -225,9 +237,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "To the park.",
       "context": "",
-      "sourceLine": 47
+      "sourceLine": 47,
+      "answerSource": "generada"
     },
     {
       "id": "q-014",
@@ -242,9 +255,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Tomorrow.",
       "context": "",
-      "sourceLine": 48
+      "sourceLine": 48,
+      "answerSource": "generada"
     },
     {
       "id": "q-015",
@@ -259,9 +273,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yesterday.",
       "context": "",
-      "sourceLine": 49
+      "sourceLine": 49,
+      "answerSource": "generada"
     },
     {
       "id": "q-016",
@@ -276,9 +291,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Because of that.",
       "context": "",
-      "sourceLine": 50
+      "sourceLine": 50,
+      "answerSource": "generada"
     },
     {
       "id": "q-017",
@@ -293,9 +309,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "indirecta",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Because of that.",
       "context": "",
-      "sourceLine": 51
+      "sourceLine": 51,
+      "answerSource": "generada"
     },
     {
       "id": "q-018",
@@ -310,9 +327,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Like this.",
       "context": "",
-      "sourceLine": 52
+      "sourceLine": 52,
+      "answerSource": "generada"
     },
     {
       "id": "q-019",
@@ -327,9 +345,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Like this.",
       "context": "",
-      "sourceLine": 53
+      "sourceLine": 53,
+      "answerSource": "generada"
     },
     {
       "id": "q-020",
@@ -344,9 +363,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "A little.",
       "context": "",
-      "sourceLine": 59
+      "sourceLine": 59,
+      "answerSource": "generada"
     },
     {
       "id": "q-021",
@@ -361,9 +381,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "There are ten people.",
       "context": "",
-      "sourceLine": 60
+      "sourceLine": 60,
+      "answerSource": "generada"
     },
     {
       "id": "q-022",
@@ -378,9 +399,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-perfecto-continuo",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "For two hours.",
       "context": "",
-      "sourceLine": 61
+      "sourceLine": 61,
+      "answerSource": "generada"
     },
     {
       "id": "q-023",
@@ -395,9 +417,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Three times a week.",
       "context": "",
-      "sourceLine": 62
+      "sourceLine": 62,
+      "answerSource": "generada"
     },
     {
       "id": "q-024",
@@ -412,9 +435,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is two kilometers away.",
       "context": "",
-      "sourceLine": 63
+      "sourceLine": 63,
+      "answerSource": "generada"
     },
     {
       "id": "q-025",
@@ -429,9 +453,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "indirecta",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I am thirty years old.",
       "context": "",
-      "sourceLine": 64
+      "sourceLine": 64,
+      "answerSource": "generada"
     },
     {
       "id": "q-026",
@@ -446,9 +471,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "About sixty kilometers per hour.",
       "context": "",
-      "sourceLine": 65
+      "sourceLine": 65,
+      "answerSource": "generada"
     },
     {
       "id": "q-027",
@@ -463,9 +489,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Very well, thank you.",
       "context": "",
-      "sourceLine": 66
+      "sourceLine": 66,
+      "answerSource": "generada"
     },
     {
       "id": "q-028",
@@ -480,9 +507,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Someone.",
       "context": "",
-      "sourceLine": 72
+      "sourceLine": 72,
+      "answerSource": "generada"
     },
     {
       "id": "q-029",
@@ -497,9 +525,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "indirecta",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something unexpected happened.",
       "context": "",
-      "sourceLine": 73
+      "sourceLine": 73,
+      "answerSource": "generada"
     },
     {
       "id": "q-030",
@@ -514,9 +543,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Someone.",
       "context": "",
-      "sourceLine": 74
+      "sourceLine": 74,
+      "answerSource": "generada"
     },
     {
       "id": "q-031",
@@ -531,9 +561,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 75
+      "sourceLine": 75,
+      "answerSource": "generada"
     },
     {
       "id": "q-032",
@@ -548,9 +579,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 89
+      "sourceLine": 89,
+      "answerSource": "generada"
     },
     {
       "id": "q-033",
@@ -565,9 +597,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "At home.",
       "context": "",
-      "sourceLine": 90
+      "sourceLine": 90,
+      "answerSource": "generada"
     },
     {
       "id": "q-034",
@@ -582,9 +615,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "indirecta",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Like this.",
       "context": "",
-      "sourceLine": 91
+      "sourceLine": 91,
+      "answerSource": "generada"
     },
     {
       "id": "q-035",
@@ -599,9 +633,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Tomorrow.",
       "context": "",
-      "sourceLine": 92
+      "sourceLine": 92,
+      "answerSource": "generada"
     },
     {
       "id": "q-036",
@@ -616,9 +651,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Someone.",
       "context": "",
-      "sourceLine": 93
+      "sourceLine": 93,
+      "answerSource": "generada"
     },
     {
       "id": "q-037",
@@ -633,9 +669,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I think so.",
       "context": "",
-      "sourceLine": 105
+      "sourceLine": 105,
+      "answerSource": "generada"
     },
     {
       "id": "q-038",
@@ -650,9 +687,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I think so.",
       "context": "",
-      "sourceLine": 106
+      "sourceLine": 106,
+      "answerSource": "generada"
     },
     {
       "id": "q-039",
@@ -667,9 +705,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I think so.",
       "context": "",
-      "sourceLine": 107
+      "sourceLine": 107,
+      "answerSource": "generada"
     },
     {
       "id": "q-040",
@@ -684,9 +723,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "it-impersonal",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I think so.",
       "context": "",
-      "sourceLine": 108
+      "sourceLine": 108,
+      "answerSource": "generada"
     },
     {
       "id": "q-041",
@@ -701,9 +741,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I think so.",
       "context": "",
-      "sourceLine": 114
+      "sourceLine": 114,
+      "answerSource": "generada"
     },
     {
       "id": "q-042",
@@ -718,9 +759,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I think so.",
       "context": "",
-      "sourceLine": 115
+      "sourceLine": 115,
+      "answerSource": "generada"
     },
     {
       "id": "q-043",
@@ -735,9 +777,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I think so.",
       "context": "",
-      "sourceLine": 116
+      "sourceLine": 116,
+      "answerSource": "generada"
     },
     {
       "id": "q-044",
@@ -752,9 +795,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I think so.",
       "context": "",
-      "sourceLine": 122
+      "sourceLine": 122,
+      "answerSource": "generada"
     },
     {
       "id": "q-045",
@@ -769,9 +813,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "indirecta",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I think so.",
       "context": "",
-      "sourceLine": 123
+      "sourceLine": 123,
+      "answerSource": "generada"
     },
     {
       "id": "q-046",
@@ -786,9 +831,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I think so.",
       "context": "",
-      "sourceLine": 129
+      "sourceLine": 129,
+      "answerSource": "generada"
     },
     {
       "id": "q-047",
@@ -803,9 +849,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "indirecta",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I think so.",
       "context": "",
-      "sourceLine": 130
+      "sourceLine": 130,
+      "answerSource": "generada"
     },
     {
       "id": "q-048",
@@ -820,9 +867,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I think so.",
       "context": "",
-      "sourceLine": 138
+      "sourceLine": 138,
+      "answerSource": "generada"
     },
     {
       "id": "q-049",
@@ -837,9 +885,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I think so.",
       "context": "",
-      "sourceLine": 139
+      "sourceLine": 139,
+      "answerSource": "generada"
     },
     {
       "id": "q-050",
@@ -854,9 +903,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I think so.",
       "context": "",
-      "sourceLine": 140
+      "sourceLine": 140,
+      "answerSource": "generada"
     },
     {
       "id": "q-051",
@@ -871,9 +921,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I think so.",
       "context": "",
-      "sourceLine": 150
+      "sourceLine": 150,
+      "answerSource": "generada"
     },
     {
       "id": "q-052",
@@ -888,9 +939,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I think so.",
       "context": "",
-      "sourceLine": 151
+      "sourceLine": 151,
+      "answerSource": "generada"
     },
     {
       "id": "q-053",
@@ -905,9 +957,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "indirecta",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Because of that.",
       "context": "",
-      "sourceLine": 152
+      "sourceLine": 152,
+      "answerSource": "generada"
     },
     {
       "id": "q-054",
@@ -922,9 +975,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Because of that.",
       "context": "",
-      "sourceLine": 153
+      "sourceLine": 153,
+      "answerSource": "generada"
     },
     {
       "id": "q-055",
@@ -939,9 +993,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Someone.",
       "context": "",
-      "sourceLine": 163
+      "sourceLine": 163,
+      "answerSource": "generada"
     },
     {
       "id": "q-056",
@@ -956,9 +1011,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 164
+      "sourceLine": 164,
+      "answerSource": "generada"
     },
     {
       "id": "q-057",
@@ -973,9 +1029,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Someone.",
       "context": "",
-      "sourceLine": 165
+      "sourceLine": 165,
+      "answerSource": "generada"
     },
     {
       "id": "q-058",
@@ -990,9 +1047,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 166
+      "sourceLine": 166,
+      "answerSource": "generada"
     },
     {
       "id": "q-059",
@@ -1007,9 +1065,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "The blue one.",
       "context": "",
-      "sourceLine": 167
+      "sourceLine": 167,
+      "answerSource": "generada"
     },
     {
       "id": "q-060",
@@ -1024,9 +1083,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "there-be",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I think so.",
       "context": "",
-      "sourceLine": 180
+      "sourceLine": 180,
+      "answerSource": "generada"
     },
     {
       "id": "q-061",
@@ -1041,9 +1101,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "there-be",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I think so.",
       "context": "",
-      "sourceLine": 181
+      "sourceLine": 181,
+      "answerSource": "generada"
     },
     {
       "id": "q-062",
@@ -1058,9 +1119,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "there-be",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "There are ten people.",
       "context": "",
-      "sourceLine": 182
+      "sourceLine": 182,
+      "answerSource": "generada"
     },
     {
       "id": "q-063",
@@ -1075,9 +1137,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "there-be",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I think so.",
       "context": "",
-      "sourceLine": 183
+      "sourceLine": 183,
+      "answerSource": "generada"
     },
     {
       "id": "q-064",
@@ -1092,9 +1155,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I think so.",
       "context": "",
-      "sourceLine": 191
+      "sourceLine": 191,
+      "answerSource": "generada"
     },
     {
       "id": "q-065",
@@ -1109,9 +1173,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I think so.",
       "context": "",
-      "sourceLine": 192
+      "sourceLine": 192,
+      "answerSource": "generada"
     },
     {
       "id": "q-066",
@@ -1126,9 +1191,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 193
+      "sourceLine": 193,
+      "answerSource": "generada"
     },
     {
       "id": "q-067",
@@ -1143,9 +1209,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "At home.",
       "context": "",
-      "sourceLine": 194
+      "sourceLine": 194,
+      "answerSource": "generada"
     },
     {
       "id": "q-068",
@@ -1160,9 +1227,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Someone.",
       "context": "",
-      "sourceLine": 195
+      "sourceLine": 195,
+      "answerSource": "generada"
     },
     {
       "id": "q-069",
@@ -1177,9 +1245,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Tomorrow.",
       "context": "",
-      "sourceLine": 196
+      "sourceLine": 196,
+      "answerSource": "generada"
     },
     {
       "id": "q-070",
@@ -1194,9 +1263,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 204
+      "sourceLine": 204,
+      "answerSource": "generada"
     },
     {
       "id": "q-071",
@@ -1211,9 +1281,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Because of that.",
       "context": "",
-      "sourceLine": 205
+      "sourceLine": 205,
+      "answerSource": "generada"
     },
     {
       "id": "q-072",
@@ -1228,9 +1299,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-continuo",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 206
+      "sourceLine": 206,
+      "answerSource": "generada"
     },
     {
       "id": "q-073",
@@ -1245,9 +1317,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-continuo",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Someone.",
       "context": "",
-      "sourceLine": 207
+      "sourceLine": 207,
+      "answerSource": "generada"
     },
     {
       "id": "q-074",
@@ -1262,9 +1335,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 208
+      "sourceLine": 208,
+      "answerSource": "generada"
     },
     {
       "id": "q-075",
@@ -1279,9 +1353,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "At home.",
       "context": "",
-      "sourceLine": 209
+      "sourceLine": 209,
+      "answerSource": "generada"
     },
     {
       "id": "q-076",
@@ -1296,9 +1371,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-perfecto-continuo",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 211
+      "sourceLine": 211,
+      "answerSource": "generada"
     },
     {
       "id": "q-077",
@@ -1313,9 +1389,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something good will happen.",
       "context": "",
-      "sourceLine": 220
+      "sourceLine": 220,
+      "answerSource": "generada"
     },
     {
       "id": "q-078",
@@ -1330,9 +1407,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 221
+      "sourceLine": 221,
+      "answerSource": "generada"
     },
     {
       "id": "q-079",
@@ -1347,9 +1425,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "At home.",
       "context": "",
-      "sourceLine": 222
+      "sourceLine": 222,
+      "answerSource": "generada"
     },
     {
       "id": "q-080",
@@ -1364,9 +1443,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I think so.",
       "context": "",
-      "sourceLine": 223
+      "sourceLine": 223,
+      "answerSource": "generada"
     },
     {
       "id": "q-081",
@@ -1381,9 +1461,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I am not sure.",
       "context": "",
-      "sourceLine": 233
+      "sourceLine": 233,
+      "answerSource": "generada"
     },
     {
       "id": "q-082",
@@ -1398,9 +1479,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I am not sure.",
       "context": "",
-      "sourceLine": 234
+      "sourceLine": 234,
+      "answerSource": "generada"
     },
     {
       "id": "q-083",
@@ -1415,9 +1497,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Someone.",
       "context": "",
-      "sourceLine": 244
+      "sourceLine": 244,
+      "answerSource": "generada"
     },
     {
       "id": "q-084",
@@ -1432,9 +1515,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "indirecta",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Someone.",
       "context": "",
-      "sourceLine": 245
+      "sourceLine": 245,
+      "answerSource": "generada"
     },
     {
       "id": "q-085",
@@ -1449,9 +1533,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 246
+      "sourceLine": 246,
+      "answerSource": "generada"
     },
     {
       "id": "q-086",
@@ -1466,9 +1551,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 254
+      "sourceLine": 254,
+      "answerSource": "generada"
     },
     {
       "id": "q-087",
@@ -1483,9 +1569,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "indirecta",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I think so.",
       "context": "",
-      "sourceLine": 255
+      "sourceLine": 255,
+      "answerSource": "generada"
     },
     {
       "id": "q-088",
@@ -1500,9 +1587,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "indirecta",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 256
+      "sourceLine": 256,
+      "answerSource": "generada"
     },
     {
       "id": "q-089",
@@ -1517,9 +1605,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "At home.",
       "context": "",
-      "sourceLine": 257
+      "sourceLine": 257,
+      "answerSource": "generada"
     },
     {
       "id": "q-090",
@@ -1534,9 +1623,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Like this.",
       "context": "",
-      "sourceLine": 258
+      "sourceLine": 258,
+      "answerSource": "generada"
     },
     {
       "id": "q-091",
@@ -1551,9 +1641,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "it-impersonal",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is five o'clock.",
       "context": "",
-      "sourceLine": 259
+      "sourceLine": 259,
+      "answerSource": "generada"
     },
     {
       "id": "q-092",
@@ -1568,9 +1659,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "indirecta",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I think so.",
       "context": "",
-      "sourceLine": 260
+      "sourceLine": 260,
+      "answerSource": "generada"
     },
     {
       "id": "q-093",
@@ -1585,9 +1677,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I think so.",
       "context": "",
-      "sourceLine": 261
+      "sourceLine": 261,
+      "answerSource": "generada"
     },
     {
       "id": "q-094",
@@ -1602,9 +1695,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I think so.",
       "context": "",
-      "sourceLine": 262
+      "sourceLine": 262,
+      "answerSource": "generada"
     },
     {
       "id": "q-095",
@@ -1619,9 +1713,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "indirecta",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "At home.",
       "context": "",
-      "sourceLine": 263
+      "sourceLine": 263,
+      "answerSource": "generada"
     },
     {
       "id": "q-096",
@@ -1636,9 +1731,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 264
+      "sourceLine": 264,
+      "answerSource": "generada"
     },
     {
       "id": "q-097",
@@ -1653,9 +1749,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yesterday.",
       "context": "",
-      "sourceLine": 265
+      "sourceLine": 265,
+      "answerSource": "generada"
     },
     {
       "id": "q-098",
@@ -1670,9 +1767,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "indirecta",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "At home.",
       "context": "",
-      "sourceLine": 266
+      "sourceLine": 266,
+      "answerSource": "generada"
     },
     {
       "id": "q-099",
@@ -1687,9 +1785,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "indirecta",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Because of that.",
       "context": "",
-      "sourceLine": 267
+      "sourceLine": 267,
+      "answerSource": "generada"
     },
     {
       "id": "q-100",
@@ -1704,9 +1803,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "About sixty kilometers per hour.",
       "context": "",
-      "sourceLine": 268
+      "sourceLine": 268,
+      "answerSource": "generada"
     },
     {
       "id": "q-101",
@@ -1721,9 +1821,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I want a new book.",
       "context": "",
-      "sourceLine": 330
+      "sourceLine": 330,
+      "answerSource": "generada"
     },
     {
       "id": "q-102",
@@ -1738,9 +1839,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "My friend did.",
       "context": "",
-      "sourceLine": 331
+      "sourceLine": 331,
+      "answerSource": "generada"
     },
     {
       "id": "q-103",
@@ -1755,9 +1857,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "My friend did.",
       "context": "",
-      "sourceLine": 332
+      "sourceLine": 332,
+      "answerSource": "generada"
     },
     {
       "id": "q-104",
@@ -1772,9 +1875,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is mine.",
       "context": "",
-      "sourceLine": 333
+      "sourceLine": 333,
+      "answerSource": "generada"
     },
     {
       "id": "q-105",
@@ -1789,9 +1893,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "The blue one.",
       "context": "",
-      "sourceLine": 334
+      "sourceLine": 334,
+      "answerSource": "generada"
     },
     {
       "id": "q-106",
@@ -1806,9 +1911,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "At home.",
       "context": "",
-      "sourceLine": 335
+      "sourceLine": 335,
+      "answerSource": "generada"
     },
     {
       "id": "q-107",
@@ -1823,9 +1929,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yesterday.",
       "context": "",
-      "sourceLine": 336
+      "sourceLine": 336,
+      "answerSource": "generada"
     },
     {
       "id": "q-108",
@@ -1840,9 +1947,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Because I wanted to.",
       "context": "",
-      "sourceLine": 337
+      "sourceLine": 337,
+      "answerSource": "generada"
     },
     {
       "id": "q-109",
@@ -1857,9 +1965,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "You mix it carefully.",
       "context": "",
-      "sourceLine": 338
+      "sourceLine": 338,
+      "answerSource": "generada"
     },
     {
       "id": "q-110",
@@ -1874,9 +1983,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I need two bottles.",
       "context": "",
-      "sourceLine": 344
+      "sourceLine": 344,
+      "answerSource": "generada"
     },
     {
       "id": "q-111",
@@ -1891,9 +2001,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I bought ten.",
       "context": "",
-      "sourceLine": 345
+      "sourceLine": 345,
+      "answerSource": "generada"
     },
     {
       "id": "q-112",
@@ -1908,9 +2019,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-perfecto",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "For two hours.",
       "context": "",
-      "sourceLine": 346
+      "sourceLine": 346,
+      "answerSource": "generada"
     },
     {
       "id": "q-113",
@@ -1925,9 +2037,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Three times a week.",
       "context": "",
-      "sourceLine": 347
+      "sourceLine": 347,
+      "answerSource": "generada"
     },
     {
       "id": "q-114",
@@ -1942,9 +2055,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is two kilometers away.",
       "context": "",
-      "sourceLine": 348
+      "sourceLine": 348,
+      "answerSource": "generada"
     },
     {
       "id": "q-115",
@@ -1959,9 +2073,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I am thirty years old.",
       "context": "",
-      "sourceLine": 349
+      "sourceLine": 349,
+      "answerSource": "generada"
     },
     {
       "id": "q-116",
@@ -1976,9 +2091,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "About sixty kilometers per hour.",
       "context": "",
-      "sourceLine": 350
+      "sourceLine": 350,
+      "answerSource": "generada"
     },
     {
       "id": "q-117",
@@ -1993,9 +2109,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "About three meters wide.",
       "context": "",
-      "sourceLine": 351
+      "sourceLine": 351,
+      "answerSource": "generada"
     },
     {
       "id": "q-118",
@@ -2010,9 +2127,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "About one meter eighty.",
       "context": "",
-      "sourceLine": 352
+      "sourceLine": 352,
+      "answerSource": "generada"
     },
     {
       "id": "q-119",
@@ -2027,9 +2145,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "About twenty meters high.",
       "context": "",
-      "sourceLine": 353
+      "sourceLine": 353,
+      "answerSource": "generada"
     },
     {
       "id": "q-120",
@@ -2044,9 +2163,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "About two meters deep.",
       "context": "",
-      "sourceLine": 354
+      "sourceLine": 354,
+      "answerSource": "generada"
     },
     {
       "id": "q-121",
@@ -2061,9 +2181,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Very well, thank you.",
       "context": "",
-      "sourceLine": 355
+      "sourceLine": 355,
+      "answerSource": "generada"
     },
     {
       "id": "q-122",
@@ -2078,9 +2199,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "In ten minutes.",
       "context": "",
-      "sourceLine": 356
+      "sourceLine": 356,
+      "answerSource": "generada"
     },
     {
       "id": "q-123",
@@ -2095,9 +2217,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Because I changed my mind.",
       "context": "",
-      "sourceLine": 357
+      "sourceLine": 357,
+      "answerSource": "generada"
     },
     {
       "id": "q-124",
@@ -2112,9 +2235,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something unexpected happened.",
       "context": "",
-      "sourceLine": 366
+      "sourceLine": 366,
+      "answerSource": "generada"
     },
     {
       "id": "q-125",
@@ -2129,9 +2253,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "The blue one.",
       "context": "",
-      "sourceLine": 367
+      "sourceLine": 367,
+      "answerSource": "generada"
     },
     {
       "id": "q-126",
@@ -2146,9 +2271,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "My friend did.",
       "context": "",
-      "sourceLine": 368
+      "sourceLine": 368,
+      "answerSource": "generada"
     },
     {
       "id": "q-127",
@@ -2163,9 +2289,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "The blue one.",
       "context": "",
-      "sourceLine": 370
+      "sourceLine": 370,
+      "answerSource": "generada"
     },
     {
       "id": "q-128",
@@ -2180,9 +2307,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I am.",
       "context": "",
-      "sourceLine": 389
+      "sourceLine": 389,
+      "answerSource": "generada"
     },
     {
       "id": "q-129",
@@ -2197,9 +2325,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, she is.",
       "context": "",
-      "sourceLine": 390
+      "sourceLine": 390,
+      "answerSource": "generada"
     },
     {
       "id": "q-130",
@@ -2214,9 +2343,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, they are.",
       "context": "",
-      "sourceLine": 391
+      "sourceLine": 391,
+      "answerSource": "generada"
     },
     {
       "id": "q-131",
@@ -2231,9 +2361,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, he was.",
       "context": "",
-      "sourceLine": 392
+      "sourceLine": 392,
+      "answerSource": "generada"
     },
     {
       "id": "q-132",
@@ -2248,9 +2379,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, they were.",
       "context": "",
-      "sourceLine": 393
+      "sourceLine": 393,
+      "answerSource": "generada"
     },
     {
       "id": "q-133",
@@ -2265,9 +2397,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-simple",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I will.",
       "context": "",
-      "sourceLine": 394
+      "sourceLine": 394,
+      "answerSource": "generada"
     },
     {
       "id": "q-134",
@@ -2282,9 +2415,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-simple",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, she will.",
       "context": "",
-      "sourceLine": 395
+      "sourceLine": 395,
+      "answerSource": "generada"
     },
     {
       "id": "q-135",
@@ -2299,9 +2433,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-perfecto",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I have.",
       "context": "",
-      "sourceLine": 396
+      "sourceLine": 396,
+      "answerSource": "generada"
     },
     {
       "id": "q-136",
@@ -2316,9 +2451,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I do.",
       "context": "",
-      "sourceLine": 402
+      "sourceLine": 402,
+      "answerSource": "generada"
     },
     {
       "id": "q-137",
@@ -2333,9 +2469,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, they do.",
       "context": "",
-      "sourceLine": 403
+      "sourceLine": 403,
+      "answerSource": "generada"
     },
     {
       "id": "q-138",
@@ -2350,9 +2487,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, he does.",
       "context": "",
-      "sourceLine": 404
+      "sourceLine": 404,
+      "answerSource": "generada"
     },
     {
       "id": "q-139",
@@ -2367,9 +2505,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, she does.",
       "context": "",
-      "sourceLine": 405
+      "sourceLine": 405,
+      "answerSource": "generada"
     },
     {
       "id": "q-140",
@@ -2384,9 +2523,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I did.",
       "context": "",
-      "sourceLine": 413
+      "sourceLine": 413,
+      "answerSource": "generada"
     },
     {
       "id": "q-141",
@@ -2401,9 +2541,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, she did.",
       "context": "",
-      "sourceLine": 414
+      "sourceLine": 414,
+      "answerSource": "generada"
     },
     {
       "id": "q-142",
@@ -2418,9 +2559,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, they did.",
       "context": "",
-      "sourceLine": 415
+      "sourceLine": 415,
+      "answerSource": "generada"
     },
     {
       "id": "q-143",
@@ -2435,9 +2577,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-perfecto",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I have.",
       "context": "",
-      "sourceLine": 421
+      "sourceLine": 421,
+      "answerSource": "generada"
     },
     {
       "id": "q-144",
@@ -2452,9 +2595,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-perfecto",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, she has.",
       "context": "",
-      "sourceLine": 422
+      "sourceLine": 422,
+      "answerSource": "generada"
     },
     {
       "id": "q-145",
@@ -2469,9 +2613,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-perfecto",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, they have.",
       "context": "",
-      "sourceLine": 423
+      "sourceLine": 423,
+      "answerSource": "generada"
     },
     {
       "id": "q-146",
@@ -2486,9 +2631,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-perfecto",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I had.",
       "context": "",
-      "sourceLine": 429
+      "sourceLine": 429,
+      "answerSource": "generada"
     },
     {
       "id": "q-147",
@@ -2503,9 +2649,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-perfecto",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yesterday.",
       "context": "",
-      "sourceLine": 430
+      "sourceLine": 430,
+      "answerSource": "generada"
     },
     {
       "id": "q-148",
@@ -2520,9 +2667,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-simple",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I will.",
       "context": "",
-      "sourceLine": 436
+      "sourceLine": 436,
+      "answerSource": "generada"
     },
     {
       "id": "q-149",
@@ -2537,9 +2685,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-simple",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, they will.",
       "context": "",
-      "sourceLine": 437
+      "sourceLine": 437,
+      "answerSource": "generada"
     },
     {
       "id": "q-150",
@@ -2554,9 +2703,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-simple",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, she will.",
       "context": "",
-      "sourceLine": 438
+      "sourceLine": 438,
+      "answerSource": "generada"
     },
     {
       "id": "q-151",
@@ -2571,9 +2721,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I am.",
       "context": "",
-      "sourceLine": 444
+      "sourceLine": 444,
+      "answerSource": "generada"
     },
     {
       "id": "q-152",
@@ -2588,9 +2739,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, she is.",
       "context": "",
-      "sourceLine": 445
+      "sourceLine": 445,
+      "answerSource": "generada"
     },
     {
       "id": "q-153",
@@ -2605,9 +2757,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, they are.",
       "context": "",
-      "sourceLine": 446
+      "sourceLine": 446,
+      "answerSource": "generada"
     },
     {
       "id": "q-154",
@@ -2622,9 +2775,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I am.",
       "context": "",
-      "sourceLine": 452
+      "sourceLine": 452,
+      "answerSource": "generada"
     },
     {
       "id": "q-155",
@@ -2639,9 +2793,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, she is.",
       "context": "",
-      "sourceLine": 453
+      "sourceLine": 453,
+      "answerSource": "generada"
     },
     {
       "id": "q-156",
@@ -2656,9 +2811,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, they are.",
       "context": "",
-      "sourceLine": 454
+      "sourceLine": 454,
+      "answerSource": "generada"
     },
     {
       "id": "q-157",
@@ -2673,9 +2829,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-continuo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I will.",
       "context": "",
-      "sourceLine": 462
+      "sourceLine": 462,
+      "answerSource": "generada"
     },
     {
       "id": "q-158",
@@ -2690,9 +2847,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-continuo",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Tomorrow.",
       "context": "",
-      "sourceLine": 463
+      "sourceLine": 463,
+      "answerSource": "generada"
     },
     {
       "id": "q-159",
@@ -2707,9 +2865,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-continuo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, they will.",
       "context": "",
-      "sourceLine": 464
+      "sourceLine": 464,
+      "answerSource": "generada"
     },
     {
       "id": "q-160",
@@ -2724,9 +2883,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-perfecto",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I will.",
       "context": "",
-      "sourceLine": 472
+      "sourceLine": 472,
+      "answerSource": "generada"
     },
     {
       "id": "q-161",
@@ -2741,9 +2901,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-perfecto",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, she will.",
       "context": "",
-      "sourceLine": 473
+      "sourceLine": 473,
+      "answerSource": "generada"
     },
     {
       "id": "q-162",
@@ -2758,9 +2919,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I am.",
       "context": "",
-      "sourceLine": 481
+      "sourceLine": 481,
+      "answerSource": "generada"
     },
     {
       "id": "q-163",
@@ -2775,9 +2937,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, she is.",
       "context": "",
-      "sourceLine": 482
+      "sourceLine": 482,
+      "answerSource": "generada"
     },
     {
       "id": "q-164",
@@ -2792,9 +2955,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, they are.",
       "context": "",
-      "sourceLine": 483
+      "sourceLine": 483,
+      "answerSource": "generada"
     },
     {
       "id": "q-165",
@@ -2809,9 +2973,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-continuo",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yesterday.",
       "context": "",
-      "sourceLine": 489
+      "sourceLine": 489,
+      "answerSource": "generada"
     },
     {
       "id": "q-166",
@@ -2826,9 +2991,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-continuo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, she was.",
       "context": "",
-      "sourceLine": 490
+      "sourceLine": 490,
+      "answerSource": "generada"
     },
     {
       "id": "q-167",
@@ -2843,9 +3009,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-continuo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I will.",
       "context": "",
-      "sourceLine": 498
+      "sourceLine": 498,
+      "answerSource": "generada"
     },
     {
       "id": "q-168",
@@ -2860,9 +3027,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-continuo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, she will.",
       "context": "",
-      "sourceLine": 499
+      "sourceLine": 499,
+      "answerSource": "generada"
     },
     {
       "id": "q-169",
@@ -2877,9 +3045,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-continuo",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Tomorrow.",
       "context": "",
-      "sourceLine": 500
+      "sourceLine": 500,
+      "answerSource": "generada"
     },
     {
       "id": "q-170",
@@ -2894,9 +3063,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-continuo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I will.",
       "context": "",
-      "sourceLine": 501
+      "sourceLine": 501,
+      "answerSource": "generada"
     },
     {
       "id": "q-171",
@@ -2911,9 +3081,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-continuo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, he will.",
       "context": "",
-      "sourceLine": 502
+      "sourceLine": 502,
+      "answerSource": "generada"
     },
     {
       "id": "q-172",
@@ -2928,9 +3099,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-perfecto-continuo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I have.",
       "context": "",
-      "sourceLine": 508
+      "sourceLine": 508,
+      "answerSource": "generada"
     },
     {
       "id": "q-173",
@@ -2945,9 +3117,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-perfecto-continuo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, she has.",
       "context": "",
-      "sourceLine": 509
+      "sourceLine": 509,
+      "answerSource": "generada"
     },
     {
       "id": "q-174",
@@ -2962,9 +3135,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-perfecto-continuo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I had.",
       "context": "",
-      "sourceLine": 515
+      "sourceLine": 515,
+      "answerSource": "generada"
     },
     {
       "id": "q-175",
@@ -2979,9 +3153,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-perfecto-continuo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I will.",
       "context": "",
-      "sourceLine": 521
+      "sourceLine": 521,
+      "answerSource": "generada"
     },
     {
       "id": "q-176",
@@ -2996,9 +3171,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I can.",
       "context": "",
-      "sourceLine": 529
+      "sourceLine": 529,
+      "answerSource": "generada"
     },
     {
       "id": "q-177",
@@ -3013,9 +3189,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I could.",
       "context": "",
-      "sourceLine": 530
+      "sourceLine": 530,
+      "answerSource": "generada"
     },
     {
       "id": "q-178",
@@ -3030,9 +3207,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I may.",
       "context": "",
-      "sourceLine": 531
+      "sourceLine": 531,
+      "answerSource": "generada"
     },
     {
       "id": "q-179",
@@ -3047,9 +3225,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, it might.",
       "context": "",
-      "sourceLine": 532
+      "sourceLine": 532,
+      "answerSource": "generada"
     },
     {
       "id": "q-180",
@@ -3064,9 +3243,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I must.",
       "context": "",
-      "sourceLine": 533
+      "sourceLine": 533,
+      "answerSource": "generada"
     },
     {
       "id": "q-181",
@@ -3081,9 +3261,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I should.",
       "context": "",
-      "sourceLine": 534
+      "sourceLine": 534,
+      "answerSource": "generada"
     },
     {
       "id": "q-182",
@@ -3098,9 +3279,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 535
+      "sourceLine": 535,
+      "answerSource": "generada"
     },
     {
       "id": "q-183",
@@ -3115,9 +3297,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-simple",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I will.",
       "context": "",
-      "sourceLine": 536
+      "sourceLine": 536,
+      "answerSource": "generada"
     },
     {
       "id": "q-184",
@@ -3132,9 +3315,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, we shall.",
       "context": "",
-      "sourceLine": 537
+      "sourceLine": 537,
+      "answerSource": "generada"
     },
     {
       "id": "q-185",
@@ -3149,9 +3333,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I think so.",
       "context": "",
-      "sourceLine": 538
+      "sourceLine": 538,
+      "answerSource": "generada"
     },
     {
       "id": "q-186",
@@ -3166,9 +3351,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "used-to",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 539
+      "sourceLine": 539,
+      "answerSource": "generada"
     },
     {
       "id": "q-187",
@@ -3183,9 +3369,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "there-be",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I am.",
       "context": "",
-      "sourceLine": 552
+      "sourceLine": 552,
+      "answerSource": "generada"
     },
     {
       "id": "q-188",
@@ -3200,9 +3387,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "there-be",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I am.",
       "context": "",
-      "sourceLine": 553
+      "sourceLine": 553,
+      "answerSource": "generada"
     },
     {
       "id": "q-189",
@@ -3217,9 +3405,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "there-be",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I was.",
       "context": "",
-      "sourceLine": 554
+      "sourceLine": 554,
+      "answerSource": "generada"
     },
     {
       "id": "q-190",
@@ -3234,9 +3423,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "there-be",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I was.",
       "context": "",
-      "sourceLine": 555
+      "sourceLine": 555,
+      "answerSource": "generada"
     },
     {
       "id": "q-191",
@@ -3251,9 +3441,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "there-be",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I will.",
       "context": "",
-      "sourceLine": 556
+      "sourceLine": 556,
+      "answerSource": "generada"
     },
     {
       "id": "q-192",
@@ -3268,9 +3459,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "there-be",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I will.",
       "context": "",
-      "sourceLine": 557
+      "sourceLine": 557,
+      "answerSource": "generada"
     },
     {
       "id": "q-193",
@@ -3285,9 +3477,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-perfecto",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I have.",
       "context": "",
-      "sourceLine": 558
+      "sourceLine": 558,
+      "answerSource": "generada"
     },
     {
       "id": "q-194",
@@ -3302,9 +3495,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-perfecto",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I have.",
       "context": "",
-      "sourceLine": 559
+      "sourceLine": 559,
+      "answerSource": "generada"
     },
     {
       "id": "q-195",
@@ -3319,9 +3513,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "eleccion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Want coffee.",
       "context": "",
-      "sourceLine": 569
+      "sourceLine": 569,
+      "answerSource": "generada"
     },
     {
       "id": "q-196",
@@ -3336,9 +3531,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "eleccion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "20.",
       "context": "",
-      "sourceLine": 570
+      "sourceLine": 570,
+      "answerSource": "generada"
     },
     {
       "id": "q-197",
@@ -3353,9 +3549,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "eleccion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Coming today.",
       "context": "",
-      "sourceLine": 571
+      "sourceLine": 571,
+      "answerSource": "generada"
     },
     {
       "id": "q-198",
@@ -3370,9 +3567,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "eleccion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Call him.",
       "context": "",
-      "sourceLine": 572
+      "sourceLine": 572,
+      "answerSource": "generada"
     },
     {
       "id": "q-199",
@@ -3387,9 +3585,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-simple",
       "type": "eleccion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Stay.",
       "context": "",
-      "sourceLine": 573
+      "sourceLine": 573,
+      "answerSource": "generada"
     },
     {
       "id": "q-200",
@@ -3404,9 +3603,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "eleccion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Prefer tea.",
       "context": "",
-      "sourceLine": 574
+      "sourceLine": 574,
+      "answerSource": "generada"
     },
     {
       "id": "q-201",
@@ -3421,9 +3621,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "eleccion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Working.",
       "context": "",
-      "sourceLine": 575
+      "sourceLine": 575,
+      "answerSource": "generada"
     },
     {
       "id": "q-202",
@@ -3438,9 +3639,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "eleccion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Prefer, tea.",
       "context": "",
-      "sourceLine": 576
+      "sourceLine": 576,
+      "answerSource": "generada"
     },
     {
       "id": "q-203",
@@ -3455,9 +3657,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "eleccion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Who called, John.",
       "context": "",
-      "sourceLine": 577
+      "sourceLine": 577,
+      "answerSource": "generada"
     },
     {
       "id": "q-204",
@@ -3472,9 +3675,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "tag",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, that's right.",
       "context": "",
-      "sourceLine": 594
+      "sourceLine": 594,
+      "answerSource": "generada"
     },
     {
       "id": "q-205",
@@ -3489,9 +3693,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "tag",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, that's right.",
       "context": "",
-      "sourceLine": 595
+      "sourceLine": 595,
+      "answerSource": "generada"
     },
     {
       "id": "q-206",
@@ -3506,9 +3711,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "tag-presente",
       "type": "tag",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, that's right.",
       "context": "",
-      "sourceLine": 601
+      "sourceLine": 601,
+      "answerSource": "generada"
     },
     {
       "id": "q-207",
@@ -3523,9 +3729,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "tag-presente",
       "type": "tag",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, that's right.",
       "context": "",
-      "sourceLine": 602
+      "sourceLine": 602,
+      "answerSource": "generada"
     },
     {
       "id": "q-208",
@@ -3540,9 +3747,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "tag",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, that's right.",
       "context": "",
-      "sourceLine": 603
+      "sourceLine": 603,
+      "answerSource": "generada"
     },
     {
       "id": "q-209",
@@ -3557,9 +3765,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "tag-perfecto",
       "type": "tag",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, that's right.",
       "context": "",
-      "sourceLine": 609
+      "sourceLine": 609,
+      "answerSource": "generada"
     },
     {
       "id": "q-210",
@@ -3574,9 +3783,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "tag-perfecto",
       "type": "tag",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, that's right.",
       "context": "",
-      "sourceLine": 610
+      "sourceLine": 610,
+      "answerSource": "generada"
     },
     {
       "id": "q-211",
@@ -3591,9 +3801,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "tag",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, that's right.",
       "context": "",
-      "sourceLine": 616
+      "sourceLine": 616,
+      "answerSource": "generada"
     },
     {
       "id": "q-212",
@@ -3608,9 +3819,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "tag",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, that's right.",
       "context": "",
-      "sourceLine": 617
+      "sourceLine": 617,
+      "answerSource": "generada"
     },
     {
       "id": "q-213",
@@ -3625,9 +3837,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "tag",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, that's right.",
       "context": "",
-      "sourceLine": 618
+      "sourceLine": 618,
+      "answerSource": "generada"
     },
     {
       "id": "q-214",
@@ -3642,9 +3855,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-simple",
       "type": "tag",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, that's right.",
       "context": "",
-      "sourceLine": 624
+      "sourceLine": 624,
+      "answerSource": "generada"
     },
     {
       "id": "q-215",
@@ -3659,9 +3873,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-simple",
       "type": "tag",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, that's right.",
       "context": "",
-      "sourceLine": 625
+      "sourceLine": 625,
+      "answerSource": "generada"
     },
     {
       "id": "q-216",
@@ -3676,9 +3891,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "tag",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, that's right.",
       "context": "",
-      "sourceLine": 626
+      "sourceLine": 626,
+      "answerSource": "generada"
     },
     {
       "id": "q-217",
@@ -3693,9 +3909,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "tag",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, that's right.",
       "context": "",
-      "sourceLine": 632
+      "sourceLine": 632,
+      "answerSource": "generada"
     },
     {
       "id": "q-218",
@@ -3710,9 +3927,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "tag",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, that's right.",
       "context": "",
-      "sourceLine": 633
+      "sourceLine": 633,
+      "answerSource": "generada"
     },
     {
       "id": "q-219",
@@ -3727,9 +3945,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "tag",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, that's right.",
       "context": "",
-      "sourceLine": 634
+      "sourceLine": 634,
+      "answerSource": "generada"
     },
     {
       "id": "q-220",
@@ -3744,9 +3963,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "tag",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, that's right.",
       "context": "",
-      "sourceLine": 635
+      "sourceLine": 635,
+      "answerSource": "generada"
     },
     {
       "id": "q-221",
@@ -3761,9 +3981,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "tag",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, that's right.",
       "context": "",
-      "sourceLine": 636
+      "sourceLine": 636,
+      "answerSource": "generada"
     },
     {
       "id": "q-222",
@@ -3778,9 +3999,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "negativa-presente",
       "type": "negativa",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I do.",
       "context": "",
-      "sourceLine": 648
+      "sourceLine": 648,
+      "answerSource": "generada"
     },
     {
       "id": "q-223",
@@ -3795,9 +4017,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "negativa-presente",
       "type": "negativa",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, he does.",
       "context": "",
-      "sourceLine": 649
+      "sourceLine": 649,
+      "answerSource": "generada"
     },
     {
       "id": "q-224",
@@ -3812,9 +4035,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "negativa-presente",
       "type": "negativa",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, they do.",
       "context": "",
-      "sourceLine": 650
+      "sourceLine": 650,
+      "answerSource": "generada"
     },
     {
       "id": "q-225",
@@ -3829,9 +4053,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "negativa-pasado",
       "type": "negativa",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I did.",
       "context": "",
-      "sourceLine": 656
+      "sourceLine": 656,
+      "answerSource": "generada"
     },
     {
       "id": "q-226",
@@ -3846,9 +4071,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "negativa-pasado",
       "type": "negativa",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, she did.",
       "context": "",
-      "sourceLine": 657
+      "sourceLine": 657,
+      "answerSource": "generada"
     },
     {
       "id": "q-227",
@@ -3863,9 +4089,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "negativa-presente",
       "type": "negativa",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, she is.",
       "context": "",
-      "sourceLine": 663
+      "sourceLine": 663,
+      "answerSource": "generada"
     },
     {
       "id": "q-228",
@@ -3880,9 +4107,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "negativa-presente",
       "type": "negativa",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I am.",
       "context": "",
-      "sourceLine": 664
+      "sourceLine": 664,
+      "answerSource": "generada"
     },
     {
       "id": "q-229",
@@ -3897,9 +4125,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "negativa-pasado",
       "type": "negativa",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, he was.",
       "context": "",
-      "sourceLine": 665
+      "sourceLine": 665,
+      "answerSource": "generada"
     },
     {
       "id": "q-230",
@@ -3914,9 +4143,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "negativa",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I have.",
       "context": "",
-      "sourceLine": 671
+      "sourceLine": 671,
+      "answerSource": "generada"
     },
     {
       "id": "q-231",
@@ -3931,9 +4161,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "negativa",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, she has.",
       "context": "",
-      "sourceLine": 672
+      "sourceLine": 672,
+      "answerSource": "generada"
     },
     {
       "id": "q-232",
@@ -3948,9 +4179,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "negativa",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I think so.",
       "context": "",
-      "sourceLine": 678
+      "sourceLine": 678,
+      "answerSource": "generada"
     },
     {
       "id": "q-233",
@@ -3965,9 +4197,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "negativa",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I think so.",
       "context": "",
-      "sourceLine": 679
+      "sourceLine": 679,
+      "answerSource": "generada"
     },
     {
       "id": "q-234",
@@ -3982,9 +4215,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "negativa-presente",
       "type": "negativa",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, we should.",
       "context": "",
-      "sourceLine": 680
+      "sourceLine": 680,
+      "answerSource": "generada"
     },
     {
       "id": "q-235",
@@ -3999,9 +4233,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "negativa-presente",
       "type": "negativa",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I would.",
       "context": "",
-      "sourceLine": 681
+      "sourceLine": 681,
+      "answerSource": "generada"
     },
     {
       "id": "q-236",
@@ -4016,9 +4251,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "negativa-presente",
       "type": "negativa",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I am.",
       "context": "",
-      "sourceLine": 687
+      "sourceLine": 687,
+      "answerSource": "generada"
     },
     {
       "id": "q-237",
@@ -4033,9 +4269,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "negativa-pasado",
       "type": "negativa",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I was.",
       "context": "",
-      "sourceLine": 688
+      "sourceLine": 688,
+      "answerSource": "generada"
     },
     {
       "id": "q-238",
@@ -4050,9 +4287,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "negativa",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I think so.",
       "context": "",
-      "sourceLine": 689
+      "sourceLine": 689,
+      "answerSource": "generada"
     },
     {
       "id": "q-239",
@@ -4067,9 +4305,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "negativa-presente",
       "type": "negativa",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I am.",
       "context": "",
-      "sourceLine": 695
+      "sourceLine": 695,
+      "answerSource": "generada"
     },
     {
       "id": "q-240",
@@ -4084,9 +4323,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "negativa-pasado",
       "type": "negativa",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, she was.",
       "context": "",
-      "sourceLine": 696
+      "sourceLine": 696,
+      "answerSource": "generada"
     },
     {
       "id": "q-241",
@@ -4101,9 +4341,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "negativa",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I think so.",
       "context": "",
-      "sourceLine": 702
+      "sourceLine": 702,
+      "answerSource": "generada"
     },
     {
       "id": "q-242",
@@ -4118,9 +4359,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "negativa",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I think so.",
       "context": "",
-      "sourceLine": 703
+      "sourceLine": 703,
+      "answerSource": "generada"
     },
     {
       "id": "q-243",
@@ -4135,9 +4377,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I am not sure.",
       "context": "",
-      "sourceLine": 715
+      "sourceLine": 715,
+      "answerSource": "generada"
     },
     {
       "id": "q-244",
@@ -4152,9 +4395,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I am not sure.",
       "context": "",
-      "sourceLine": 716
+      "sourceLine": 716,
+      "answerSource": "generada"
     },
     {
       "id": "q-245",
@@ -4169,9 +4413,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I am not sure.",
       "context": "",
-      "sourceLine": 717
+      "sourceLine": 717,
+      "answerSource": "generada"
     },
     {
       "id": "q-246",
@@ -4186,9 +4431,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "indirecta",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I am not sure.",
       "context": "",
-      "sourceLine": 720
+      "sourceLine": 720,
+      "answerSource": "generada"
     },
     {
       "id": "q-247",
@@ -4203,9 +4449,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "indirecta",
       "related": "Where is the station?",
-      "answerGuide": "",
+      "answerGuide": "At home.",
       "context": "",
-      "sourceLine": 727
+      "sourceLine": 727,
+      "answerSource": "generada"
     },
     {
       "id": "q-248",
@@ -4220,9 +4467,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "indirecta",
       "related": "What does she want?",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 728
+      "sourceLine": 728,
+      "answerSource": "generada"
     },
     {
       "id": "q-249",
@@ -4237,9 +4485,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "indirecta",
       "related": "When will they arrive?",
-      "answerGuide": "",
+      "answerGuide": "Tomorrow.",
       "context": "",
-      "sourceLine": 730
+      "sourceLine": 730,
+      "answerSource": "generada"
     },
     {
       "id": "q-250",
@@ -4254,9 +4503,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "indirecta",
       "related": "How do you do that?",
-      "answerGuide": "",
+      "answerGuide": "Like this.",
       "context": "",
-      "sourceLine": 731
+      "sourceLine": 731,
+      "answerSource": "generada"
     },
     {
       "id": "q-251",
@@ -4271,9 +4521,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "indirecta",
       "related": "Who is that man?",
-      "answerGuide": "",
+      "answerGuide": "It is my friend.",
       "context": "",
-      "sourceLine": 732
+      "sourceLine": 732,
+      "answerSource": "generada"
     },
     {
       "id": "q-252",
@@ -4288,9 +4539,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "indirecta",
       "related": "Is he here?",
-      "answerGuide": "",
+      "answerGuide": "Yes, he is.",
       "context": "",
-      "sourceLine": 738
+      "sourceLine": 738,
+      "answerSource": "generada"
     },
     {
       "id": "q-253",
@@ -4305,9 +4557,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "indirecta",
       "related": "Do you like coffee?",
-      "answerGuide": "",
+      "answerGuide": "Yes, I do.",
       "context": "",
-      "sourceLine": 739
+      "sourceLine": 739,
+      "answerSource": "generada"
     },
     {
       "id": "q-254",
@@ -4322,9 +4575,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "indirecta",
       "related": "Are they coming?",
-      "answerGuide": "",
+      "answerGuide": "Yes, they are.",
       "context": "",
-      "sourceLine": 740
+      "sourceLine": 740,
+      "answerSource": "generada"
     },
     {
       "id": "q-255",
@@ -4339,9 +4593,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-simple",
       "type": "indirecta",
       "related": "Will she be there?",
-      "answerGuide": "",
+      "answerGuide": "Yes, she will.",
       "context": "",
-      "sourceLine": 741
+      "sourceLine": 741,
+      "answerSource": "generada"
     },
     {
       "id": "q-256",
@@ -4356,9 +4611,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "preposicion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is my friend.",
       "context": "",
-      "sourceLine": 771
+      "sourceLine": 771,
+      "answerSource": "generada"
     },
     {
       "id": "q-257",
@@ -4373,9 +4629,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "preposicion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I am looking for my keys.",
       "context": "",
-      "sourceLine": 772
+      "sourceLine": 772,
+      "answerSource": "generada"
     },
     {
       "id": "q-258",
@@ -4390,9 +4647,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "preposicion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "My friend did.",
       "context": "",
-      "sourceLine": 773
+      "sourceLine": 773,
+      "answerSource": "generada"
     },
     {
       "id": "q-259",
@@ -4407,9 +4665,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "preposicion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I am thinking about the future.",
       "context": "",
-      "sourceLine": 774
+      "sourceLine": 774,
+      "answerSource": "generada"
     },
     {
       "id": "q-260",
@@ -4424,9 +4683,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "preposicion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is my friend.",
       "context": "",
-      "sourceLine": 775
+      "sourceLine": 775,
+      "answerSource": "generada"
     },
     {
       "id": "q-261",
@@ -4441,9 +4701,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "preposicion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 776
+      "sourceLine": 776,
+      "answerSource": "generada"
     },
     {
       "id": "q-262",
@@ -4458,9 +4719,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "preposicion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "My friend did.",
       "context": "",
-      "sourceLine": 777
+      "sourceLine": 777,
+      "answerSource": "generada"
     },
     {
       "id": "q-263",
@@ -4475,9 +4737,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "preposicion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I am waiting for a friend.",
       "context": "",
-      "sourceLine": 778
+      "sourceLine": 778,
+      "answerSource": "generada"
     },
     {
       "id": "q-264",
@@ -4492,9 +4755,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "preposicion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "The blue one.",
       "context": "",
-      "sourceLine": 779
+      "sourceLine": 779,
+      "answerSource": "generada"
     },
     {
       "id": "q-265",
@@ -4509,9 +4773,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "preposicion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "At home.",
       "context": "",
-      "sourceLine": 780
+      "sourceLine": 780,
+      "answerSource": "generada"
     },
     {
       "id": "q-266",
@@ -4526,9 +4791,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "preposicion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is my friend.",
       "context": "",
-      "sourceLine": 781
+      "sourceLine": 781,
+      "answerSource": "generada"
     },
     {
       "id": "q-267",
@@ -4543,9 +4809,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "preposicion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 782
+      "sourceLine": 782,
+      "answerSource": "generada"
     },
     {
       "id": "q-268",
@@ -4560,9 +4827,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-continuo",
       "type": "preposicion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is my friend.",
       "context": "",
-      "sourceLine": 783
+      "sourceLine": 783,
+      "answerSource": "generada"
     },
     {
       "id": "q-269",
@@ -4577,9 +4845,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "preposicion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 784
+      "sourceLine": 784,
+      "answerSource": "generada"
     },
     {
       "id": "q-270",
@@ -4594,9 +4863,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "preposicion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 790
+      "sourceLine": 790,
+      "answerSource": "generada"
     },
     {
       "id": "q-271",
@@ -4611,9 +4881,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "preposicion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 791
+      "sourceLine": 791,
+      "answerSource": "generada"
     },
     {
       "id": "q-272",
@@ -4628,9 +4899,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "preposicion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 792
+      "sourceLine": 792,
+      "answerSource": "generada"
     },
     {
       "id": "q-273",
@@ -4645,9 +4917,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "preposicion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 793
+      "sourceLine": 793,
+      "answerSource": "generada"
     },
     {
       "id": "q-274",
@@ -4662,9 +4935,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "preposicion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 794
+      "sourceLine": 794,
+      "answerSource": "generada"
     },
     {
       "id": "q-275",
@@ -4679,9 +4953,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "preposicion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is my friend.",
       "context": "",
-      "sourceLine": 800
+      "sourceLine": 800,
+      "answerSource": "generada"
     },
     {
       "id": "q-276",
@@ -4696,9 +4971,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "preposicion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 801
+      "sourceLine": 801,
+      "answerSource": "generada"
     },
     {
       "id": "q-277",
@@ -4713,9 +4989,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "preposicion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "My friend did.",
       "context": "",
-      "sourceLine": 802
+      "sourceLine": 802,
+      "answerSource": "generada"
     },
     {
       "id": "q-278",
@@ -4730,9 +5007,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "preposicion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "At home.",
       "context": "",
-      "sourceLine": 805
+      "sourceLine": 805,
+      "answerSource": "generada"
     },
     {
       "id": "q-279",
@@ -4747,9 +5025,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "preposicion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is Monday.",
       "context": "",
-      "sourceLine": 807
+      "sourceLine": 807,
+      "answerSource": "generada"
     },
     {
       "id": "q-280",
@@ -4764,9 +5043,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "eco",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I did.",
       "context": "I saw Brad Pitt.",
-      "sourceLine": 819
+      "sourceLine": 819,
+      "answerSource": "generada"
     },
     {
       "id": "q-281",
@@ -4781,9 +5061,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "eco",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I am.",
       "context": "I'm moving to Japan.",
-      "sourceLine": 820
+      "sourceLine": 820,
+      "answerSource": "generada"
     },
     {
       "id": "q-282",
@@ -4798,9 +5079,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "eco",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, she did.",
       "context": "She won the lottery.",
-      "sourceLine": 821
+      "sourceLine": 821,
+      "answerSource": "generada"
     },
     {
       "id": "q-283",
@@ -4815,9 +5097,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "eco",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, they have.",
       "context": "They've bought a new car.",
-      "sourceLine": 823
+      "sourceLine": 823,
+      "answerSource": "generada"
     },
     {
       "id": "q-284",
@@ -4832,9 +5115,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "eco",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I am.",
       "context": "We're going to Paris.",
-      "sourceLine": 824
+      "sourceLine": 824,
+      "answerSource": "generada"
     },
     {
       "id": "q-285",
@@ -4849,9 +5133,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "eco",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I think so.",
       "context": "She won the lottery.",
-      "sourceLine": 830
+      "sourceLine": 830,
+      "answerSource": "generada"
     },
     {
       "id": "q-286",
@@ -4866,9 +5151,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "eco",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I think so.",
       "context": "I'm moving to Japan.",
-      "sourceLine": 831
+      "sourceLine": 831,
+      "answerSource": "generada"
     },
     {
       "id": "q-287",
@@ -4883,9 +5169,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "eco",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I think so.",
       "context": "He bought a Ferrari.",
-      "sourceLine": 832
+      "sourceLine": 832,
+      "answerSource": "generada"
     },
     {
       "id": "q-288",
@@ -4900,9 +5187,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "eco",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I think so.",
       "context": "I'm leaving.",
-      "sourceLine": 838
+      "sourceLine": 838,
+      "answerSource": "generada"
     },
     {
       "id": "q-289",
@@ -4917,9 +5205,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "eco",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I think so.",
       "context": "She's pregnant.",
-      "sourceLine": 839
+      "sourceLine": 839,
+      "answerSource": "generada"
     },
     {
       "id": "q-290",
@@ -4934,9 +5223,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "eco",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I think so.",
       "context": "We lost.",
-      "sourceLine": 840
+      "sourceLine": 840,
+      "answerSource": "generada"
     },
     {
       "id": "q-291",
@@ -4953,7 +5243,8 @@ export const QUESTIONS_VERIFIED = {
       "related": "",
       "answerGuide": "Nadie lo sabe.",
       "context": "",
-      "sourceLine": 850
+      "sourceLine": 850,
+      "answerSource": "documento"
     },
     {
       "id": "q-292",
@@ -4970,7 +5261,8 @@ export const QUESTIONS_VERIFIED = {
       "related": "",
       "answerGuide": "Es obvio que sí.",
       "context": "",
-      "sourceLine": 851
+      "sourceLine": 851,
+      "answerSource": "documento"
     },
     {
       "id": "q-293",
@@ -4987,7 +5279,8 @@ export const QUESTIONS_VERIFIED = {
       "related": "",
       "answerGuide": "No lo soy.",
       "context": "",
-      "sourceLine": 852
+      "sourceLine": 852,
+      "answerSource": "documento"
     },
     {
       "id": "q-294",
@@ -5004,7 +5297,8 @@ export const QUESTIONS_VERIFIED = {
       "related": "",
       "answerGuide": "Obviamente sí.",
       "context": "",
-      "sourceLine": 853
+      "sourceLine": 853,
+      "answerSource": "documento"
     },
     {
       "id": "q-295",
@@ -5021,7 +5315,8 @@ export const QUESTIONS_VERIFIED = {
       "related": "",
       "answerGuide": "Obviamente sí.",
       "context": "",
-      "sourceLine": 854
+      "sourceLine": 854,
+      "answerSource": "documento"
     },
     {
       "id": "q-296",
@@ -5038,7 +5333,8 @@ export const QUESTIONS_VERIFIED = {
       "related": "",
       "answerGuide": "¿Por qué no?",
       "context": "",
-      "sourceLine": 856
+      "sourceLine": 856,
+      "answerSource": "documento"
     },
     {
       "id": "q-297",
@@ -5055,7 +5351,8 @@ export const QUESTIONS_VERIFIED = {
       "related": "",
       "answerGuide": "No tiene sentido.",
       "context": "",
-      "sourceLine": 857
+      "sourceLine": 857,
+      "answerSource": "documento"
     },
     {
       "id": "q-298",
@@ -5072,7 +5369,8 @@ export const QUESTIONS_VERIFIED = {
       "related": "",
       "answerGuide": "¡No puede ser!",
       "context": "",
-      "sourceLine": 858
+      "sourceLine": 858,
+      "answerSource": "documento"
     },
     {
       "id": "q-299",
@@ -5089,7 +5387,8 @@ export const QUESTIONS_VERIFIED = {
       "related": "",
       "answerGuide": "Increíble",
       "context": "",
-      "sourceLine": 859
+      "sourceLine": 859,
+      "answerSource": "documento"
     },
     {
       "id": "q-300",
@@ -5106,7 +5405,8 @@ export const QUESTIONS_VERIFIED = {
       "related": "",
       "answerGuide": "No deberías.",
       "context": "",
-      "sourceLine": 860
+      "sourceLine": 860,
+      "answerSource": "documento"
     },
     {
       "id": "q-301",
@@ -5123,7 +5423,8 @@ export const QUESTIONS_VERIFIED = {
       "related": "",
       "answerGuide": "Es imperdonable.",
       "context": "",
-      "sourceLine": 861
+      "sourceLine": 861,
+      "answerSource": "documento"
     },
     {
       "id": "q-302",
@@ -5138,9 +5439,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I am.",
       "context": "",
-      "sourceLine": 876
+      "sourceLine": 876,
+      "answerSource": "generada"
     },
     {
       "id": "q-303",
@@ -5155,9 +5457,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, it is.",
       "context": "",
-      "sourceLine": 877
+      "sourceLine": 877,
+      "answerSource": "generada"
     },
     {
       "id": "q-304",
@@ -5172,9 +5475,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I am studying.",
       "context": "",
-      "sourceLine": 878
+      "sourceLine": 878,
+      "answerSource": "generada"
     },
     {
       "id": "q-305",
@@ -5189,9 +5493,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "At home.",
       "context": "",
-      "sourceLine": 879
+      "sourceLine": 879,
+      "answerSource": "generada"
     },
     {
       "id": "q-306",
@@ -5206,9 +5511,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Because I wanted to.",
       "context": "",
-      "sourceLine": 880
+      "sourceLine": 880,
+      "answerSource": "generada"
     },
     {
       "id": "q-307",
@@ -5223,9 +5529,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is my friend.",
       "context": "",
-      "sourceLine": 881
+      "sourceLine": 881,
+      "answerSource": "generada"
     },
     {
       "id": "q-308",
@@ -5240,9 +5547,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I am studying.",
       "context": "",
-      "sourceLine": 885
+      "sourceLine": 885,
+      "answerSource": "generada"
     },
     {
       "id": "q-309",
@@ -5257,9 +5565,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-continuo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, they were.",
       "context": "",
-      "sourceLine": 897
+      "sourceLine": 897,
+      "answerSource": "generada"
     },
     {
       "id": "q-310",
@@ -5274,9 +5583,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-continuo",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yesterday.",
       "context": "",
-      "sourceLine": 898
+      "sourceLine": 898,
+      "answerSource": "generada"
     },
     {
       "id": "q-311",
@@ -5291,9 +5601,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-continuo",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 899
+      "sourceLine": 899,
+      "answerSource": "generada"
     },
     {
       "id": "q-312",
@@ -5308,9 +5619,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-continuo",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "At home.",
       "context": "",
-      "sourceLine": 900
+      "sourceLine": 900,
+      "answerSource": "generada"
     },
     {
       "id": "q-313",
@@ -5325,9 +5637,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-continuo",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Because I wanted to.",
       "context": "",
-      "sourceLine": 901
+      "sourceLine": 901,
+      "answerSource": "generada"
     },
     {
       "id": "q-314",
@@ -5342,9 +5655,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-continuo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, it will.",
       "context": "",
-      "sourceLine": 916
+      "sourceLine": 916,
+      "answerSource": "generada"
     },
     {
       "id": "q-315",
@@ -5359,9 +5673,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-continuo",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 917
+      "sourceLine": 917,
+      "answerSource": "generada"
     },
     {
       "id": "q-316",
@@ -5376,9 +5691,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-continuo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I will.",
       "context": "",
-      "sourceLine": 934
+      "sourceLine": 934,
+      "answerSource": "generada"
     },
     {
       "id": "q-317",
@@ -5393,9 +5709,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-continuo",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Tomorrow.",
       "context": "",
-      "sourceLine": 935
+      "sourceLine": 935,
+      "answerSource": "generada"
     },
     {
       "id": "q-318",
@@ -5410,9 +5727,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-perfecto",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, they will.",
       "context": "",
-      "sourceLine": 953
+      "sourceLine": 953,
+      "answerSource": "generada"
     },
     {
       "id": "q-319",
@@ -5427,9 +5745,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-perfecto",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, he will.",
       "context": "",
-      "sourceLine": 954
+      "sourceLine": 954,
+      "answerSource": "generada"
     },
     {
       "id": "q-320",
@@ -5444,9 +5763,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-perfecto",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I think so.",
       "context": "",
-      "sourceLine": 955
+      "sourceLine": 955,
+      "answerSource": "generada"
     },
     {
       "id": "q-321",
@@ -5461,9 +5781,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-perfecto-continuo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, she will.",
       "context": "",
-      "sourceLine": 967
+      "sourceLine": 967,
+      "answerSource": "generada"
     },
     {
       "id": "q-322",
@@ -5478,9 +5799,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-perfecto-continuo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, they will.",
       "context": "",
-      "sourceLine": 968
+      "sourceLine": 968,
+      "answerSource": "generada"
     },
     {
       "id": "q-323",
@@ -5495,9 +5817,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-perfecto-continuo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, they have.",
       "context": "",
-      "sourceLine": 982
+      "sourceLine": 982,
+      "answerSource": "generada"
     },
     {
       "id": "q-324",
@@ -5512,9 +5835,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-perfecto-continuo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, it has.",
       "context": "",
-      "sourceLine": 983
+      "sourceLine": 983,
+      "answerSource": "generada"
     },
     {
       "id": "q-325",
@@ -5529,9 +5853,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-perfecto-continuo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I think so.",
       "context": "",
-      "sourceLine": 984
+      "sourceLine": 984,
+      "answerSource": "generada"
     },
     {
       "id": "q-326",
@@ -5546,9 +5871,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-perfecto-continuo",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yesterday.",
       "context": "",
-      "sourceLine": 997
+      "sourceLine": 997,
+      "answerSource": "generada"
     },
     {
       "id": "q-327",
@@ -5563,9 +5889,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-perfecto-continuo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, they had.",
       "context": "",
-      "sourceLine": 998
+      "sourceLine": 998,
+      "answerSource": "generada"
     },
     {
       "id": "q-328",
@@ -5580,9 +5907,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I can.",
       "context": "",
-      "sourceLine": 1009
+      "sourceLine": 1009,
+      "answerSource": "generada"
     },
     {
       "id": "q-329",
@@ -5597,9 +5925,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, he could.",
       "context": "",
-      "sourceLine": 1011
+      "sourceLine": 1011,
+      "answerSource": "generada"
     },
     {
       "id": "q-330",
@@ -5614,9 +5943,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, it may.",
       "context": "",
-      "sourceLine": 1013
+      "sourceLine": 1013,
+      "answerSource": "generada"
     },
     {
       "id": "q-331",
@@ -5631,9 +5961,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, she might.",
       "context": "",
-      "sourceLine": 1015
+      "sourceLine": 1015,
+      "answerSource": "generada"
     },
     {
       "id": "q-332",
@@ -5648,9 +5979,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, she must.",
       "context": "",
-      "sourceLine": 1017
+      "sourceLine": 1017,
+      "answerSource": "generada"
     },
     {
       "id": "q-333",
@@ -5665,9 +5997,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, they should.",
       "context": "",
-      "sourceLine": 1019
+      "sourceLine": 1019,
+      "answerSource": "generada"
     },
     {
       "id": "q-334",
@@ -5682,9 +6015,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, he would.",
       "context": "",
-      "sourceLine": 1021
+      "sourceLine": 1021,
+      "answerSource": "generada"
     },
     {
       "id": "q-335",
@@ -5699,9 +6033,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-simple",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, she will.",
       "context": "",
-      "sourceLine": 1023
+      "sourceLine": 1023,
+      "answerSource": "generada"
     },
     {
       "id": "q-336",
@@ -5716,9 +6051,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I shall.",
       "context": "",
-      "sourceLine": 1025
+      "sourceLine": 1025,
+      "answerSource": "generada"
     },
     {
       "id": "q-337",
@@ -5733,9 +6069,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "used-to",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I did.",
       "context": "",
-      "sourceLine": 1027
+      "sourceLine": 1027,
+      "answerSource": "generada"
     },
     {
       "id": "q-338",
@@ -5750,9 +6087,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal-perfecto",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, she must.",
       "context": "",
-      "sourceLine": 1033
+      "sourceLine": 1033,
+      "answerSource": "generada"
     },
     {
       "id": "q-339",
@@ -5767,9 +6105,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal-perfecto",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I could.",
       "context": "",
-      "sourceLine": 1034
+      "sourceLine": 1034,
+      "answerSource": "generada"
     },
     {
       "id": "q-340",
@@ -5784,9 +6123,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal-perfecto",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I should.",
       "context": "",
-      "sourceLine": 1035
+      "sourceLine": 1035,
+      "answerSource": "generada"
     },
     {
       "id": "q-341",
@@ -5801,9 +6141,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal-perfecto",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I would.",
       "context": "",
-      "sourceLine": 1036
+      "sourceLine": 1036,
+      "answerSource": "generada"
     },
     {
       "id": "q-342",
@@ -5818,9 +6159,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal-perfecto",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, she might.",
       "context": "",
-      "sourceLine": 1037
+      "sourceLine": 1037,
+      "answerSource": "generada"
     },
     {
       "id": "q-343",
@@ -5835,9 +6177,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal-perfecto",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, he may.",
       "context": "",
-      "sourceLine": 1038
+      "sourceLine": 1038,
+      "answerSource": "generada"
     },
     {
       "id": "q-344",
@@ -5852,9 +6195,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal-perfecto",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I think so.",
       "context": "",
-      "sourceLine": 1039
+      "sourceLine": 1039,
+      "answerSource": "generada"
     },
     {
       "id": "q-345",
@@ -5869,9 +6213,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal-continuo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, she must.",
       "context": "",
-      "sourceLine": 1045
+      "sourceLine": 1045,
+      "answerSource": "generada"
     },
     {
       "id": "q-346",
@@ -5886,9 +6231,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal-continuo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, he could.",
       "context": "",
-      "sourceLine": 1046
+      "sourceLine": 1046,
+      "answerSource": "generada"
     },
     {
       "id": "q-347",
@@ -5903,9 +6249,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal-continuo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, they should.",
       "context": "",
-      "sourceLine": 1047
+      "sourceLine": 1047,
+      "answerSource": "generada"
     },
     {
       "id": "q-348",
@@ -5920,9 +6267,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal-continuo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, it might.",
       "context": "",
-      "sourceLine": 1048
+      "sourceLine": 1048,
+      "answerSource": "generada"
     },
     {
       "id": "q-349",
@@ -5937,9 +6285,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal-pasivo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, it can.",
       "context": "",
-      "sourceLine": 1054
+      "sourceLine": 1054,
+      "answerSource": "generada"
     },
     {
       "id": "q-350",
@@ -5954,9 +6303,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal-pasivo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, it must.",
       "context": "",
-      "sourceLine": 1055
+      "sourceLine": 1055,
+      "answerSource": "generada"
     },
     {
       "id": "q-351",
@@ -5971,9 +6321,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal-pasivo",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, it should.",
       "context": "",
-      "sourceLine": 1056
+      "sourceLine": 1056,
+      "answerSource": "generada"
     },
     {
       "id": "q-352",
@@ -5988,9 +6339,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "used-to",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, she did.",
       "context": "",
-      "sourceLine": 1065
+      "sourceLine": 1065,
+      "answerSource": "generada"
     },
     {
       "id": "q-353",
@@ -6005,9 +6357,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "used-to",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, they did.",
       "context": "",
-      "sourceLine": 1066
+      "sourceLine": 1066,
+      "answerSource": "generada"
     },
     {
       "id": "q-354",
@@ -6022,9 +6375,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "used-to",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "At home.",
       "context": "",
-      "sourceLine": 1067
+      "sourceLine": 1067,
+      "answerSource": "generada"
     },
     {
       "id": "q-355",
@@ -6039,9 +6393,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "used-to",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1068
+      "sourceLine": 1068,
+      "answerSource": "generada"
     },
     {
       "id": "q-356",
@@ -6056,9 +6411,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-perfecto",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I have.",
       "context": "",
-      "sourceLine": 1078
+      "sourceLine": 1078,
+      "answerSource": "generada"
     },
     {
       "id": "q-357",
@@ -6073,9 +6429,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-perfecto",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, she has.",
       "context": "",
-      "sourceLine": 1079
+      "sourceLine": 1079,
+      "answerSource": "generada"
     },
     {
       "id": "q-358",
@@ -6090,9 +6447,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-perfecto",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, they have.",
       "context": "",
-      "sourceLine": 1080
+      "sourceLine": 1080,
+      "answerSource": "generada"
     },
     {
       "id": "q-359",
@@ -6107,9 +6465,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-perfecto",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I had.",
       "context": "",
-      "sourceLine": 1101
+      "sourceLine": 1101,
+      "answerSource": "generada"
     },
     {
       "id": "q-360",
@@ -6124,9 +6483,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-perfecto",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I will.",
       "context": "",
-      "sourceLine": 1102
+      "sourceLine": 1102,
+      "answerSource": "generada"
     },
     {
       "id": "q-361",
@@ -6141,9 +6501,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I could.",
       "context": "",
-      "sourceLine": 1103
+      "sourceLine": 1103,
+      "answerSource": "generada"
     },
     {
       "id": "q-362",
@@ -6158,9 +6519,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I should.",
       "context": "",
-      "sourceLine": 1104
+      "sourceLine": 1104,
+      "answerSource": "generada"
     },
     {
       "id": "q-363",
@@ -6175,9 +6537,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "it-impersonal",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, it is.",
       "context": "",
-      "sourceLine": 1112
+      "sourceLine": 1112,
+      "answerSource": "generada"
     },
     {
       "id": "q-364",
@@ -6192,9 +6555,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "it-impersonal",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, it was.",
       "context": "",
-      "sourceLine": 1113
+      "sourceLine": 1113,
+      "answerSource": "generada"
     },
     {
       "id": "q-365",
@@ -6209,9 +6573,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "it-impersonal",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, it will.",
       "context": "",
-      "sourceLine": 1114
+      "sourceLine": 1114,
+      "answerSource": "generada"
     },
     {
       "id": "q-366",
@@ -6226,9 +6591,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "it-impersonal",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, it is.",
       "context": "",
-      "sourceLine": 1115
+      "sourceLine": 1115,
+      "answerSource": "generada"
     },
     {
       "id": "q-367",
@@ -6243,9 +6609,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "it-impersonal",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, it is.",
       "context": "",
-      "sourceLine": 1116
+      "sourceLine": 1116,
+      "answerSource": "generada"
     },
     {
       "id": "q-368",
@@ -6260,9 +6627,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is five o'clock.",
       "context": "",
-      "sourceLine": 1117
+      "sourceLine": 1117,
+      "answerSource": "generada"
     },
     {
       "id": "q-369",
@@ -6277,9 +6645,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I think so.",
       "context": "",
-      "sourceLine": 1118
+      "sourceLine": 1118,
+      "answerSource": "generada"
     },
     {
       "id": "q-370",
@@ -6294,9 +6663,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1119
+      "sourceLine": 1119,
+      "answerSource": "generada"
     },
     {
       "id": "q-371",
@@ -6311,9 +6681,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "there-be",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I am.",
       "context": "",
-      "sourceLine": 1127
+      "sourceLine": 1127,
+      "answerSource": "generada"
     },
     {
       "id": "q-372",
@@ -6328,9 +6699,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "there-be",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I am.",
       "context": "",
-      "sourceLine": 1128
+      "sourceLine": 1128,
+      "answerSource": "generada"
     },
     {
       "id": "q-373",
@@ -6345,9 +6717,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "there-be",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I am.",
       "context": "",
-      "sourceLine": 1129
+      "sourceLine": 1129,
+      "answerSource": "generada"
     },
     {
       "id": "q-374",
@@ -6362,9 +6735,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "there-be",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I am.",
       "context": "",
-      "sourceLine": 1130
+      "sourceLine": 1130,
+      "answerSource": "generada"
     },
     {
       "id": "q-375",
@@ -6379,9 +6753,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "About one meter eighty.",
       "context": "",
-      "sourceLine": 1138
+      "sourceLine": 1138,
+      "answerSource": "generada"
     },
     {
       "id": "q-376",
@@ -6396,9 +6771,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "About sixty kilometers per hour.",
       "context": "",
-      "sourceLine": 1145
+      "sourceLine": 1145,
+      "answerSource": "generada"
     },
     {
       "id": "q-377",
@@ -6413,9 +6789,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It costs ten dollars.",
       "context": "",
-      "sourceLine": 1150
+      "sourceLine": 1150,
+      "answerSource": "generada"
     },
     {
       "id": "q-378",
@@ -6430,9 +6807,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-perfecto",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "For two hours.",
       "context": "",
-      "sourceLine": 1152
+      "sourceLine": 1152,
+      "answerSource": "generada"
     },
     {
       "id": "q-379",
@@ -6447,9 +6825,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is two kilometers away.",
       "context": "",
-      "sourceLine": 1153
+      "sourceLine": 1153,
+      "answerSource": "generada"
     },
     {
       "id": "q-380",
@@ -6464,9 +6843,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is five o'clock.",
       "context": "",
-      "sourceLine": 1161
+      "sourceLine": 1161,
+      "answerSource": "generada"
     },
     {
       "id": "q-381",
@@ -6481,9 +6861,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is blue.",
       "context": "",
-      "sourceLine": 1162
+      "sourceLine": 1162,
+      "answerSource": "generada"
     },
     {
       "id": "q-382",
@@ -6498,9 +6879,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is a book about animals.",
       "context": "",
-      "sourceLine": 1163
+      "sourceLine": 1163,
+      "answerSource": "generada"
     },
     {
       "id": "q-383",
@@ -6515,9 +6897,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is Monday.",
       "context": "",
-      "sourceLine": 1164
+      "sourceLine": 1164,
+      "answerSource": "generada"
     },
     {
       "id": "q-384",
@@ -6532,9 +6915,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is medium.",
       "context": "",
-      "sourceLine": 1165
+      "sourceLine": 1165,
+      "answerSource": "generada"
     },
     {
       "id": "q-385",
@@ -6549,9 +6933,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1166
+      "sourceLine": 1166,
+      "answerSource": "generada"
     },
     {
       "id": "q-386",
@@ -6566,9 +6951,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1167
+      "sourceLine": 1167,
+      "answerSource": "generada"
     },
     {
       "id": "q-387",
@@ -6583,9 +6969,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "The blue one.",
       "context": "",
-      "sourceLine": 1175
+      "sourceLine": 1175,
+      "answerSource": "generada"
     },
     {
       "id": "q-388",
@@ -6600,9 +6987,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "The blue one.",
       "context": "",
-      "sourceLine": 1177
+      "sourceLine": 1177,
+      "answerSource": "generada"
     },
     {
       "id": "q-389",
@@ -6617,9 +7005,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "The blue one.",
       "context": "",
-      "sourceLine": 1178
+      "sourceLine": 1178,
+      "answerSource": "generada"
     },
     {
       "id": "q-390",
@@ -6634,9 +7023,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "The blue one.",
       "context": "",
-      "sourceLine": 1179
+      "sourceLine": 1179,
+      "answerSource": "generada"
     },
     {
       "id": "q-391",
@@ -6651,9 +7041,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is mine.",
       "context": "",
-      "sourceLine": 1188
+      "sourceLine": 1188,
+      "answerSource": "generada"
     },
     {
       "id": "q-392",
@@ -6668,9 +7059,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is mine.",
       "context": "",
-      "sourceLine": 1189
+      "sourceLine": 1189,
+      "answerSource": "generada"
     },
     {
       "id": "q-393",
@@ -6685,9 +7077,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is mine.",
       "context": "",
-      "sourceLine": 1190
+      "sourceLine": 1190,
+      "answerSource": "generada"
     },
     {
       "id": "q-394",
@@ -6702,9 +7095,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is mine.",
       "context": "",
-      "sourceLine": 1191
+      "sourceLine": 1191,
+      "answerSource": "generada"
     },
     {
       "id": "q-395",
@@ -6719,9 +7113,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "My friend did.",
       "context": "",
-      "sourceLine": 1200
+      "sourceLine": 1200,
+      "answerSource": "generada"
     },
     {
       "id": "q-396",
@@ -6736,9 +7131,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "My friend did.",
       "context": "",
-      "sourceLine": 1201
+      "sourceLine": 1201,
+      "answerSource": "generada"
     },
     {
       "id": "q-397",
@@ -6753,9 +7149,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "My friend did.",
       "context": "",
-      "sourceLine": 1202
+      "sourceLine": 1202,
+      "answerSource": "generada"
     },
     {
       "id": "q-398",
@@ -6770,9 +7167,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is my friend.",
       "context": "",
-      "sourceLine": 1203
+      "sourceLine": 1203,
+      "answerSource": "generada"
     },
     {
       "id": "q-399",
@@ -6787,9 +7185,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-continuo",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is my friend.",
       "context": "",
-      "sourceLine": 1204
+      "sourceLine": 1204,
+      "answerSource": "generada"
     },
     {
       "id": "q-400",
@@ -6804,9 +7203,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "My friend did.",
       "context": "",
-      "sourceLine": 1205
+      "sourceLine": 1205,
+      "answerSource": "generada"
     },
     {
       "id": "q-401",
@@ -6821,9 +7221,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "My friend did.",
       "context": "",
-      "sourceLine": 1206
+      "sourceLine": 1206,
+      "answerSource": "generada"
     },
     {
       "id": "q-402",
@@ -6838,9 +7239,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "My friend did.",
       "context": "",
-      "sourceLine": 1217
+      "sourceLine": 1217,
+      "answerSource": "generada"
     },
     {
       "id": "q-403",
@@ -6855,9 +7257,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is my friend.",
       "context": "",
-      "sourceLine": 1218
+      "sourceLine": 1218,
+      "answerSource": "generada"
     },
     {
       "id": "q-404",
@@ -6872,9 +7275,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "My friend did.",
       "context": "",
-      "sourceLine": 1219
+      "sourceLine": 1219,
+      "answerSource": "generada"
     },
     {
       "id": "q-405",
@@ -6889,9 +7293,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-perfecto",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "My friend did.",
       "context": "",
-      "sourceLine": 1220
+      "sourceLine": 1220,
+      "answerSource": "generada"
     },
     {
       "id": "q-406",
@@ -6906,9 +7311,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "My friend did.",
       "context": "",
-      "sourceLine": 1221
+      "sourceLine": 1221,
+      "answerSource": "generada"
     },
     {
       "id": "q-407",
@@ -6923,9 +7329,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1232
+      "sourceLine": 1232,
+      "answerSource": "generada"
     },
     {
       "id": "q-408",
@@ -6940,9 +7347,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1233
+      "sourceLine": 1233,
+      "answerSource": "generada"
     },
     {
       "id": "q-409",
@@ -6957,9 +7365,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1234
+      "sourceLine": 1234,
+      "answerSource": "generada"
     },
     {
       "id": "q-410",
@@ -6974,9 +7383,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1235
+      "sourceLine": 1235,
+      "answerSource": "generada"
     },
     {
       "id": "q-411",
@@ -6991,9 +7401,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something good will happen.",
       "context": "",
-      "sourceLine": 1236
+      "sourceLine": 1236,
+      "answerSource": "generada"
     },
     {
       "id": "q-412",
@@ -7008,9 +7419,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1247
+      "sourceLine": 1247,
+      "answerSource": "generada"
     },
     {
       "id": "q-413",
@@ -7025,9 +7437,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-perfecto",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1249
+      "sourceLine": 1249,
+      "answerSource": "generada"
     },
     {
       "id": "q-414",
@@ -7042,9 +7455,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1250
+      "sourceLine": 1250,
+      "answerSource": "generada"
     },
     {
       "id": "q-415",
@@ -7059,9 +7473,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "At home.",
       "context": "",
-      "sourceLine": 1261
+      "sourceLine": 1261,
+      "answerSource": "generada"
     },
     {
       "id": "q-416",
@@ -7076,9 +7491,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "To the park.",
       "context": "",
-      "sourceLine": 1262
+      "sourceLine": 1262,
+      "answerSource": "generada"
     },
     {
       "id": "q-417",
@@ -7093,9 +7509,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-continuo",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "At home.",
       "context": "",
-      "sourceLine": 1263
+      "sourceLine": 1263,
+      "answerSource": "generada"
     },
     {
       "id": "q-418",
@@ -7110,9 +7527,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-perfecto",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "At home.",
       "context": "",
-      "sourceLine": 1264
+      "sourceLine": 1264,
+      "answerSource": "generada"
     },
     {
       "id": "q-419",
@@ -7127,9 +7545,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "To the park.",
       "context": "",
-      "sourceLine": 1265
+      "sourceLine": 1265,
+      "answerSource": "generada"
     },
     {
       "id": "q-420",
@@ -7144,9 +7563,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-continuo",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "At home.",
       "context": "",
-      "sourceLine": 1266
+      "sourceLine": 1266,
+      "answerSource": "generada"
     },
     {
       "id": "q-421",
@@ -7161,9 +7581,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "At home.",
       "context": "",
-      "sourceLine": 1267
+      "sourceLine": 1267,
+      "answerSource": "generada"
     },
     {
       "id": "q-422",
@@ -7178,9 +7599,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "At home.",
       "context": "",
-      "sourceLine": 1268
+      "sourceLine": 1268,
+      "answerSource": "generada"
     },
     {
       "id": "q-423",
@@ -7195,9 +7617,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Tomorrow.",
       "context": "",
-      "sourceLine": 1276
+      "sourceLine": 1276,
+      "answerSource": "generada"
     },
     {
       "id": "q-424",
@@ -7212,9 +7635,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Tomorrow.",
       "context": "",
-      "sourceLine": 1277
+      "sourceLine": 1277,
+      "answerSource": "generada"
     },
     {
       "id": "q-425",
@@ -7229,9 +7653,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-continuo",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yesterday.",
       "context": "",
-      "sourceLine": 1279
+      "sourceLine": 1279,
+      "answerSource": "generada"
     },
     {
       "id": "q-426",
@@ -7246,9 +7671,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-perfecto",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Tomorrow.",
       "context": "",
-      "sourceLine": 1280
+      "sourceLine": 1280,
+      "answerSource": "generada"
     },
     {
       "id": "q-427",
@@ -7263,9 +7689,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Tomorrow.",
       "context": "",
-      "sourceLine": 1281
+      "sourceLine": 1281,
+      "answerSource": "generada"
     },
     {
       "id": "q-428",
@@ -7280,9 +7707,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-continuo",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Tomorrow.",
       "context": "",
-      "sourceLine": 1282
+      "sourceLine": 1282,
+      "answerSource": "generada"
     },
     {
       "id": "q-429",
@@ -7297,9 +7725,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Tomorrow.",
       "context": "",
-      "sourceLine": 1283
+      "sourceLine": 1283,
+      "answerSource": "generada"
     },
     {
       "id": "q-430",
@@ -7314,9 +7743,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Tomorrow.",
       "context": "",
-      "sourceLine": 1284
+      "sourceLine": 1284,
+      "answerSource": "generada"
     },
     {
       "id": "q-431",
@@ -7331,9 +7761,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Because I wanted to.",
       "context": "",
-      "sourceLine": 1292
+      "sourceLine": 1292,
+      "answerSource": "generada"
     },
     {
       "id": "q-432",
@@ -7348,9 +7779,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Because I wanted to.",
       "context": "",
-      "sourceLine": 1293
+      "sourceLine": 1293,
+      "answerSource": "generada"
     },
     {
       "id": "q-433",
@@ -7365,9 +7797,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Because I wanted to.",
       "context": "",
-      "sourceLine": 1294
+      "sourceLine": 1294,
+      "answerSource": "generada"
     },
     {
       "id": "q-434",
@@ -7382,9 +7815,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-continuo",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Because I wanted to.",
       "context": "",
-      "sourceLine": 1295
+      "sourceLine": 1295,
+      "answerSource": "generada"
     },
     {
       "id": "q-435",
@@ -7399,9 +7833,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-perfecto",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Because I wanted to.",
       "context": "",
-      "sourceLine": 1296
+      "sourceLine": 1296,
+      "answerSource": "generada"
     },
     {
       "id": "q-436",
@@ -7416,9 +7851,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Because I wanted to.",
       "context": "",
-      "sourceLine": 1297
+      "sourceLine": 1297,
+      "answerSource": "generada"
     },
     {
       "id": "q-437",
@@ -7433,9 +7869,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Because I wanted to.",
       "context": "",
-      "sourceLine": 1298
+      "sourceLine": 1298,
+      "answerSource": "generada"
     },
     {
       "id": "q-438",
@@ -7450,9 +7887,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Because I wanted to.",
       "context": "",
-      "sourceLine": 1299
+      "sourceLine": 1299,
+      "answerSource": "generada"
     },
     {
       "id": "q-439",
@@ -7467,9 +7905,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1300
+      "sourceLine": 1300,
+      "answerSource": "generada"
     },
     {
       "id": "q-440",
@@ -7484,9 +7923,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Because I wanted to.",
       "context": "",
-      "sourceLine": 1301
+      "sourceLine": 1301,
+      "answerSource": "generada"
     },
     {
       "id": "q-441",
@@ -7501,9 +7941,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "You mix it carefully.",
       "context": "",
-      "sourceLine": 1309
+      "sourceLine": 1309,
+      "answerSource": "generada"
     },
     {
       "id": "q-442",
@@ -7518,9 +7959,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I am fine, thanks.",
       "context": "",
-      "sourceLine": 1310
+      "sourceLine": 1310,
+      "answerSource": "generada"
     },
     {
       "id": "q-443",
@@ -7535,9 +7977,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I guessed.",
       "context": "",
-      "sourceLine": 1311
+      "sourceLine": 1311,
+      "answerSource": "generada"
     },
     {
       "id": "q-444",
@@ -7552,9 +7995,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-continuo",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Like this.",
       "context": "",
-      "sourceLine": 1312
+      "sourceLine": 1312,
+      "answerSource": "generada"
     },
     {
       "id": "q-445",
@@ -7569,9 +8013,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-perfecto",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Like this.",
       "context": "",
-      "sourceLine": 1313
+      "sourceLine": 1313,
+      "answerSource": "generada"
     },
     {
       "id": "q-446",
@@ -7586,9 +8031,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-simple",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Like this.",
       "context": "",
-      "sourceLine": 1314
+      "sourceLine": 1314,
+      "answerSource": "generada"
     },
     {
       "id": "q-447",
@@ -7603,9 +8049,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Like this.",
       "context": "",
-      "sourceLine": 1315
+      "sourceLine": 1315,
+      "answerSource": "generada"
     },
     {
       "id": "q-448",
@@ -7620,9 +8067,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Like this.",
       "context": "",
-      "sourceLine": 1316
+      "sourceLine": 1316,
+      "answerSource": "generada"
     },
     {
       "id": "q-449",
@@ -7637,9 +8085,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1324
+      "sourceLine": 1324,
+      "answerSource": "generada"
     },
     {
       "id": "q-450",
@@ -7654,9 +8103,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1325
+      "sourceLine": 1325,
+      "answerSource": "generada"
     },
     {
       "id": "q-451",
@@ -7671,9 +8121,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1326
+      "sourceLine": 1326,
+      "answerSource": "generada"
     },
     {
       "id": "q-452",
@@ -7688,9 +8139,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1327
+      "sourceLine": 1327,
+      "answerSource": "generada"
     },
     {
       "id": "q-453",
@@ -7705,9 +8157,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Like this.",
       "context": "",
-      "sourceLine": 1341
+      "sourceLine": 1341,
+      "answerSource": "generada"
     },
     {
       "id": "q-454",
@@ -7722,9 +8175,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Like this.",
       "context": "",
-      "sourceLine": 1342
+      "sourceLine": 1342,
+      "answerSource": "generada"
     },
     {
       "id": "q-455",
@@ -7739,9 +8193,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Like this.",
       "context": "",
-      "sourceLine": 1343
+      "sourceLine": 1343,
+      "answerSource": "generada"
     },
     {
       "id": "q-456",
@@ -7756,9 +8211,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "cortesia",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1351
+      "sourceLine": 1351,
+      "answerSource": "generada"
     },
     {
       "id": "q-457",
@@ -7773,9 +8229,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "cortesia",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1352
+      "sourceLine": 1352,
+      "answerSource": "generada"
     },
     {
       "id": "q-458",
@@ -7790,9 +8247,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "cortesia",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Like this.",
       "context": "",
-      "sourceLine": 1353
+      "sourceLine": 1353,
+      "answerSource": "generada"
     },
     {
       "id": "q-459",
@@ -7807,9 +8265,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "cortesia",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Like this.",
       "context": "",
-      "sourceLine": 1354
+      "sourceLine": 1354,
+      "answerSource": "generada"
     },
     {
       "id": "q-460",
@@ -7824,9 +8283,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "cortesia",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1362
+      "sourceLine": 1362,
+      "answerSource": "generada"
     },
     {
       "id": "q-461",
@@ -7841,9 +8301,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "cortesia",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1363
+      "sourceLine": 1363,
+      "answerSource": "generada"
     },
     {
       "id": "q-462",
@@ -7858,9 +8319,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "cortesia",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1364
+      "sourceLine": 1364,
+      "answerSource": "generada"
     },
     {
       "id": "q-463",
@@ -7877,7 +8339,8 @@ export const QUESTIONS_VERIFIED = {
       "related": "",
       "answerGuide": "No, not at all. / Sorry, I can't.",
       "context": "",
-      "sourceLine": 1372
+      "sourceLine": 1372,
+      "answerSource": "documento"
     },
     {
       "id": "q-464",
@@ -7894,7 +8357,8 @@ export const QUESTIONS_VERIFIED = {
       "related": "",
       "answerGuide": "No, not at all. / Sorry, I can't.",
       "context": "",
-      "sourceLine": 1373
+      "sourceLine": 1373,
+      "answerSource": "documento"
     },
     {
       "id": "q-465",
@@ -7911,7 +8375,8 @@ export const QUESTIONS_VERIFIED = {
       "related": "",
       "answerGuide": "No, not at all. / Sorry, I can't.",
       "context": "",
-      "sourceLine": 1374
+      "sourceLine": 1374,
+      "answerSource": "documento"
     },
     {
       "id": "q-466",
@@ -7926,9 +8391,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "cortesia",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1387
+      "sourceLine": 1387,
+      "answerSource": "generada"
     },
     {
       "id": "q-467",
@@ -7943,9 +8409,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "cortesia",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1388
+      "sourceLine": 1388,
+      "answerSource": "generada"
     },
     {
       "id": "q-468",
@@ -7960,9 +8427,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "cortesia",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1389
+      "sourceLine": 1389,
+      "answerSource": "generada"
     },
     {
       "id": "q-469",
@@ -7977,9 +8445,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "cortesia",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1397
+      "sourceLine": 1397,
+      "answerSource": "generada"
     },
     {
       "id": "q-470",
@@ -7994,9 +8463,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "cortesia",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1398
+      "sourceLine": 1398,
+      "answerSource": "generada"
     },
     {
       "id": "q-471",
@@ -8011,9 +8481,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "cortesia",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1399
+      "sourceLine": 1399,
+      "answerSource": "generada"
     },
     {
       "id": "q-472",
@@ -8028,9 +8499,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "cortesia",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1400
+      "sourceLine": 1400,
+      "answerSource": "generada"
     },
     {
       "id": "q-473",
@@ -8045,9 +8517,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "cortesia",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, we shall.",
       "context": "",
-      "sourceLine": 1409
+      "sourceLine": 1409,
+      "answerSource": "generada"
     },
     {
       "id": "q-474",
@@ -8062,9 +8535,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "cortesia",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I shall.",
       "context": "",
-      "sourceLine": 1410
+      "sourceLine": 1410,
+      "answerSource": "generada"
     },
     {
       "id": "q-475",
@@ -8079,9 +8553,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "cortesia",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, we shall.",
       "context": "",
-      "sourceLine": 1411
+      "sourceLine": 1411,
+      "answerSource": "generada"
     },
     {
       "id": "q-476",
@@ -8096,9 +8571,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "cortesia",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1420
+      "sourceLine": 1420,
+      "answerSource": "generada"
     },
     {
       "id": "q-477",
@@ -8113,9 +8589,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "cortesia",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1430
+      "sourceLine": 1430,
+      "answerSource": "generada"
     },
     {
       "id": "q-478",
@@ -8130,9 +8607,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "cortesia",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1431
+      "sourceLine": 1431,
+      "answerSource": "generada"
     },
     {
       "id": "q-479",
@@ -8147,9 +8625,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "cortesia",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1432
+      "sourceLine": 1432,
+      "answerSource": "generada"
     },
     {
       "id": "q-480",
@@ -8164,9 +8643,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-perfecto",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I have.",
       "context": "",
-      "sourceLine": 1440
+      "sourceLine": 1440,
+      "answerSource": "generada"
     },
     {
       "id": "q-481",
@@ -8181,9 +8661,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-perfecto",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I have.",
       "context": "",
-      "sourceLine": 1441
+      "sourceLine": 1441,
+      "answerSource": "generada"
     },
     {
       "id": "q-482",
@@ -8198,9 +8679,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I did.",
       "context": "",
-      "sourceLine": 1442
+      "sourceLine": 1442,
+      "answerSource": "generada"
     },
     {
       "id": "q-483",
@@ -8215,9 +8697,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "My friend did.",
       "context": "",
-      "sourceLine": 1443
+      "sourceLine": 1443,
+      "answerSource": "generada"
     },
     {
       "id": "q-484",
@@ -8232,9 +8715,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1444
+      "sourceLine": 1444,
+      "answerSource": "generada"
     },
     {
       "id": "q-485",
@@ -8249,9 +8733,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "At home.",
       "context": "",
-      "sourceLine": 1445
+      "sourceLine": 1445,
+      "answerSource": "generada"
     },
     {
       "id": "q-486",
@@ -8266,9 +8751,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1453
+      "sourceLine": 1453,
+      "answerSource": "generada"
     },
     {
       "id": "q-487",
@@ -8283,9 +8769,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "My friend did.",
       "context": "",
-      "sourceLine": 1454
+      "sourceLine": 1454,
+      "answerSource": "generada"
     },
     {
       "id": "q-488",
@@ -8300,9 +8787,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "To the park.",
       "context": "",
-      "sourceLine": 1455
+      "sourceLine": 1455,
+      "answerSource": "generada"
     },
     {
       "id": "q-489",
@@ -8317,9 +8805,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Tomorrow.",
       "context": "",
-      "sourceLine": 1456
+      "sourceLine": 1456,
+      "answerSource": "generada"
     },
     {
       "id": "q-490",
@@ -8334,9 +8823,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "yes-no",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I think so.",
       "context": "",
-      "sourceLine": 1457
+      "sourceLine": 1457,
+      "answerSource": "generada"
     },
     {
       "id": "q-491",
@@ -8351,9 +8841,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Because I wanted to.",
       "context": "",
-      "sourceLine": 1458
+      "sourceLine": 1458,
+      "answerSource": "generada"
     },
     {
       "id": "q-492",
@@ -8368,9 +8859,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "confirmacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I think so.",
       "context": "",
-      "sourceLine": 1466
+      "sourceLine": 1466,
+      "answerSource": "generada"
     },
     {
       "id": "q-493",
@@ -8385,9 +8877,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "confirmacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I think so.",
       "context": "",
-      "sourceLine": 1467
+      "sourceLine": 1467,
+      "answerSource": "generada"
     },
     {
       "id": "q-494",
@@ -8402,9 +8895,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "tag",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, that's right.",
       "context": "",
-      "sourceLine": 1477
+      "sourceLine": 1477,
+      "answerSource": "generada"
     },
     {
       "id": "q-495",
@@ -8419,9 +8913,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "tag",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, that's right.",
       "context": "",
-      "sourceLine": 1478
+      "sourceLine": 1478,
+      "answerSource": "generada"
     },
     {
       "id": "q-496",
@@ -8436,9 +8931,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "tag",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, that's right.",
       "context": "",
-      "sourceLine": 1486
+      "sourceLine": 1486,
+      "answerSource": "generada"
     },
     {
       "id": "q-497",
@@ -8453,9 +8949,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "tag",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, that's right.",
       "context": "",
-      "sourceLine": 1487
+      "sourceLine": 1487,
+      "answerSource": "generada"
     },
     {
       "id": "q-498",
@@ -8470,9 +8967,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "tag",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, that's right.",
       "context": "",
-      "sourceLine": 1488
+      "sourceLine": 1488,
+      "answerSource": "generada"
     },
     {
       "id": "q-499",
@@ -8487,9 +8985,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I think so.",
       "context": "",
-      "sourceLine": 1496
+      "sourceLine": 1496,
+      "answerSource": "generada"
     },
     {
       "id": "q-500",
@@ -8504,9 +9003,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Yes, I think so.",
       "context": "",
-      "sourceLine": 1497
+      "sourceLine": 1497,
+      "answerSource": "generada"
     },
     {
       "id": "q-501",
@@ -8521,9 +9021,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1506
+      "sourceLine": 1506,
+      "answerSource": "generada"
     },
     {
       "id": "q-502",
@@ -8538,9 +9039,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Because I changed my mind.",
       "context": "",
-      "sourceLine": 1515
+      "sourceLine": 1515,
+      "answerSource": "generada"
     },
     {
       "id": "q-503",
@@ -8555,9 +9057,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Because I changed my mind.",
       "context": "",
-      "sourceLine": 1516
+      "sourceLine": 1516,
+      "answerSource": "generada"
     },
     {
       "id": "q-504",
@@ -8572,9 +9075,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Because I changed my mind.",
       "context": "",
-      "sourceLine": 1517
+      "sourceLine": 1517,
+      "answerSource": "generada"
     },
     {
       "id": "q-505",
@@ -8589,9 +9093,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1527
+      "sourceLine": 1527,
+      "answerSource": "generada"
     },
     {
       "id": "q-506",
@@ -8606,9 +9111,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Because I wanted to.",
       "context": "",
-      "sourceLine": 1528
+      "sourceLine": 1528,
+      "answerSource": "generada"
     },
     {
       "id": "q-507",
@@ -8623,9 +9129,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is mine.",
       "context": "",
-      "sourceLine": 1541
+      "sourceLine": 1541,
+      "answerSource": "generada"
     },
     {
       "id": "q-508",
@@ -8640,9 +9147,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is mine.",
       "context": "",
-      "sourceLine": 1542
+      "sourceLine": 1542,
+      "answerSource": "generada"
     },
     {
       "id": "q-509",
@@ -8657,9 +9165,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "eleccion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Either one is fine.",
       "context": "",
-      "sourceLine": 1552
+      "sourceLine": 1552,
+      "answerSource": "generada"
     },
     {
       "id": "q-510",
@@ -8674,9 +9183,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "eleccion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Either one is fine.",
       "context": "",
-      "sourceLine": 1553
+      "sourceLine": 1553,
+      "answerSource": "generada"
     },
     {
       "id": "q-511",
@@ -8691,9 +9201,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "otro",
       "type": "eleccion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Either one is fine.",
       "context": "",
-      "sourceLine": 1554
+      "sourceLine": 1554,
+      "answerSource": "generada"
     },
     {
       "id": "q-512",
@@ -8708,9 +9219,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is a book about animals.",
       "context": "",
-      "sourceLine": 1562
+      "sourceLine": 1562,
+      "answerSource": "generada"
     },
     {
       "id": "q-513",
@@ -8725,9 +9237,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is a book about animals.",
       "context": "",
-      "sourceLine": 1563
+      "sourceLine": 1563,
+      "answerSource": "generada"
     },
     {
       "id": "q-514",
@@ -8742,9 +9255,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is a book about animals.",
       "context": "",
-      "sourceLine": 1564
+      "sourceLine": 1564,
+      "answerSource": "generada"
     },
     {
       "id": "q-515",
@@ -8759,9 +9273,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "There are ten people.",
       "context": "",
-      "sourceLine": 1572
+      "sourceLine": 1572,
+      "answerSource": "generada"
     },
     {
       "id": "q-516",
@@ -8776,9 +9291,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Ten.",
       "context": "",
-      "sourceLine": 1573
+      "sourceLine": 1573,
+      "answerSource": "generada"
     },
     {
       "id": "q-517",
@@ -8793,9 +9309,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I need two bottles.",
       "context": "",
-      "sourceLine": 1574
+      "sourceLine": 1574,
+      "answerSource": "generada"
     },
     {
       "id": "q-518",
@@ -8810,9 +9327,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "A little.",
       "context": "",
-      "sourceLine": 1575
+      "sourceLine": 1575,
+      "answerSource": "generada"
     },
     {
       "id": "q-519",
@@ -8827,9 +9345,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It costs ten dollars.",
       "context": "",
-      "sourceLine": 1576
+      "sourceLine": 1576,
+      "answerSource": "generada"
     },
     {
       "id": "q-520",
@@ -8844,9 +9363,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "A little.",
       "context": "",
-      "sourceLine": 1577
+      "sourceLine": 1577,
+      "answerSource": "generada"
     },
     {
       "id": "q-521",
@@ -8861,9 +9381,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-perfecto",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "For two hours.",
       "context": "",
-      "sourceLine": 1585
+      "sourceLine": 1585,
+      "answerSource": "generada"
     },
     {
       "id": "q-522",
@@ -8878,9 +9399,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "For two hours.",
       "context": "",
-      "sourceLine": 1586
+      "sourceLine": 1586,
+      "answerSource": "generada"
     },
     {
       "id": "q-523",
@@ -8895,9 +9417,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "futuro-simple",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "For two hours.",
       "context": "",
-      "sourceLine": 1587
+      "sourceLine": 1587,
+      "answerSource": "generada"
     },
     {
       "id": "q-524",
@@ -8912,9 +9435,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "For two hours.",
       "context": "",
-      "sourceLine": 1588
+      "sourceLine": 1588,
+      "answerSource": "generada"
     },
     {
       "id": "q-525",
@@ -8929,9 +9453,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "For two hours.",
       "context": "",
-      "sourceLine": 1589
+      "sourceLine": 1589,
+      "answerSource": "generada"
     },
     {
       "id": "q-526",
@@ -8946,9 +9471,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Three times a week.",
       "context": "",
-      "sourceLine": 1597
+      "sourceLine": 1597,
+      "answerSource": "generada"
     },
     {
       "id": "q-527",
@@ -8963,9 +9489,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Three times a week.",
       "context": "",
-      "sourceLine": 1598
+      "sourceLine": 1598,
+      "answerSource": "generada"
     },
     {
       "id": "q-528",
@@ -8980,9 +9507,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Three times a week.",
       "context": "",
-      "sourceLine": 1599
+      "sourceLine": 1599,
+      "answerSource": "generada"
     },
     {
       "id": "q-529",
@@ -8997,9 +9525,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is two kilometers away.",
       "context": "",
-      "sourceLine": 1607
+      "sourceLine": 1607,
+      "answerSource": "generada"
     },
     {
       "id": "q-530",
@@ -9014,9 +9543,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is two kilometers away.",
       "context": "",
-      "sourceLine": 1608
+      "sourceLine": 1608,
+      "answerSource": "generada"
     },
     {
       "id": "q-531",
@@ -9031,9 +9561,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is two kilometers away.",
       "context": "",
-      "sourceLine": 1609
+      "sourceLine": 1609,
+      "answerSource": "generada"
     },
     {
       "id": "q-532",
@@ -9048,9 +9579,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I am thirty years old.",
       "context": "",
-      "sourceLine": 1617
+      "sourceLine": 1617,
+      "answerSource": "generada"
     },
     {
       "id": "q-533",
@@ -9065,9 +9597,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I am thirty years old.",
       "context": "",
-      "sourceLine": 1618
+      "sourceLine": 1618,
+      "answerSource": "generada"
     },
     {
       "id": "q-534",
@@ -9082,9 +9615,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "pasado-simple",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "I am thirty years old.",
       "context": "",
-      "sourceLine": 1619
+      "sourceLine": 1619,
+      "answerSource": "generada"
     },
     {
       "id": "q-535",
@@ -9099,9 +9633,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "About one meter eighty.",
       "context": "",
-      "sourceLine": 1627
+      "sourceLine": 1627,
+      "answerSource": "generada"
     },
     {
       "id": "q-536",
@@ -9116,9 +9651,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-continuo",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "About one meter eighty.",
       "context": "",
-      "sourceLine": 1628
+      "sourceLine": 1628,
+      "answerSource": "generada"
     },
     {
       "id": "q-537",
@@ -9133,9 +9669,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "About twenty meters high.",
       "context": "",
-      "sourceLine": 1629
+      "sourceLine": 1629,
+      "answerSource": "generada"
     },
     {
       "id": "q-538",
@@ -9150,9 +9687,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "About twenty meters high.",
       "context": "",
-      "sourceLine": 1630
+      "sourceLine": 1630,
+      "answerSource": "generada"
     },
     {
       "id": "q-539",
@@ -9167,9 +9705,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "About two meters deep.",
       "context": "",
-      "sourceLine": 1638
+      "sourceLine": 1638,
+      "answerSource": "generada"
     },
     {
       "id": "q-540",
@@ -9184,9 +9723,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "About three meters wide.",
       "context": "",
-      "sourceLine": 1639
+      "sourceLine": 1639,
+      "answerSource": "generada"
     },
     {
       "id": "q-541",
@@ -9201,9 +9741,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "About three meters wide.",
       "context": "",
-      "sourceLine": 1640
+      "sourceLine": 1640,
+      "answerSource": "generada"
     },
     {
       "id": "q-542",
@@ -9218,9 +9759,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Very well, thank you.",
       "context": "",
-      "sourceLine": 1648
+      "sourceLine": 1648,
+      "answerSource": "generada"
     },
     {
       "id": "q-543",
@@ -9235,9 +9777,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "About sixty kilometers per hour.",
       "context": "",
-      "sourceLine": 1649
+      "sourceLine": 1649,
+      "answerSource": "generada"
     },
     {
       "id": "q-544",
@@ -9252,9 +9795,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "modal",
       "type": "wh-combinacion",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "In ten minutes.",
       "context": "",
-      "sourceLine": 1650
+      "sourceLine": 1650,
+      "answerSource": "generada"
     },
     {
       "id": "q-545",
@@ -9269,9 +9813,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is five o'clock.",
       "context": "",
-      "sourceLine": 1658
+      "sourceLine": 1658,
+      "answerSource": "generada"
     },
     {
       "id": "q-546",
@@ -9286,9 +9831,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "be-presente",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "It is the fifth of May.",
       "context": "",
-      "sourceLine": 1661
+      "sourceLine": 1661,
+      "answerSource": "generada"
     },
     {
       "id": "q-547",
@@ -9303,9 +9849,10 @@ export const QUESTIONS_VERIFIED = {
       "tense": "presente-simple",
       "type": "wh",
       "related": "",
-      "answerGuide": "",
+      "answerGuide": "Something.",
       "context": "",
-      "sourceLine": 1671
+      "sourceLine": 1671,
+      "answerSource": "generada"
     }
   ]
 };
