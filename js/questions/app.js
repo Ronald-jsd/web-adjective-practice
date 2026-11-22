@@ -14,6 +14,7 @@ import {
     getQuestionProgress,
     loadAIQuestions,
     loadQuestionProgress,
+    questionModeBadge,
     recordQuestionOutcome,
     saveQuestionProgress,
     selectNextQuestion,
@@ -79,6 +80,7 @@ function refreshPool({ reset = true } = {}) {
         setHidden("questions-exercise", true);
         setHidden("questions-question", true);
         setHidden("questions-options", true);
+        setHidden("questions-match", true);
         setHidden("questions-explanation", true);
         setHidden("questions-answer-listen", true);
         setText("questions-status", state.pool.length
@@ -235,6 +237,27 @@ function markOptions(selected) {
     });
 }
 
+/* «Emparejar»: una fila por pregunta con un desplegable de respuestas. */
+function renderMatch(pairs, answers) {
+    const host = byId("questions-match");
+    if (!host) return;
+    host.replaceChildren();
+    pairs.forEach((pair, index) => {
+        const row = document.createElement("div");
+        row.className = "questions-match-row";
+        const question = document.createElement("span");
+        question.className = "questions-match-question";
+        question.textContent = `${index + 1}. ${pair.question}`;
+        const select = document.createElement("select");
+        select.className = "questions-match-select";
+        select.setAttribute("aria-label", `Respuesta de ${pair.question}`);
+        select.append(new Option("Elige respuesta…", ""));
+        answers.forEach(answer => select.append(new Option(answer, answer)));
+        row.append(question, select);
+        host.append(row);
+    });
+}
+
 function renderExercise() {
     const exercise = state.exercise;
     if (!exercise) return;
@@ -244,11 +267,10 @@ function renderExercise() {
     setText("questions-source-label", exercise.sourceLabel);
     setText("questions-pattern", [exercise.categoryTitle, exercise.questionWord, exercise.tense].filter(Boolean).join(" · "));
     const mixed = currentFilters().mode === "mixed";
-    const modeBadge = { form: "✍ Formar", answer: "💬 Responder", choice: "🎯 Elegir" };
-    setText("questions-mode-badge", modeBadge[exercise.mode] || "✍ Formar");
+    setText("questions-mode-badge", exercise.modeBadge || questionModeBadge(exercise.mode));
     setHidden("questions-mode-badge", !mixed);
     setText("questions-question", exercise.question);
-    setHidden("questions-question", exercise.mode === "form");
+    setHidden("questions-question", !exercise.showQuestion);
     setText("questions-prompt", exercise.prompt);
     setText("questions-explanation-title", `📘 ${exercise.explanationLabel}`);
     setText("questions-explanation-text", "");
@@ -259,23 +281,30 @@ function renderExercise() {
     setText("questions-feedback", "");
     byId("questions-feedback")?.classList.remove("is-correct", "is-wrong", "is-guide");
     setHidden("questions-feedback", true);
-    setHidden("questions-bank", exercise.mode !== "form");
-    renderBank(exercise.bank);
-    setHidden("questions-options", exercise.mode !== "choice");
-    renderOptions(exercise.options);
-    setHidden("questions-answer-label", exercise.mode === "choice");
-    setHidden("questions-answer", exercise.mode === "choice");
-    setHidden("questions-check", exercise.mode === "choice");
+    setHidden("questions-bank", !exercise.bank.length);
+    if (exercise.bank.length) renderBank(exercise.bank);
+    else byId("questions-bank")?.replaceChildren();
+    setHidden("questions-options", !exercise.options.length);
+    if (exercise.options.length) renderOptions(exercise.options);
+    else byId("questions-options")?.replaceChildren();
+    setHidden("questions-match", exercise.mode !== "match" || !exercise.pairs.length);
+    if (exercise.mode === "match" && exercise.pairs.length) renderMatch(exercise.pairs, exercise.answers);
+    else byId("questions-match")?.replaceChildren();
+    const usesInput = !exercise.options.length && exercise.mode !== "match";
+    setHidden("questions-answer-label", !usesInput);
+    setHidden("questions-answer", !usesInput);
+    setHidden("questions-check", !exercise.showCheck);
     const check = byId("questions-check");
     if (check) check.disabled = false;
     setText("questions-check", "✅ Comprobar");
     setText("questions-reveal", "📘 Ver explicación");
+    setText("questions-answer-label", exercise.inputLabel);
     const input = byId("questions-answer");
     if (input) {
         input.value = "";
-        input.placeholder = exercise.mode === "form" ? "Escribe la pregunta en inglés…" : "Escribe tu respuesta en inglés…";
+        input.placeholder = exercise.inputPlaceholder;
         input.disabled = false;
-        if (exercise.mode !== "choice") input.focus();
+        if (usesInput) input.focus();
     }
     setText("questions-status", `Pregunta ${state.historyIndex + 1} de ${state.history.length}`);
 }
@@ -373,10 +402,45 @@ function recordOutcome(isCorrect) {
     byId("questions-check")?.setAttribute("disabled", "true");
     byId("questions-bank")?.querySelectorAll("button").forEach(button => button.disabled = true);
     byId("questions-options")?.querySelectorAll("button").forEach(button => button.disabled = true);
+    byId("questions-match")?.querySelectorAll("select").forEach(select => select.disabled = true);
+}
+
+function checkMatch() {
+    const exercise = state.exercise;
+    const selects = byId("questions-match")
+        ? [...byId("questions-match").querySelectorAll(".questions-match-select")] : [];
+    if (selects.some(select => !select.value)) {
+        setFeedback("Elige una respuesta para cada pregunta antes de comprobar.", "is-guide");
+        return;
+    }
+    const pairs = exercise.pairs || [];
+    const results = selects.map((select, index) => ({
+        select,
+        ok: checkWrittenAnswer({ answer: pairs[index]?.answer }, select.value, { strict: true })
+    }));
+    const hits = results.filter(result => result.ok).length;
+    recordOutcome(hits === results.length);
+    results.forEach((result, index) => {
+        const row = result.select.closest(".questions-match-row");
+        row?.classList.add(result.ok ? "is-correct" : "is-wrong");
+        const mark = document.createElement("span");
+        mark.className = "questions-match-result";
+        mark.textContent = result.ok ? "✅" : `❌ ${finishSentence(pairs[index]?.answer)}`;
+        row?.append(mark);
+    });
+    setFeedback(hits === results.length
+        ? "✅ Las tres parejas son correctas."
+        : `❌ ${hits} de ${results.length} parejas correctas. Revisa las filas marcadas.`,
+        hits === results.length ? "is-correct" : "is-wrong");
+    showExplanation();
 }
 
 function checkAnswer(valueOverride = "", { fromChoice = false } = {}) {
     if (!state.exercise || state.checked) return;
+    if (state.exercise.mode === "match") {
+        checkMatch();
+        return;
+    }
     const input = byId("questions-answer");
     const exercise = state.exercise;
     const value = fromChoice ? valueOverride : (input?.value || "");
@@ -389,22 +453,38 @@ function checkAnswer(valueOverride = "", { fromChoice = false } = {}) {
         showExplanation();
         return;
     }
-    const correct = exercise.mode === "form"
-        ? checkFormedAnswer(exercise, value)
-        : checkWrittenAnswer(exercise, value, { strict: fromChoice });
+    const buildModes = ["form", "dictation", "fix"];
+    const exactModes = ["choice", "verify", "fill"];
+    const correct = exactModes.includes(exercise.mode)
+        ? checkWrittenAnswer(exercise, value, { strict: true })
+        : buildModes.includes(exercise.mode)
+            ? checkFormedAnswer(exercise, value)
+            : checkWrittenAnswer(exercise, value);
     recordOutcome(correct);
 
-    if (exercise.mode === "form") {
+    if (buildModes.includes(exercise.mode)) {
         setFeedback(correct
             ? "✅ Correcta. Lee la explicación y escucha la entonación."
             : `❌ La forma correcta es: ${finishSentence(exercise.answer)}`, correct ? "is-correct" : "is-wrong");
-        if (window.speechSynthesis) playAudioEnhanced(exercise.question, "en");
+        if (window.speechSynthesis) playAudioEnhanced(exercise.answer, "en");
+    } else if (exercise.mode === "verify") {
+        markOptions(value);
+        setFeedback(correct
+            ? `✅ Correcto. ${exercise.answer}`
+            : `❌ La respuesta correcta era: ${exercise.answer}`,
+            correct ? "is-correct" : "is-wrong");
     } else if (exercise.mode === "choice") {
         markOptions(value);
         setFeedback(correct
             ? `✅ Correcta. ${exercise.answerLabel}: ${finishSentence(exercise.answer)}`
             : `❌ La correcta era: ${finishSentence(exercise.answer || "sin respuesta modelo")}`, correct ? "is-correct" : "is-wrong");
         if (exercise.answer && window.speechSynthesis) playAudioEnhanced(exercise.answer, "en");
+    } else if (exercise.mode === "fill") {
+        setFeedback(correct
+            ? `✅ Correcta. La palabra era: ${exercise.answer}`
+            : `❌ La palabra correcta era: ${exercise.answer}`, correct ? "is-correct" : "is-wrong");
+        const full = String(exercise.question).replace("____", exercise.answer);
+        if (window.speechSynthesis) playAudioEnhanced(full, "en");
     } else {
         const label = exercise.answerLabel || "Respuesta modelo";
         setFeedback(correct

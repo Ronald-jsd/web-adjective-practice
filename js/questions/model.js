@@ -262,13 +262,154 @@ function shuffleTokens(tokens, random) {
     return result;
 }
 
-const EXERCISE_MODES = ["form", "answer", "choice"];
+/* Ocho formatos derivados del mismo dato verificado. El modo mixto rota por
+ * posición de ejercicio, así que la misma pregunta conserva su tipo al volver
+ * atrás en el historial. */
+export const EXERCISE_MODES = Object.freeze([
+    "form", "answer", "choice", "dictation", "fill", "fix", "match", "verify"
+]);
 
-/* El modo mixto rota los tres formatos por posición de ejercicio, de modo que
- * la misma pregunta siempre conserve su tipo al navegar hacia atrás. */
+const MODE_BADGES = {
+    form: "✍ Formar",
+    answer: "💬 Responder",
+    choice: "🎯 Elegir",
+    dictation: "🎧 Dictado",
+    fill: "✏️ Completar",
+    fix: "🛠 Corregir",
+    match: "🔗 Emparejar",
+    verify: "✅ ¿Sí o no?"
+};
+
 export function resolveQuestionMode(mode, { index = 0 } = {}) {
-    if (mode === "mixed") return EXERCISE_MODES[((index % EXERCISE_MODES.length) + EXERCISE_MODES.length) % EXERCISE_MODES.length];
+    if (mode === "mixed") {
+        const position = ((index % EXERCISE_MODES.length) + EXERCISE_MODES.length) % EXERCISE_MODES.length;
+        return EXERCISE_MODES[position];
+    }
     return EXERCISE_MODES.includes(mode) ? mode : "form";
+}
+
+export function questionModeBadge(mode) {
+    return MODE_BADGES[mode] || MODE_BADGES.form;
+}
+
+const QUESTION_WORDS = [
+    "how much", "how many", "how long", "how often", "how far", "how old",
+    "what", "who", "whom", "whose", "which", "where", "when", "why", "how"
+];
+const AUXILIARIES = [
+    "do", "does", "did", "is", "are", "was", "were", "am", "can", "could",
+    "will", "would", "shall", "should", "has", "have", "had", "must", "may", "might"
+];
+
+function tokenize(value) {
+    return String(value || "").replace(/[?!]+$/, "").split(/\s+/).filter(Boolean);
+}
+
+function pickOne(items, fallback, random) {
+    return items.length ? items[Math.floor(random() * items.length)] : fallback;
+}
+
+function findQuestionWordToken(tokens) {
+    const lower = tokens.map(token => token.toLocaleLowerCase());
+    for (const word of QUESTION_WORDS) {
+        const parts = word.split(" ");
+        for (let index = 0; index <= lower.length - parts.length; index += 1) {
+            if (parts.every((part, offset) => lower[index + offset] === part)) {
+                return { index, length: parts.length, token: tokens.slice(index, index + parts.length).join(" ") };
+            }
+        }
+    }
+    return null;
+}
+
+function findAuxiliaryToken(tokens) {
+    const index = tokens.findIndex(token => AUXILIARIES.includes(token.toLocaleLowerCase()));
+    return index < 0 ? null : { index, length: 1, token: tokens[index] };
+}
+
+/* «Completar»: se oculta la palabra interrogativa o el auxiliar y se ofrecen
+ * otras opciones reales del documento como distractores. */
+function buildFill(tokens, random) {
+    const target = findQuestionWordToken(tokens) || findAuxiliaryToken(tokens)
+        || (tokens.length ? { index: 0, length: 1, token: tokens[0] } : null);
+    if (!target) return { display: "", target: "", bank: [] };
+    const display = `${tokens.slice(0, target.index).join(" ")} ____ ${tokens.slice(target.index + target.length).join(" ")}`.replace(/\s+/g, " ").trim();
+    const isQuestionWord = QUESTION_WORDS.includes(target.token.toLocaleLowerCase());
+    const candidates = (isQuestionWord ? QUESTION_WORDS : AUXILIARIES)
+        .filter(word => word !== target.token.toLocaleLowerCase() && word.split(" ").length === target.length);
+    const distractors = shuffleTokens(candidates, random).slice(0, 3);
+    return {
+        display: `${display}?`,
+        target: target.token,
+        bank: shuffleTokens([target.token, ...distractors], random)
+    };
+}
+
+/* «Corregir»: se cambia una palabra interrogativa o un auxiliar por otro real.
+ * La respuesta sigue siendo la pregunta exacta del documento. */
+function buildBrokenQuestion(tokens, random) {
+    const result = [...tokens];
+    const target = findQuestionWordToken(result) || findAuxiliaryToken(result);
+    if (target) {
+        const source = QUESTION_WORDS.includes(target.token.toLocaleLowerCase()) ? QUESTION_WORDS : AUXILIARIES;
+        const options = source.filter(word => word !== target.token.toLocaleLowerCase() && word.split(" ").length === target.length);
+        const replacement = pickOne(options, "", random);
+        if (replacement) {
+            result.splice(target.index, target.length, replacement);
+            return { question: `${result.join(" ")}?`, hint: "💡 Revisa la palabra interrogativa o el auxiliar: uno está cambiado." };
+        }
+    }
+    if (result.length > 1) [result[0], result[1]] = [result[1], result[0]];
+    return { question: `${result.join(" ")}?`, hint: "💡 El orden de las palabras no es el correcto." };
+}
+
+/* «Emparejar»: la pregunta actual más dos del mismo grupo, con respuestas y
+ * preguntas desordenadas por separado. */
+function buildPairs(entry, pool, random) {
+    const source = (pool.length ? pool : VERIFIED_QUESTIONS)
+        .filter(item => item && item.id !== entry.id && String(item.answerGuide || "").trim());
+    const seen = new Set([normalizeWrittenAnswer(entry.answerGuide || "")]);
+    const others = [];
+    for (const item of shuffleTokens(source, random)) {
+        const normalized = normalizeWrittenAnswer(item.answerGuide || "");
+        if (!normalized || seen.has(normalized)) continue;
+        seen.add(normalized);
+        others.push(item);
+        if (others.length === 2) break;
+    }
+    const selected = [entry, ...others];
+    return {
+        pairs: shuffleTokens(selected, random).map(item => ({
+            id: item.id,
+            question: String(item.english),
+            answer: String(item.answerGuide || item.related || "").trim()
+        })),
+        answers: shuffleTokens(selected, random).map(item => String(item.answerGuide || item.related || "").trim())
+    };
+}
+
+/* «¿Sí o no?»: a veces la pregunta mostrada es la correcta y a veces se toma
+ * de otra entrada verificada, siempre con el significado de la actual. */
+function buildVerify(entry, pool, random) {
+    const yes = "✅ Sí, corresponde";
+    const no = "❌ No, corresponde a otra pregunta";
+    let matches = random() < 0.5;
+    let candidate = String(entry.english);
+    if (!matches) {
+        const source = (pool.length ? pool : VERIFIED_QUESTIONS).filter(item =>
+            item && item.id !== entry.id
+            && normalizeWrittenAnswer(item.spanish) !== normalizeWrittenAnswer(entry.spanish)
+            && normalizeWrittenAnswer(item.english) !== normalizeWrittenAnswer(entry.english));
+        const other = pickOne(source, null, random);
+        if (other) candidate = String(other.english);
+        else matches = true;
+    }
+    return {
+        question: candidate,
+        matches,
+        options: shuffleTokens([yes, no], random),
+        answer: matches ? yes : no
+    };
 }
 
 /* Compara la respuesta escrita con la guía: ignora mayúsculas, tildes,
@@ -321,11 +462,11 @@ function asSentence(value) {
 
 /* Explicación derivada solo de los campos verificados del documento: forma
  * correcta o guía, estructura, tiempo, tipo, significado y contexto. */
-function buildExplanation(entry, { mode, answer }) {
+function buildExplanation(entry, { mode, answer, answerLabel }) {
     const parts = [];
     parts.push(mode === "form"
         ? `Forma correcta: ${asSentence(entry.english)}`
-        : `${answerLabelFor(entry)}: ${asSentence(answer || "sin respuesta modelo")}`);
+        : `${answerLabel || answerLabelFor(entry)}: ${asSentence(answer || "sin respuesta modelo")}`);
     const pattern = String(entry.pattern || "").trim();
     if (pattern) parts.push(`Estructura: ${asSentence(pattern)}`);
     if (entry.tense) parts.push(`Tiempo: ${asSentence(TENSE_LABELS[entry.tense] || entry.tense)}`);
@@ -339,42 +480,158 @@ function buildExplanation(entry, { mode, answer }) {
 export function buildQuestionExercise(entry, { mode = "form", random = Math.random, index = 0, pool = [] } = {}) {
     if (!entry) return null;
     const resolvedMode = resolveQuestionMode(mode, { index });
-    const isForm = resolvedMode === "form";
-    const isChoice = resolvedMode === "choice";
     const guide = String(entry.answerGuide || entry.related || "");
     const context = String(entry.context || "");
     const questionWord = entry.questionWord === "yes-no" ? "Sí / no: elige el auxiliar correcto" : entry.questionWord;
-    const tokens = shuffleTokens(
-        String(entry.english).replace(/[?!]+$/, "").split(/\s+/).filter(Boolean),
-        random
-    );
-    const answer = isForm ? String(entry.english) : guide;
+    const rawTokens = tokenize(entry.english);
+    const shuffled = shuffleTokens(rawTokens, random);
+    const english = String(entry.english);
+    const spanish = String(entry.spanish);
+
+    let question = english;
+    let answer = guide;
+    let prompt = "";
+    let hint = "";
+    let answerLabel = "";
+    let explanation = "";
+    let explanationLabel = "Cómo se responde esta pregunta";
+    let inputLabel = "Tu respuesta en inglés";
+    let inputPlaceholder = "Escribe aquí…";
+    let bank = [];
+    let options = [];
+    let pairs = [];
+    let answers = [];
+    let showQuestion = true;
+    let showCheck = true;
+
+    switch (resolvedMode) {
+        case "form":
+            answer = english;
+            prompt = `Forma la pregunta en inglés: ${spanish}`;
+            hint = `💡 Empieza con: ${questionWord}${entry.pattern ? ` · Estructura: ${entry.pattern}` : ""}`;
+            explanationLabel = "Cómo se forma esta pregunta";
+            inputPlaceholder = "Escribe la pregunta en inglés…";
+            bank = shuffled;
+            showQuestion = false;
+            explanation = buildExplanation(entry, { mode: "form", answer });
+            break;
+
+        case "dictation":
+            answer = english;
+            prompt = "Escucha la pregunta y escríbela en inglés.";
+            hint = `💡 Cuenta las palabras (${rawTokens.length}) y recuerda el signo de interrogación final.`;
+            answerLabel = "Forma correcta";
+            explanationLabel = "Cómo suena y se escribe esta pregunta";
+            inputPlaceholder = "Escribe lo que escuchaste…";
+            showQuestion = false;
+            explanation = buildExplanation(entry, { mode: "form", answer });
+            break;
+
+        case "fill": {
+            const filled = buildFill(rawTokens, random);
+            question = filled.display || english;
+            answer = filled.target || english;
+            prompt = "Completa el hueco de la pregunta en inglés.";
+            hint = `💡 Significado: ${spanish}`;
+            answerLabel = "Palabra que falta";
+            explanationLabel = "Cómo se completa esta pregunta";
+            inputLabel = "Palabra o palabras que faltan";
+            inputPlaceholder = "Escribe la palabra que falta…";
+            bank = filled.bank;
+            explanation = `Palabra que falta: ${asSentence(answer)} ${buildExplanation(entry, { mode: "form", answer: english })}`;
+            break;
+        }
+
+        case "fix": {
+            const broken = buildBrokenQuestion(rawTokens, random);
+            question = broken.question;
+            answer = english;
+            prompt = "Esta pregunta tiene un error. Escríbela correctamente en inglés.";
+            hint = broken.hint;
+            answerLabel = "Forma correcta";
+            explanationLabel = "Cómo se corrige esta pregunta";
+            explanation = buildExplanation(entry, { mode: "form", answer });
+            break;
+        }
+
+        case "choice":
+            prompt = "Lee la pregunta y elige la mejor respuesta.";
+            hint = `💡 Significado: ${spanish}${context ? ` · Contexto del documento: ${context}` : ""}`;
+            answerLabel = answerLabelFor(entry);
+            options = buildChoiceOptions(entry, pool, random);
+            showCheck = false;
+            explanation = buildExplanation(entry, { mode: "answer", answer, answerLabel });
+            break;
+
+        case "verify": {
+            const verified = buildVerify(entry, pool, random);
+            question = verified.question;
+            answer = verified.answer;
+            prompt = "¿Corresponde esta pregunta en inglés al significado en español?";
+            hint = `💡 Significado: ${spanish}`;
+            answerLabel = "Resultado";
+            options = verified.options;
+            showCheck = false;
+            explanation = `${verified.matches ? "✅ Sí, corresponde." : "❌ No, corresponde a otra pregunta."} ${buildExplanation(entry, { mode: "form", answer: english })}`;
+            break;
+        }
+
+        case "match": {
+            answer = "";
+            prompt = guide
+                ? "Empareja cada pregunta con su respuesta correcta."
+                : "No hay respuesta verificada para emparejar esta pregunta.";
+            hint = `💡 Significado de la pregunta principal: ${spanish}`;
+            answerLabel = "Parejas correctas";
+            explanationLabel = "Cómo se emparejan estas preguntas";
+            showQuestion = false;
+            if (guide) {
+                const matching = buildPairs(entry, pool, random);
+                pairs = matching.pairs;
+                answers = matching.answers;
+                explanation = `${pairs.map(pair => `«${pair.question}» → ${asSentence(pair.answer)}`).join(" ")} ${buildExplanation(entry, { mode: "answer", answer: guide, answerLabel: answerLabelFor(entry) })}`;
+            } else {
+                showCheck = false;
+                explanation = `No tiene respuesta verificada para emparejar. ${buildExplanation(entry, { mode: "form", answer: english })}`;
+            }
+            break;
+        }
+
+        case "answer":
+        default:
+            prompt = "Lee la pregunta, responde en inglés y compara con la explicación.";
+            hint = `💡 Significado: ${spanish}${context ? ` · Contexto del documento: ${context}` : ""}`;
+            answerLabel = answerLabelFor(entry);
+            explanation = buildExplanation(entry, { mode: "answer", answer, answerLabel });
+            break;
+    }
 
     return {
         id: entry.id,
         source: entry.source || "verified",
         mode: resolvedMode,
-        question: String(entry.english),
-        translation: String(entry.spanish),
+        modeBadge: questionModeBadge(resolvedMode),
+        question,
+        translation: spanish,
         pattern: String(entry.pattern || ""),
         categoryTitle: String(entry.categoryTitle || ""),
         tense: String(entry.tense || ""),
         questionWord: String(entry.questionWord || ""),
         sourceLabel: entry.source === "ai" ? "IA opcional" : `Pregunta verificada · ${entry.section === "incorporadas" ? "dentro de oraciones" : "enciclopedia"}`,
-        prompt: isForm
-            ? `Forma la pregunta en inglés: ${entry.spanish}`
-            : isChoice
-                ? "Lee la pregunta y elige la mejor respuesta."
-                : `Lee la pregunta, responde en inglés y compara con la explicación.`,
-        hint: isForm
-            ? `💡 Empieza con: ${questionWord}${entry.pattern ? ` · Estructura: ${entry.pattern}` : ""}`
-            : `💡 Significado: ${entry.spanish}${context ? ` · Contexto del documento: ${context}` : ""}`,
+        prompt,
+        hint,
         answer,
-        answerLabel: isForm ? "" : answerLabelFor(entry),
-        explanation: buildExplanation(entry, { mode: resolvedMode, answer }),
-        explanationLabel: isForm ? "Cómo se forma esta pregunta" : "Cómo se responde esta pregunta",
+        answerLabel,
+        explanation,
+        explanationLabel,
         hasModelAnswer: Boolean(guide),
-        bank: isForm ? tokens : [],
-        options: isChoice ? buildChoiceOptions(entry, pool, random) : []
+        bank,
+        options,
+        pairs,
+        answers,
+        showQuestion,
+        showCheck,
+        inputLabel,
+        inputPlaceholder
     };
 }

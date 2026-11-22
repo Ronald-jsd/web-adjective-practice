@@ -409,7 +409,17 @@
                                 <label>Tipo<select id="questions-filter-type"><option value="all">Todos los tipos</option></select></label>
                                 <label>Estructura<select id="questions-filter-section"><option value="all">Todas las estructuras</option></select></label>
                                 <label>Fuente<select id="questions-filter-source"><option value="all">Offline + IA</option></select></label>
-                                <label>Modo<select id="questions-filter-mode"><option value="form">✍ Formar la pregunta</option><option value="answer">💬 Responder</option><option value="choice">🎯 Elegir respuesta</option><option value="mixed">🔀 Mixto (3 formatos)</option></select></label>
+                                <label>Modo<select id="questions-filter-mode">
+                                    <option value="form">✍ Formar la pregunta</option>
+                                    <option value="answer">💬 Responder</option>
+                                    <option value="choice">🎯 Elegir respuesta</option>
+                                    <option value="dictation">🎧 Escuchar y escribir</option>
+                                    <option value="fill">✏️ Completar la pregunta</option>
+                                    <option value="fix">🛠 Corregir un error</option>
+                                    <option value="match">🔗 Emparejar pares</option>
+                                    <option value="verify">✅ ¿Sí o no?</option>
+                                    <option value="mixed">🔀 Mixto (8 formatos)</option>
+                                </select></label>
                                 <label class="questions-search">Buscar<input id="questions-filter-search" type="search" placeholder="how much, where, presente perfecto…" autocomplete="off" /></label>
                             </div>
                         </details>
@@ -444,6 +454,7 @@
                             </div>
                             <div id="questions-bank" class="questions-bank" hidden></div>
                             <div id="questions-options" class="questions-options" hidden></div>
+                            <div id="questions-match" class="questions-match" hidden></div>
                             <label id="questions-answer-label" class="questions-answer-label" for="questions-answer">Tu respuesta en inglés</label>
                             <textarea id="questions-answer" rows="2" spellcheck="false" autocomplete="off" autocapitalize="off" placeholder="Escribe aquí…"></textarea>
                             <div class="questions-actions">
