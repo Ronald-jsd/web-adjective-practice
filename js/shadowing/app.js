@@ -682,7 +682,38 @@ async function mountVideo(videoId) {
 function handlePlaybackState(data) {
     // YT.PlayerState: -1 unstarted, 0 ended, 1 playing, 2 paused, 3 buffering, 5 cued.
     if (data !== 0 && data !== 2 && data !== 1) return
-    pollShadowing()
+    const segment = phraseAt()
+
+    if (data === 1) {
+        // Si el usuario da play directo en YouTube, sincronizamos la frase actual:
+        // activamos el watcher de fin, resaltado y estado del botón.
+        if (!state.phraseTimer && !state.speechActive && segment && !useSystemVoice()) {
+            const seconds = Number(state.player?.getCurrentTime?.() || 0)
+            if (seconds < segment.end + 0.6) {
+                state.phraseStartedAt = performance.now()
+                state.phraseTimer = setTimeout(() => watchPhraseEnd(segment, state.phraseStartedAt), 40)
+                updatePlayButton()
+                syncMediaSession("playing")
+            }
+        }
+        pollShadowing()
+        return
+    }
+
+    if (data === 2) {
+        // Pausa manual desde YouTube: detener watcher/botón, sin avanzar.
+        if (state.phraseTimer && !state.speechActive) {
+            stopPhraseTimer()
+            syncMediaSession("paused")
+        }
+        return
+    }
+
+    // ended
+    if (state.phraseTimer && !state.speechActive) {
+        stopPhraseTimer()
+        syncMediaSession("paused")
+    }
 }
 
 /* Sin red (o sin YouTube disponible) la frase se reproduce con la voz del
