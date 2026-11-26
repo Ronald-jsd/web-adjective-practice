@@ -219,6 +219,16 @@ test("splitTranscriptSegments conserva los tiempos de palabra recibidos", () => 
     assert.ok(result[0].words[2].to <= result[0].end + 0.01)
 })
 
+test("splitTranscriptSegments divide texto largo sin puntuación en varias frases", () => {
+    const words = Array.from({ length: 80 }, (_, i) => `word${i + 1}`).join(" ")
+    const result = splitTranscriptSegments([{ start: 0, duration: 60, text: words }])
+    assert.ok(result.length >= 2, `debería dividirse, pero quedaron ${result.length} frases`)
+    assert.ok(result.every(item => item.text.trim().length > 0))
+    assert.ok(result.every(item => item.end > item.start))
+    const totalWords = result.reduce((sum, item) => sum + item.text.split(/\s+/).filter(Boolean).length, 0)
+    assert.equal(totalWords, 80)
+})
+
 test("partOfSpeech identifica los tipos usados en la guía", () => {
     assert.equal(partOfSpeech("company").tag, "noun")
     assert.equal(partOfSpeech("wants").tag, "verb")

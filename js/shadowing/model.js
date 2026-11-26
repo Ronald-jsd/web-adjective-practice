@@ -123,9 +123,32 @@ export function splitTranscriptSegments(segments) {
         })
         current = []
     }
-    words.forEach(word => {
+    const isSoftBreak = (text) => /[,;:\u2014\u2013]["'”)]*$/.test(text)
+    words.forEach((word, index) => {
         current.push(word)
-        if (/[.!?]["'”)]*$/.test(word.text)) flush()
+        const text = word.text
+        const next = words[index + 1]
+        const hardEnd = /[.!?]["'”)]*$/.test(text)
+        const softEnd = !hardEnd && isSoftBreak(text) && current.length >= 8
+        const tooLong = current.length >= MAX_SEGMENT_SIZE
+        // Corta en puntuación fuerte, en pausa suave si ya hay suficientes palabras,
+        // o por tamaño máximo cuando el subtítulo no trae puntuación.
+        if (hardEnd || softEnd || (tooLong && !next)) {
+            flush()
+        } else if (tooLong) {
+            // Busca un corte suave cercano hacia atrás; si no hay, corta aquí.
+            let cut = -1
+            for (let i = current.length - 2; i >= Math.floor(current.length * 0.5); i -= 1) {
+                if (isSoftBreak(current[i].text)) { cut = i + 1; break }
+            }
+            if (cut > 0 && cut < current.length) {
+                const tail = current.splice(cut)
+                flush()
+                current.push(...tail)
+            } else {
+                flush()
+            }
+        }
     })
     flush()
 
