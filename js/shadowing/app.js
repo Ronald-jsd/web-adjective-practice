@@ -1030,7 +1030,16 @@ async function createLesson() {
             let segments = cached.segments
             if (needsTimingRebuild(segments)) {
                 const rebuilt = await fetchRebuiltSegments(videoId)
-                if (rebuilt) segments = rebuilt
+                if (rebuilt) {
+                    segments = rebuilt
+                    await transcriptStore?.save(user?.id || null, {
+                        videoId,
+                        title: cached.title || "Lección de YouTube",
+                        language: cached.language || "en",
+                        source: cached.source || "auto",
+                        segments
+                    })
+                }
             }
             await applyLesson({
                 videoId,
@@ -1098,9 +1107,17 @@ async function createLesson() {
 }
 
 /* Las lecciones antiguas guardaron el "duration" de Supadata como tiempo de
- * habla. En ese formato casi todas las frases se solapan con la siguiente. */
+ * habla. En ese formato casi todas las frases se solapan con la siguiente.
+ * También detecta transcripciones viejas que quedaron como un solo bloque
+ * largo porque no había puntuación de frase. */
 function needsTimingRebuild(transcript) {
-    if (!Array.isArray(transcript) || transcript.length < 3) return false
+    if (!Array.isArray(transcript) || !transcript.length) return false
+    if (transcript.length === 1) {
+        const text = String(transcript[0]?.text || "").trim()
+        const wordCount = text ? text.split(/\s+/).length : 0
+        return wordCount > 45
+    }
+    if (transcript.length < 3) return false
     let overlapping = 0
     for (let index = 0; index < transcript.length - 1; index += 1) {
         const end = Number(transcript[index]?.end || 0)
@@ -1956,6 +1973,13 @@ async function retimeCurrentLesson() {
         await shadowingRepository?.save(user.id, { ...lesson, title: lesson.title || `Lección ${lesson.videoId}` })
         await refreshLessons(lesson.id)
     }
+    await transcriptStore?.save(user?.id || null, {
+        videoId: lesson.videoId,
+        title: lesson.title || "Lección de YouTube",
+        language: lesson.language || "en",
+        source: lesson.source || "auto",
+        segments: rebuilt
+    })
     stopPhraseTimer()
     state.currentIndex = 0
     state.translation = ""
@@ -2004,6 +2028,13 @@ async function openLesson(id) {
                 await refreshLessons(lesson.id)
                 lesson = state.lessons.find(item => item.id === id) || lesson
             }
+            await transcriptStore?.save(user?.id || null, {
+                videoId: lesson.videoId,
+                title: lesson.title || "Lección de YouTube",
+                language: lesson.language || "en",
+                source: lesson.source || "auto",
+                segments: rebuilt
+            })
             showStatus("Tiempos de las frases corregidos.")
         }
     }
