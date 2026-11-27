@@ -1,5 +1,5 @@
 import { store } from "../config.js"
-import { splitCatalogExamples } from "../search-utils.js"
+import { normalizeSearchText, splitCatalogExamples } from "../search-utils.js"
 import { verbsData } from "../verbs/verbs-state.js"
 import { SYNCED_FIELDS, syncedFieldsFrom } from "./model.js"
 
@@ -159,14 +159,30 @@ export function collectWordCandidates() {
 }
 
 export function filterCandidates(candidates, query, limit = 30) {
-    const q = String(query || "").trim().toLowerCase()
+    const q = normalizeSearchText(query).trim()
     if (!q) return []
-    const matches = []
+    const ranked = []
     for (const candidate of candidates || []) {
-        const haystack = `${candidate.word || ""} ${candidate.spanish || ""} ${candidate.pronunciation || ""} ${candidate.context || ""}`.toLowerCase()
+        const word = normalizeSearchText(candidate.word || "")
+        const spanish = normalizeSearchText(candidate.spanish || "")
+        const pronunciation = normalizeSearchText(candidate.pronunciation || "")
+        const context = normalizeSearchText(candidate.context || "")
+        const haystack = `${word} ${spanish} ${pronunciation} ${context}`
         if (!haystack.includes(q)) continue
-        matches.push(candidate)
-        if (matches.length >= limit) break
+
+        let rank = 4
+        if (word === q) rank = 0
+        else if (word.startsWith(q)) rank = 1
+        else if (word.includes(q)) rank = 2
+        else if (spanish.startsWith(q) || spanish.includes(q)) rank = 3
+        ranked.push({ candidate, rank, word, spanish })
     }
-    return matches
+
+    ranked.sort((left, right) =>
+        left.rank - right.rank
+        || left.word.localeCompare(right.word, "es", { sensitivity: "base" })
+        || left.spanish.localeCompare(right.spanish, "es", { sensitivity: "base" })
+    )
+
+    return ranked.slice(0, limit).map(entry => entry.candidate)
 }
