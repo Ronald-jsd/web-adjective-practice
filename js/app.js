@@ -17,7 +17,6 @@ import { initializeQuestions } from "./questions/app.js";
 import { initializeWordGroups } from "./word-groups/modal.js";
 import { toggleFavorite } from "./favorites.js";
 import { showToast } from "./cache.js";
-import { isCatalogFresh } from "./catalog-freshness.js";
 import { showLoading, hideLoading } from "./ui-status.js";
 import { initPWA } from "./pwa.js";
 import { initOfflineSync, startAutoSync } from "./offline/sync.js";
@@ -188,29 +187,45 @@ window.loadVerbsFromSupabase = async function (forceRefresh) {
 
 /* Actualiza las categorías desde la nube sin bloquear la interfaz. La copia
  * local ya está visible; cuando llega la respuesta se refresca la vista
- * respetando la búsqueda o la categoría que el usuario esté viendo. */
+ * respetando la búsqueda o la categoría que el usuario esté viendo.
+ * Se ejecuta también con caché fresca para propagar cambios hechos en otro
+ * dispositivo (borrados, ediciones, nuevos custom items). */
+let categoriesBackgroundRefresh = null;
 async function refreshCategoriesInBackground() {
-    // La copia local ya se validó al cargar; solo se vuelve a la red cuando
-    // han pasado 24 h. Las ediciones usan forceRefresh y no dependen de aquí.
-    if (isCatalogFresh("categories")) return;
-    try {
-        const fresh = await loadCategoriesFromSupabase(true, { silent: true });
-        if (!fresh?.length) return;
-        store.categoriesData = fresh;
+    if (categoriesBackgroundRefresh) return categoriesBackgroundRefresh;
+    if (typeof navigator !== "undefined" && navigator.onLine === false) return;
+    categoriesBackgroundRefresh = (async () => {
+        try {
+            const fresh = await loadCategoriesFromSupabase(true, { silent: true });
+            if (!fresh?.length) return;
+            store.categoriesData = fresh;
 
-        const searchDiv = document.getElementById("search-results");
-        if (searchDiv && !searchDiv.classList.contains("hidden")) {
-            window.refreshSearchResults?.();
-            return;
-        }
+            const searchDiv = document.getElementById("search-results");
+            if (searchDiv && !searchDiv.classList.contains("hidden")) {
+                window.refreshSearchResults?.();
+                return;
+            }
 
-        const categoryView = document.getElementById("category-view");
-        if (!categoryView || categoryView.classList.contains("hidden")) {
-            renderCategories(fresh);
+            const categoryView = document.getElementById("category-view");
+            if (!categoryView || categoryView.classList.contains("hidden")) {
+                renderCategories(fresh);
+            }
+        } catch (error) {
+            console.warn("No se pudieron actualizar las categorías en segundo plano:", error);
+        } finally {
+            categoriesBackgroundRefresh = null;
         }
-    } catch (error) {
-        console.warn("No se pudieron actualizar las categorías en segundo plano:", error);
-    }
+    })();
+    return categoriesBackgroundRefresh;
+}
+
+if (typeof window !== "undefined") {
+    const triggerCategoryRefresh = () => { refreshCategoriesInBackground().catch(() => {}); };
+    window.addEventListener("app-online", triggerCategoryRefresh);
+    window.addEventListener("app-foreground", triggerCategoryRefresh);
+    document.addEventListener("visibilitychange", () => {
+        if (document.visibilityState === "visible") triggerCategoryRefresh();
+    });
 }
 
 function navigateToDailyActivity(activity, mission) {
